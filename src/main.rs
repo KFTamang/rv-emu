@@ -21,7 +21,16 @@ fn main() -> io::Result<()> {
     let mut code = Vec::new();
     file.read_to_end(&mut code)?;
 
-    let cpu = Cpu::new(code);
+    let mut cpu = Cpu::new(code);
+
+    while cpu.pc < cpu.dram.len() as u64 {
+        let inst = cpu.fetch();
+        cpu.pc = cpu.pc + 4;
+
+        cpu.execute(inst);
+
+        cpu.dump_registers();
+    }
 
     Ok(())
 }
@@ -39,7 +48,70 @@ impl Cpu {
 
     fn fetch(&self) -> u32 {
         let index = self.pc as usize;
-        return index as u32;
+        return ((self.dram[index + 0] as u32) << 0)
+            | ((self.dram[index + 1] as u32) << 8)
+            | ((self.dram[index + 2] as u32) << 16)
+            | ((self.dram[index + 3] as u32) << 24);
     }
-    fn execute(&mut self, inst: u32) {}
+    fn execute(&mut self, inst: u32) {
+        let opcode = inst & 0x7f;
+        let rd = ((inst >> 7) & 0x1f) as usize;
+        let rs1 = ((inst >> 15) & 0x1f) as usize;
+        let rs2 = ((inst >> 20) & 0x1f) as usize;
+
+        match opcode {
+            0x33 => {
+                // add
+                println!(
+                    "opcode:{}({}), rd:{}, rs1:{}, rs2:{}",
+                    opcode, "add", rd, rs1, rs2
+                );
+                self.regs[rd] = self.regs[rs1].wrapping_add(self.regs[rs2]);
+            }
+            0x13 => {
+                // addi
+                println!(
+                    "opcode:{}({}), rd:{}, rs1:{}, rs2:{}",
+                    opcode, "addi", rd, rs1, rs2
+                );
+                let imm = ((inst >> 20) & 0xfff) as u64;
+                self.regs[rd] = self.regs[rs1].wrapping_add(imm);
+            }
+            _ => {
+                dbg!("not implemented yet!");
+            }
+        }
+    }
+
+    fn dump_registers(&self) {
+        let mut output = String::from("");
+        let abi = [
+            "zero", " ra ", " sp ", " gp ", " tp ", " t0 ", " t1 ", " t2 ", " s0 ", " s1 ", " a0 ",
+            " a1 ", " a2 ", " a3 ", " a4 ", " a5 ", " a6 ", " a7 ", " s2 ", " s3 ", " s4 ", " s5 ",
+            " s6 ", " s7 ", " s8 ", " s9 ", " s10", " s11", " t3 ", " t4 ", " t5 ", " t6 ",
+        ];
+        output = format!("pc={:>#18x}", self.pc);
+        for i in (0..32).step_by(4) {
+            output = format!(
+                "{}\n{}",
+                output,
+                format!(
+                    "x{:02}({})={:>#18x}, x{:02}({})={:>#18x}, x{:02}({})={:>#18x}, x{:02}({})={:>#18x}",
+                    i,
+                    abi[i],
+                    self.regs[i],
+                    i+1,
+                    abi[i+1],
+                    self.regs[i+1],
+                    i+2,
+                    abi[i+2],
+                    self.regs[i+2],
+                    i+3,
+                    abi[i+3],
+                    self.regs[i+3]
+                )
+            )
+        }
+        println!("{}", output);
+    }
 }

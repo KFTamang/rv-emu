@@ -1,20 +1,20 @@
-// dram memory size, 128MB
-pub const DRAM_SIZE: u64 = 1024 * 1024 * 128;
+use crate::bus::*;
+use crate::dram::*;
 
 pub struct Cpu {
     pub regs: [u64; 32],
     pub pc: u64,
-    pub dram: Vec<u8>,
+    pub bus: Bus,
 }
 
 impl Cpu {
-    pub fn new(code: Vec<u8>) -> Self {
+    pub fn new(binary: Vec<u8>) -> Self {
         let mut regs = [0; 32];
         regs[2] = DRAM_SIZE;
         Self {
             regs,
             pc: 0,
-            dram: code,
+            bus: Bus::new(binary),
         }
     }
 

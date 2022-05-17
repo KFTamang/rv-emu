@@ -1,4 +1,6 @@
+mod bus;
 mod cpu;
+mod dram;
 use crate::cpu::*;
 
 use std::env;

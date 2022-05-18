@@ -13,19 +13,19 @@ impl Cpu {
         regs[2] = DRAM_SIZE;
         Self {
             regs,
-            pc: 0,
+            pc: DRAM_BASE,
             bus: Bus::new(binary),
         }
     }
 
-    pub fn fetch(&self) -> u32 {
+    pub fn fetch(&self) -> Result<u64,()> {
         let index = self.pc as usize;
-        return ((self.dram[index + 0] as u32) << 0)
-            | ((self.dram[index + 1] as u32) << 8)
-            | ((self.dram[index + 2] as u32) << 16)
-            | ((self.dram[index + 3] as u32) << 24);
+        match self.bus.load(index as u64, 32) {
+            Ok(inst) => Ok(inst),
+            Err(_) => Err(()),
+        }
     }
-    pub fn execute(&mut self, inst: u32) {
+    pub fn execute(&mut self, inst: u32) -> Result<(),()> {
         let opcode = inst & 0x7f;
         let rd = ((inst >> 7) & 0x1f) as usize;
         let rs1 = ((inst >> 15) & 0x1f) as usize;
@@ -39,6 +39,7 @@ impl Cpu {
                     opcode, "add", rd, rs1, rs2
                 );
                 self.regs[rd] = self.regs[rs1].wrapping_add(self.regs[rs2]);
+                Ok(())
             }
             0x13 => {
                 // addi
@@ -48,9 +49,11 @@ impl Cpu {
                 );
                 let imm = ((inst >> 20) & 0xfff) as u64;
                 self.regs[rd] = self.regs[rs1].wrapping_add(imm);
+                Ok(())
             }
             _ => {
                 dbg!("not implemented yet!");
+                Err(())
             }
         }
     }

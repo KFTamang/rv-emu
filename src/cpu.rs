@@ -30,6 +30,7 @@ impl Cpu {
         let rd = ((inst >> 7) & 0x1f) as usize;
         let rs1 = ((inst >> 15) & 0x1f) as usize;
         let rs2 = ((inst >> 20) & 0x1f) as usize;
+        let funct3 = ((inst >> 12) & 0x7) as usize;
 
         match opcode {
             0x33 => {
@@ -42,13 +43,109 @@ impl Cpu {
                 Ok(())
             }
             0x13 => {
-                // addi
-                println!(
-                    "opcode:{}({}), rd:{}, rs1:{}, rs2:{}",
-                    opcode, "addi", rd, rs1, rs2
-                );
-                let imm = ((inst >> 20) & 0xfff) as u64;
-                self.regs[rd] = self.regs[rs1].wrapping_add(imm);
+                let imm = ((inst as i32 as i64 >> 20) & 0xfff) as u64;
+                match funct3 {
+                    0x0 => {
+                        // addi
+                        println!(
+                            "opcode:{}({}), rd:{}, rs1:{}, rs2:{}",
+                            opcode, "addi", rd, rs1, rs2
+                        );
+                        self.regs[rd] = self.regs[rs1].wrapping_add(imm);
+                    }
+                    0x2 => {
+                        // slti
+                        let result = if (self.regs[rs1] as i32 as i64) < (imm as i64) {1} else {0};
+                        self.regs[rd] = result;
+                    }
+                    0x3 => {
+                        // sltiu
+                        let result = if (self.regs[rs1] as i32 as i64 as u64) < imm {1} else {0};
+                        self.regs[rd] = result;
+                    }
+                    0x4 => {
+                        // xori
+                        let val = ((self.regs[rs1] as i32) ^ (imm as i32)) as u64;
+                        self.regs[rd] = val;
+                    }
+                    0x6 => {
+                        // ori
+                        let val = ((self.regs[rs1] as i32) | (imm as i32)) as u64;
+                        self.regs[rd] = val;
+                    }                    
+                    0x7 => {
+                        // andi
+                        let val = ((self.regs[rs1] as i32) & (imm as i32)) as u64;
+                        self.regs[rd] = val;
+                    }
+                    0x1 => {
+                        // slli
+                        let shamt = self.regs[rs2] as u64;
+                        self.regs[rd] = (self.regs[rs1] as u64) << shamt;
+                    }
+                    0x5 => {
+                        // srli
+                        let shamt = self.regs[rs2] as u64;
+                        let logical_shift = (imm >> 10) & 0x1;
+                        if logical_shift != 0 {
+                            self.regs[rd] = (self.regs[rs1] as u64) >> shamt;
+                        } else {
+                            self.regs[rd] = ((self.regs[rs1] as i64) >> shamt) as u64;
+                        }
+                    }
+                    _ => {}
+                }
+                Ok(())
+            }
+            0x03 =>{
+                // load instructions
+                // load a value stored at addr, where addr is RS1 + imm
+                let imm = ((inst as i32 as i64) >> 20) as u64;
+                let addr = self.regs[rs1].wrapping_add(imm); 
+                match funct3 {
+                    0x0 => { // lb
+                        let val = self.bus.load(addr, 8)?;
+                        self.regs[rd] = val as i8 as i64 as u64;
+                    }
+                    0x1 => { // lh
+                        let val = self.bus.load(addr, 16)?;
+                        self.regs[rd] = val as i16 as i64 as u64;
+                    }
+                    0x2 => { // lw
+                        let val = self.bus.load(addr, 32)?;
+                        self.regs[rd] = val as i32 as i64 as u64;
+                    }
+                    0x3 => { // lw
+                        let val = self.bus.load(addr, 64)?;
+                        self.regs[rd] = val;
+                    }
+                    0x4 => { // lbu
+                        let val = self.bus.load(addr, 8)?;
+                        self.regs[rd] = val;
+                    }
+                    0x5 => { // lhu
+                        let val = self.bus.load(addr, 16)?;
+                        self.regs[rd] = val;
+                    }
+                    0x6 => { // lwu
+                        let val = self.bus.load(addr, 32)?;
+                        self.regs[rd] = val;
+                    }
+                    _ => {}
+                }
+                Ok(())
+            }
+            0x23 => {
+                // store instructions
+                let imm = (((inst & 0xfe000000) as i32 as i64 >> 20) as u64 ) | ((inst >> 7) & 0x1f) as u64;
+                let addr = self.regs[rs1].wrapping_add(imm);
+                match funct3 {
+                    0x0 => self.bus.store(addr,  8, self.regs[rs2])?,
+                    0x1 => self.bus.store(addr, 16, self.regs[rs2])?,
+                    0x2 => self.bus.store(addr, 32, self.regs[rs2])?,
+                    0x3 => self.bus.store(addr, 64, self.regs[rs2])?,
+                    _ => {}
+                }
                 Ok(())
             }
             _ => {

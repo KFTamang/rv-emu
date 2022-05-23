@@ -152,7 +152,8 @@ impl Cpu {
                 // jal
                 let tmp = inst as u64;
                 let imm = ((tmp >> 11) & 0x100000) | ((tmp >> 20) & 0x7fe) | ((tmp >> 9) & 0x800) | (tmp & 0xff000);
-                self.pc = self.pc + imm;
+                self.regs[rd] = self.pc;
+                self.pc = self.pc.wrapping_add(imm);
                 Ok(())
             }
             _ => {

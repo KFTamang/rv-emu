@@ -156,6 +156,19 @@ impl Cpu {
                 self.pc = self.pc.wrapping_add(imm);
                 Ok(())
             }
+            0x67 => {
+                // jalr
+                match funct3 {
+                    0x0 => {
+                        let imm = ((inst as i32 as i64) >> 20) as u64;
+                        let offset = self.regs[rs1].wrapping_add(imm);
+                        self.regs[rd] = self.pc;
+                        self.pc = self.pc.wrapping_add(offset);
+                    }
+                    _ => {}
+                }
+                Ok(())
+            }
             _ => {
                 dbg!("not implemented yet!");
                 Err(())

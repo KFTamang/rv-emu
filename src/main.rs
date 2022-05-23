@@ -38,6 +38,7 @@ fn main() -> io::Result<()> {
         }
 
         cpu.dump_registers();
+        println!("----");
     }
 
     Ok(())

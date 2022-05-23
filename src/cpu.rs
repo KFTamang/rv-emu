@@ -36,7 +36,7 @@ impl Cpu {
             0x33 => {
                 // add
                 println!(
-                    "opcode:{}({}), rd:{}, rs1:{}, rs2:{}",
+                    "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
                     opcode, "add", rd, rs1, rs2
                 );
                 self.regs[rd] = self.regs[rs1].wrapping_add(self.regs[rs2]);
@@ -48,43 +48,71 @@ impl Cpu {
                     0x0 => {
                         // addi
                         println!(
-                            "opcode:{}({}), rd:{}, rs1:{}, rs2:{}",
+                            "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
                             opcode, "addi", rd, rs1, rs2
                         );
                         self.regs[rd] = self.regs[rs1].wrapping_add(imm);
                     }
                     0x2 => {
                         // slti
-                        let result = if (self.regs[rs1] as i32 as i64) < (imm as i64) {1} else {0};
+                        println!(
+                            "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                            opcode, "slti", rd, rs1, rs2
+                        );
+                                let result = if (self.regs[rs1] as i32 as i64) < (imm as i64) {1} else {0};
                         self.regs[rd] = result;
                     }
                     0x3 => {
                         // sltiu
+                        println!(
+                            "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                            opcode, "sltiu", rd, rs1, rs2
+                        );        
                         let result = if (self.regs[rs1] as i32 as i64 as u64) < imm {1} else {0};
                         self.regs[rd] = result;
                     }
                     0x4 => {
                         // xori
+                        println!(
+                            "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                            opcode, "xori", rd, rs1, rs2
+                        );        
                         let val = ((self.regs[rs1] as i32) ^ (imm as i32)) as u64;
                         self.regs[rd] = val;
                     }
                     0x6 => {
                         // ori
+                        println!(
+                            "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                            opcode, "ori", rd, rs1, rs2
+                        );
                         let val = ((self.regs[rs1] as i32) | (imm as i32)) as u64;
                         self.regs[rd] = val;
                     }                    
                     0x7 => {
                         // andi
+                        println!(
+                            "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                            opcode, "andi", rd, rs1, rs2
+                        );
                         let val = ((self.regs[rs1] as i32) & (imm as i32)) as u64;
                         self.regs[rd] = val;
                     }
                     0x1 => {
                         // slli
+                        println!(
+                            "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                            opcode, "slli", rd, rs1, rs2
+                        );
                         let shamt = self.regs[rs2] as u64;
                         self.regs[rd] = (self.regs[rs1] as u64) << shamt;
                     }
                     0x5 => {
                         // srli
+                        println!(
+                            "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                            opcode, "srli", rd, rs1, rs2
+                        );
                         let shamt = self.regs[rs2] as u64;
                         let logical_shift = (imm >> 10) & 0x1;
                         if logical_shift != 0 {
@@ -103,31 +131,66 @@ impl Cpu {
                 let imm = ((inst as i32 as i64) >> 20) as u64;
                 let addr = self.regs[rs1].wrapping_add(imm); 
                 match funct3 {
-                    0x0 => { // lb
+                    0x0 => {
+                        // lb
+                        println!(
+                            "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                            opcode, "lb", rd, rs1, rs2
+                        );
                         let val = self.bus.load(addr, 8)?;
                         self.regs[rd] = val as i8 as i64 as u64;
                     }
-                    0x1 => { // lh
+                    0x1 => {
+                        // lh
+                        println!(
+                            "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                            opcode, "lh", rd, rs1, rs2
+                        );
                         let val = self.bus.load(addr, 16)?;
                         self.regs[rd] = val as i16 as i64 as u64;
                     }
-                    0x2 => { // lw
+                    0x2 => {
+                        // lw
+                        println!(
+                            "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                            opcode, "lw", rd, rs1, rs2
+                        );
                         let val = self.bus.load(addr, 32)?;
                         self.regs[rd] = val as i32 as i64 as u64;
                     }
-                    0x3 => { // lw
+                    0x3 => {
+                        // ld
+                        println!(
+                            "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                            opcode, "ld", rd, rs1, rs2
+                        );
                         let val = self.bus.load(addr, 64)?;
                         self.regs[rd] = val;
                     }
-                    0x4 => { // lbu
+                    0x4 => {
+                        // lbu
+                        println!(
+                            "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                            opcode, "lbu", rd, rs1, rs2
+                        );
                         let val = self.bus.load(addr, 8)?;
                         self.regs[rd] = val;
                     }
-                    0x5 => { // lhu
+                    0x5 => {
+                        // lhu
+                        println!(
+                            "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                            opcode, "lhu", rd, rs1, rs2
+                        );
                         let val = self.bus.load(addr, 16)?;
                         self.regs[rd] = val;
                     }
-                    0x6 => { // lwu
+                    0x6 => {
+                        // lwu
+                        println!(
+                            "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                            opcode, "lwu", rd, rs1, rs2
+                        );
                         let val = self.bus.load(addr, 32)?;
                         self.regs[rd] = val;
                     }
@@ -137,6 +200,10 @@ impl Cpu {
             }
             0x23 => {
                 // store instructions
+                println!(
+                    "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                    opcode, "s?", rd, rs1, rs2
+                );
                 let imm = (((inst & 0xfe000000) as i32 as i64 >> 20) as u64 ) | ((inst >> 7) & 0x1f) as u64;
                 let addr = self.regs[rs1].wrapping_add(imm);
                 match funct3 {
@@ -150,6 +217,10 @@ impl Cpu {
             }
             0x6f => {
                 // jal
+                println!(
+                    "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                    opcode, "jal", rd, rs1, rs2
+                );
                 let tmp = inst as u64;
                 let imm = ((tmp >> 11) & 0x100000) | ((tmp >> 20) & 0x7fe) | ((tmp >> 9) & 0x800) | (tmp & 0xff000);
                 self.regs[rd] = self.pc;
@@ -158,6 +229,10 @@ impl Cpu {
             }
             0x67 => {
                 // jalr
+                println!(
+                    "opcode:{:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                    opcode, "jalr", rd, rs1, rs2
+                );
                 match funct3 {
                     0x0 => {
                         let imm = ((inst as i32 as i64) >> 20) as u64;

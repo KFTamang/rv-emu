@@ -36,8 +36,8 @@ impl Cpu {
             0x33 => {
                 // add
                 println!(
-                    "opcode:{:>#2x}({}), dest:{}, src1:{}, src2:{}",
-                    opcode, "add", rd, rs1, rs2
+                    "{:>#x} : {:>#2x}({}), dest:{}, src1:{}, src2:{}",
+                    self.pc, opcode, "add", rd, rs1, rs2
                 );
                 self.regs[rd] = self.regs[rs1].wrapping_add(self.regs[rs2]);
                 Ok(())
@@ -48,16 +48,16 @@ impl Cpu {
                     0x0 => {
                         // addi
                         println!(
-                            "opcode:{:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            opcode, "addi", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
+                            self.pc, opcode, "addi", rd, rs1, imm
                         );
                         self.regs[rd] = self.regs[rs1].wrapping_add(imm);
                     }
                     0x2 => {
                         // slti
                         println!(
-                            "opcode:{:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            opcode, "slti", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
+                            self.pc, opcode, "slti", rd, rs1, imm
                         );
                                 let result = if (self.regs[rs1] as i32 as i64) < (imm as i64) {1} else {0};
                         self.regs[rd] = result;
@@ -65,8 +65,8 @@ impl Cpu {
                     0x3 => {
                         // sltiu
                         println!(
-                            "opcode:{:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            opcode, "sltiu", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
+                            self.pc, opcode, "sltiu", rd, rs1, imm
                         );        
                         let result = if (self.regs[rs1] as i32 as i64 as u64) < imm {1} else {0};
                         self.regs[rd] = result;
@@ -74,8 +74,8 @@ impl Cpu {
                     0x4 => {
                         // xori
                         println!(
-                            "opcode:{:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            opcode, "xori", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
+                            self.pc, opcode, "xori", rd, rs1, imm
                         );        
                         let val = ((self.regs[rs1] as i32) ^ (imm as i32)) as u64;
                         self.regs[rd] = val;
@@ -83,8 +83,8 @@ impl Cpu {
                     0x6 => {
                         // ori
                         println!(
-                            "opcode:{:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            opcode, "ori", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
+                            self.pc, opcode, "ori", rd, rs1, imm
                         );
                         let val = ((self.regs[rs1] as i32) | (imm as i32)) as u64;
                         self.regs[rd] = val;
@@ -92,8 +92,8 @@ impl Cpu {
                     0x7 => {
                         // andi
                         println!(
-                            "opcode:{:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            opcode, "andi", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
+                            self.pc, opcode, "andi", rd, rs1, imm
                         );
                         let val = ((self.regs[rs1] as i32) & (imm as i32)) as u64;
                         self.regs[rd] = val;
@@ -101,8 +101,8 @@ impl Cpu {
                     0x1 => {
                         // slli
                         println!(
-                            "opcode:{:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            opcode, "slli", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
+                            self.pc, opcode, "slli", rd, rs1, imm
                         );
                         let shamt = self.regs[rs2] as u64;
                         self.regs[rd] = (self.regs[rs1] as u64) << shamt;
@@ -110,8 +110,8 @@ impl Cpu {
                     0x5 => {
                         // srli
                         println!(
-                            "opcode:{:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            opcode, "srli", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
+                            self.pc, opcode, "srli", rd, rs1, imm
                         );
                         let shamt = self.regs[rs2] as u64;
                         let logical_shift = (imm >> 10) & 0x1;
@@ -134,8 +134,8 @@ impl Cpu {
                     0x0 => {
                         // lb
                         println!(
-                            "opcode:{:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            opcode, "lb", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
+                            self.pc, opcode, "lb", rd, rs1, imm
                         );
                         let val = self.bus.load(addr, 8)?;
                         self.regs[rd] = val as i8 as i64 as u64;
@@ -143,8 +143,8 @@ impl Cpu {
                     0x1 => {
                         // lh
                         println!(
-                            "opcode:{:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            opcode, "lh", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
+                            self.pc, opcode, "lh", rd, rs1, imm
                         );
                         let val = self.bus.load(addr, 16)?;
                         self.regs[rd] = val as i16 as i64 as u64;
@@ -152,8 +152,8 @@ impl Cpu {
                     0x2 => {
                         // lw
                         println!(
-                            "opcode:{:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            opcode, "lw", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
+                            self.pc, opcode, "lw", rd, rs1, imm
                         );
                         let val = self.bus.load(addr, 32)?;
                         self.regs[rd] = val as i32 as i64 as u64;
@@ -161,8 +161,8 @@ impl Cpu {
                     0x3 => {
                         // ld
                         println!(
-                            "opcode:{:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            opcode, "ld", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
+                            self.pc, opcode, "ld", rd, rs1, imm
                         );
                         let val = self.bus.load(addr, 64)?;
                         self.regs[rd] = val;
@@ -170,8 +170,8 @@ impl Cpu {
                     0x4 => {
                         // lbu
                         println!(
-                            "opcode:{:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            opcode, "lbu", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
+                            self.pc, opcode, "lbu", rd, rs1, imm
                         );
                         let val = self.bus.load(addr, 8)?;
                         self.regs[rd] = val;
@@ -179,8 +179,8 @@ impl Cpu {
                     0x5 => {
                         // lhu
                         println!(
-                            "opcode:{:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            opcode, "lhu", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
+                            self.pc, opcode, "lhu", rd, rs1, imm
                         );
                         let val = self.bus.load(addr, 16)?;
                         self.regs[rd] = val;
@@ -188,8 +188,8 @@ impl Cpu {
                     0x6 => {
                         // lwu
                         println!(
-                            "opcode:{:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            opcode, "lwu", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
+                            self.pc, opcode, "lwu", rd, rs1, imm
                         );
                         let val = self.bus.load(addr, 32)?;
                         self.regs[rd] = val;
@@ -203,8 +203,8 @@ impl Cpu {
                 let imm = (((inst & 0xfe000000) as i32 as i64 >> 20) as u64 ) | ((inst >> 7) & 0x1f) as u64;
                 let addr = self.regs[rs1].wrapping_add(imm);
                 println!(
-                    "opcode:{:>#2x}({}), offset:{}, base:{}, src:{}",
-                    opcode, "s?", imm, rs1, rs2
+                    "{:>#x} : {:>#2x}({}), offset:{}, base:{}, src:{}",
+                    self.pc, opcode, "s?", imm, rs1, rs2
                 );
                 match funct3 {
                     0x0 => self.bus.store(addr,  8, self.regs[rs2])?,
@@ -220,8 +220,8 @@ impl Cpu {
                 let tmp = inst as u64;
                 let imm = ((tmp >> 11) & 0x100000) | ((tmp >> 20) & 0x7fe) | ((tmp >> 9) & 0x800) | (tmp & 0xff000);
                 println!(
-                    "opcode:{:>#2x}({}), dest:{}, offset:{}",
-                    opcode, "jal", rd, imm
+                    "{:>#x} : {:>#2x}({}), dest:{}, offset:{}",
+                    self.pc, opcode, "jal", rd, imm
                 );
                 self.regs[rd] = self.pc;
                 self.pc = self.pc.wrapping_add(imm);
@@ -234,8 +234,8 @@ impl Cpu {
                         let imm = ((inst as i32 as i64) >> 20) as u64;
                         let offset = self.regs[rs1].wrapping_add(imm);
                         println!(
-                            "opcode:{:>#2x}({}), dest:{}, base:{}, offset:{}",
-                            opcode, "jalr", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, offset:{}",
+                            self.pc, opcode, "jalr", rd, rs1, imm
                         );
                         self.regs[rd] = self.pc;
                         self.pc = self.pc.wrapping_add(offset);
@@ -280,5 +280,6 @@ impl Cpu {
             )
         }
         println!("{}", output);
+        println!("----");
     }
 }

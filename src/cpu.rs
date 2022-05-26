@@ -223,7 +223,7 @@ impl Cpu {
                     "{:>#x} : {:>#2x}({}), dest:{}, offset:{}",
                     self.pc, opcode, "jal", rd, imm
                 );
-                self.regs[rd] = self.pc;
+                self.regs[rd] = self.pc.wrapping_add(4);
                 self.pc = self.pc.wrapping_add(imm);
                 Ok(())
             }
@@ -237,7 +237,7 @@ impl Cpu {
                             "{:>#x} : {:>#2x}({}), dest:{}, base:{}, offset:{}",
                             self.pc, opcode, "jalr", rd, rs1, imm
                         );
-                        self.regs[rd] = self.pc;
+                        self.regs[rd] = self.pc.wrapping_add(4);
                         self.pc = self.pc.wrapping_add(offset);
                     }
                     _ => {}

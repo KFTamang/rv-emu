@@ -27,12 +27,12 @@ fn main() -> io::Result<()> {
             Err(_) => break,
         };
 
-        cpu.pc = cpu.pc + 4;
-
         match cpu.execute(inst as u32){
             Ok(_) => {},
             Err(_) => break,
         };
+
+        cpu.pc = cpu.pc + 4;
 
         if cpu.pc == 0{
             break;

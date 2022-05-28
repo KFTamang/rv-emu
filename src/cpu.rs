@@ -220,8 +220,8 @@ impl Cpu {
                 let tmp = inst as u64;
                 let imm = ((tmp >> 11) & 0x100000) | ((tmp >> 20) & 0x7fe) | ((tmp >> 9) & 0x800) | (tmp & 0xff000);
                 println!(
-                    "{:>#x} : {:>#2x}({}), dest:{}, offset:{}",
-                    self.pc, opcode, "jal", rd, imm
+                    "{:>#x} : {:>#2x}({}), dest:{}, offset:{}({:>#x})",
+                    self.pc, opcode, "jal", rd, imm, imm
                 );
                 self.regs[rd] = self.pc.wrapping_add(4);
                 self.pc = self.pc.wrapping_add(imm);
@@ -234,8 +234,8 @@ impl Cpu {
                         let imm = ((inst as i32 as i64) >> 20) as u64;
                         let offset = self.regs[rs1].wrapping_add(imm);
                         println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, offset:{}",
-                            self.pc, opcode, "jalr", rd, rs1, imm
+                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, offset:{}({:>#x})",
+                            self.pc, opcode, "jalr", rd, rs1, imm, imm
                         );
                         self.regs[rd] = self.pc.wrapping_add(4);
                         self.pc = self.pc.wrapping_add(offset);

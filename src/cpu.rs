@@ -262,6 +262,77 @@ impl Cpu {
                 }
                 Ok(())
             }
+            0x63 => {
+                // branch instructions
+                let imm = ((inst & 0x80000000) as i32 as i64 >> 19) as u64 | 
+                          ((inst & 0x7e000000) as u64) >> 20 |
+                          ((inst & 0xf00) as u64) >> 7 |
+                          ((inst & 0x80) as u64) <<  5;
+                match funct3 {
+                    0x0 => {
+                        // beq
+                        println!(
+                            "{:>#x} : {:>#2x}({}), rs1:{}, rs2:{}, imm:{}({:>#x})",
+                            self.pc, opcode, "beq", rs1, rs2, imm as i32, imm as i32
+                        );
+                        if self.regs[rs1] == self.regs[rs2] {
+                            self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                        }
+                    }
+                    0x1 => {
+                        // bne
+                        println!(
+                            "{:>#x} : {:>#2x}({}), rs1:{}, rs2:{}, imm:{}({:>#x})",
+                            self.pc, opcode, "bne", rs1, rs2, imm as i32, imm as i32
+                        );
+                        if self.regs[rs1] != self.regs[rs2] {
+                            self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                        }
+                    }
+                    0x4 => {
+                        // blt
+                        println!(
+                            "{:>#x} : {:>#2x}({}), rs1:{}, rs2:{}, imm:{}({:>#x})",
+                            self.pc, opcode, "blt", rs1, rs2, imm as i32, imm as i32
+                        );
+                        if (self.regs[rs1] as i64) < (self.regs[rs2] as i64) {
+                            self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                        }
+                    }
+                    0x5 => {
+                        // bge
+                        println!(
+                            "{:>#x} : {:>#2x}({}), rs1:{}, rs2:{}, imm:{}({:>#x})",
+                            self.pc, opcode, "bge", rs1, rs2, imm as i32, imm as i32
+                        );
+                        if (self.regs[rs1] as i64) >= (self.regs[rs2] as i64) {
+                            self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                        }
+                    }
+                    0x6 => {
+                        // bltu
+                        println!(
+                            "{:>#x} : {:>#2x}({}), rs1:{}, rs2:{}, imm:{}({:>#x})",
+                            self.pc, opcode, "bltu", rs1, rs2, imm as i32, imm as i32
+                        );
+                        if self.regs[rs1] < self.regs[rs2] {
+                            self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                        }
+                    }
+                    0x7 => {
+                        // bgeu
+                        println!(
+                            "{:>#x} : {:>#2x}({}), rs1:{}, rs2:{}, imm:{}({:>#x})",
+                            self.pc, opcode, "bgeu", rs1, rs2, imm as i32, imm as i32
+                        );
+                        if self.regs[rs1] >= self.regs[rs2] {
+                            self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                        }
+                    }
+                    _ => {}
+                }
+                Ok(())
+            }
             _ => {
                 dbg!("not implemented yet!");
                 Err(())

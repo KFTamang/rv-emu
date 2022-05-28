@@ -224,7 +224,7 @@ impl Cpu {
                     self.pc, opcode, "jal", rd, imm, imm
                 );
                 self.regs[rd] = self.pc.wrapping_add(4);
-                self.pc = self.pc.wrapping_add(imm);
+                self.pc = self.pc.wrapping_add(imm).wrapping_sub(4); // subtract 4 because 4 will be added
                 Ok(())
             }
             0x67 => {
@@ -238,7 +238,7 @@ impl Cpu {
                             self.pc, opcode, "jalr", rd, rs1, imm, imm
                         );
                         self.regs[rd] = self.pc.wrapping_add(4);
-                        self.pc = self.pc.wrapping_add(offset);
+                        self.pc = self.pc.wrapping_add(offset).wrapping_sub(4); // subtract 4 because 4 will be added
                     }
                     _ => {}
                 }

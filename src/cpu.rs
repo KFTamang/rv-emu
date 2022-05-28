@@ -135,7 +135,7 @@ impl Cpu {
                         // lb
                         println!(
                             "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            self.pc, opcode, "lb", rd, rs1, imm
+                            self.pc, opcode, "lb", rd, rs1, imm as i64
                         );
                         let val = self.bus.load(addr, 8)?;
                         self.regs[rd] = val as i8 as i64 as u64;
@@ -144,7 +144,7 @@ impl Cpu {
                         // lh
                         println!(
                             "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            self.pc, opcode, "lh", rd, rs1, imm
+                            self.pc, opcode, "lh", rd, rs1, imm as i64
                         );
                         let val = self.bus.load(addr, 16)?;
                         self.regs[rd] = val as i16 as i64 as u64;
@@ -153,7 +153,7 @@ impl Cpu {
                         // lw
                         println!(
                             "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            self.pc, opcode, "lw", rd, rs1, imm
+                            self.pc, opcode, "lw", rd, rs1, imm as i64
                         );
                         let val = self.bus.load(addr, 32)?;
                         self.regs[rd] = val as i32 as i64 as u64;
@@ -162,7 +162,7 @@ impl Cpu {
                         // ld
                         println!(
                             "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            self.pc, opcode, "ld", rd, rs1, imm
+                            self.pc, opcode, "ld", rd, rs1, imm as i64
                         );
                         let val = self.bus.load(addr, 64)?;
                         self.regs[rd] = val;
@@ -171,7 +171,7 @@ impl Cpu {
                         // lbu
                         println!(
                             "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            self.pc, opcode, "lbu", rd, rs1, imm
+                            self.pc, opcode, "lbu", rd, rs1, imm as i64
                         );
                         let val = self.bus.load(addr, 8)?;
                         self.regs[rd] = val;
@@ -180,7 +180,7 @@ impl Cpu {
                         // lhu
                         println!(
                             "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            self.pc, opcode, "lhu", rd, rs1, imm
+                            self.pc, opcode, "lhu", rd, rs1, imm as i64
                         );
                         let val = self.bus.load(addr, 16)?;
                         self.regs[rd] = val;
@@ -189,7 +189,7 @@ impl Cpu {
                         // lwu
                         println!(
                             "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            self.pc, opcode, "lwu", rd, rs1, imm
+                            self.pc, opcode, "lwu", rd, rs1, imm as i64
                         );
                         let val = self.bus.load(addr, 32)?;
                         self.regs[rd] = val;
@@ -204,7 +204,7 @@ impl Cpu {
                 let addr = self.regs[rs1].wrapping_add(imm);
                 println!(
                     "{:>#x} : {:>#2x}({}), offset:{}, base:{}, src:{}",
-                    self.pc, opcode, "s?", imm, rs1, rs2
+                    self.pc, opcode, "s?", imm as i64, rs1, rs2
                 );
                 match funct3 {
                     0x0 => self.bus.store(addr,  8, self.regs[rs2])?,

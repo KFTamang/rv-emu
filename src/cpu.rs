@@ -244,6 +244,24 @@ impl Cpu {
                 }
                 Ok(())
             }
+            0x1b => {
+                match funct3 {
+                    0x0 => {
+                        // addiw
+                        // I-type format
+                        let imm = (inst as i32) >> 20;
+                        println!(
+                            "{:>#x} : {:>#2x}({}), rd:{}, rs1:{}, imm:{}({:>#x})",
+                            self.pc, opcode, "addiw", rd, rs1, imm, imm
+                        );
+                        let src = self.regs[rs1] as i32;
+                        let val = src.wrapping_add(imm);
+                        self.regs[rd] = val as i64 as u64;
+                    }
+                    _ => {}
+                }
+                Ok(())
+            }
             _ => {
                 dbg!("not implemented yet!");
                 Err(())

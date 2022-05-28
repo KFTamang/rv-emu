@@ -217,11 +217,13 @@ impl Cpu {
             }
             0x6f => {
                 // jal
-                let tmp = inst as u64;
-                let imm = ((tmp >> 11) & 0x100000) | ((tmp >> 20) & 0x7fe) | ((tmp >> 9) & 0x800) | (tmp & 0xff000);
+                let imm = ((inst & 0x80000000) as i32 as i64 >> 11) as u64 | 
+                          ((inst & 0x7fe00000) as u64) >> 20 |
+                          ((inst & 0x100000) as u64) >> 9 |
+                          ((inst & 0xff000) as u64);
                 println!(
                     "{:>#x} : {:>#2x}({}), dest:{}, offset:{}({:>#x})",
-                    self.pc, opcode, "jal", rd, imm, imm
+                    self.pc, opcode, "jal", rd, imm as i64, imm as i64
                 );
                 self.regs[rd] = self.pc.wrapping_add(4);
                 self.pc = self.pc.wrapping_add(imm).wrapping_sub(4); // subtract 4 because 4 will be added

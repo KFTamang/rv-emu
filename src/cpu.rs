@@ -234,13 +234,12 @@ impl Cpu {
                 match funct3 {
                     0x0 => {
                         let imm = ((inst as i32 as i64) >> 20) as u64;
-                        let offset = self.regs[rs1].wrapping_add(imm);
                         println!(
                             "{:>#x} : {:>#2x}({}), dest:{}, base:{}, offset:{}({:>#x})",
                             self.pc, opcode, "jalr", rd, rs1, imm, imm
                         );
                         self.regs[rd] = self.pc.wrapping_add(4);
-                        self.pc = self.pc.wrapping_add(offset).wrapping_sub(4); // subtract 4 because 4 will be added
+                        self.pc = self.regs[rs1].wrapping_add(imm).wrapping_sub(4); // subtract 4 because 4 will be added
                     }
                     _ => {}
                 }

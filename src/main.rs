@@ -2,22 +2,30 @@ mod bus;
 mod cpu;
 mod dram;
 use crate::cpu::*;
+use clap::Parser; // command-line option parser
 
 use std::env;
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 
-fn main() -> io::Result<()> {
-    let args: Vec<String> = env::args().collect();
+/// Search for a pattern in a file and display the lines that contain it.
+/// c.f. https://rust-cli.github.io/book/tutorial/cli-args.html
+#[derive(Parser)]
+struct Cli {
+    /// The path to the file to read
+    bin: std::path::PathBuf,
+    #[clap(short, long, parse(from_occurrences))]
+    dump: usize,
+}
 
-    if args.len() < 2 {
-        panic!("Usage: rv-emusimple <filename>")
-    }
-    let reg_dump = if (args.len() == 3) && (args[2] == "--dump") {1} else {0};
-    let mut file = File::open(&args[1])?;
+fn main() -> io::Result<()> {
+    let cli = Cli::parse();
+    let mut file = File::open(&cli.bin)?;
     let mut code = Vec::new();
     file.read_to_end(&mut code)?;
+
+    let reg_dump = cli.dump > 0;
 
     let mut cpu = Cpu::new(code);
 
@@ -38,7 +46,7 @@ fn main() -> io::Result<()> {
             break;
         }
 
-        if reg_dump != 0 {
+        if reg_dump {
             cpu.dump_registers();
         }
     }

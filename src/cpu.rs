@@ -43,13 +43,13 @@ impl Cpu {
                 Ok(())
             }
             0x13 => {
-                let imm = ((inst as i32 as i64 >> 20) & 0xfff) as u64;
+                let imm = (inst as i32 as i64 >> 20) as u64;
                 match funct3 {
                     0x0 => {
                         // addi
                         println!(
                             "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            self.pc, opcode, "addi", rd, rs1, imm
+                            self.pc, opcode, "addi", rd, rs1, imm as i64
                         );
                         self.regs[rd] = self.regs[rs1].wrapping_add(imm);
                     }

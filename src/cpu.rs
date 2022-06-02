@@ -18,14 +18,14 @@ impl Cpu {
         }
     }
 
-    pub fn fetch(&self) -> Result<u64,()> {
+    pub fn fetch(&self) -> Result<u64, ()> {
         let index = self.pc as usize;
         match self.bus.load(index as u64, 32) {
             Ok(inst) => Ok(inst),
             Err(_) => Err(()),
         }
     }
-    pub fn execute(&mut self, inst: u32) -> Result<(),()> {
+    pub fn execute(&mut self, inst: u32) -> Result<(), ()> {
         let opcode = inst & 0x7f;
         let rd = ((inst >> 7) & 0x1f) as usize;
         let rs1 = ((inst >> 15) & 0x1f) as usize;
@@ -59,7 +59,11 @@ impl Cpu {
                             "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
                             self.pc, opcode, "slti", rd, rs1, imm
                         );
-                                let result = if (self.regs[rs1] as i32 as i64) < (imm as i64) {1} else {0};
+                        let result = if (self.regs[rs1] as i32 as i64) < (imm as i64) {
+                            1
+                        } else {
+                            0
+                        };
                         self.regs[rd] = result;
                     }
                     0x3 => {
@@ -67,8 +71,12 @@ impl Cpu {
                         println!(
                             "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
                             self.pc, opcode, "sltiu", rd, rs1, imm
-                        );        
-                        let result = if (self.regs[rs1] as i32 as i64 as u64) < imm {1} else {0};
+                        );
+                        let result = if (self.regs[rs1] as i32 as i64 as u64) < imm {
+                            1
+                        } else {
+                            0
+                        };
                         self.regs[rd] = result;
                     }
                     0x4 => {
@@ -76,7 +84,7 @@ impl Cpu {
                         println!(
                             "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
                             self.pc, opcode, "xori", rd, rs1, imm
-                        );        
+                        );
                         let val = ((self.regs[rs1] as i32) ^ (imm as i32)) as u64;
                         self.regs[rd] = val;
                     }
@@ -88,7 +96,7 @@ impl Cpu {
                         );
                         let val = ((self.regs[rs1] as i32) | (imm as i32)) as u64;
                         self.regs[rd] = val;
-                    }                    
+                    }
                     0x7 => {
                         // andi
                         println!(
@@ -125,11 +133,11 @@ impl Cpu {
                 }
                 Ok(())
             }
-            0x03 =>{
+            0x03 => {
                 // load instructions
                 // load a value stored at addr, where addr is RS1 + imm
                 let imm = ((inst as i32 as i64) >> 20) as u64;
-                let addr = self.regs[rs1].wrapping_add(imm); 
+                let addr = self.regs[rs1].wrapping_add(imm);
                 match funct3 {
                     0x0 => {
                         // lb
@@ -200,14 +208,15 @@ impl Cpu {
             }
             0x23 => {
                 // store instructions
-                let imm = (((inst & 0xfe000000) as i32 as i64 >> 20) as u64 ) | ((inst >> 7) & 0x1f) as u64;
+                let imm = (((inst & 0xfe000000) as i32 as i64 >> 20) as u64)
+                    | ((inst >> 7) & 0x1f) as u64;
                 let addr = self.regs[rs1].wrapping_add(imm);
                 println!(
                     "{:>#x} : {:>#2x}({}), offset:{}, base:{}, src:{}",
                     self.pc, opcode, "s?", imm as i64, rs1, rs2
                 );
                 match funct3 {
-                    0x0 => self.bus.store(addr,  8, self.regs[rs2])?,
+                    0x0 => self.bus.store(addr, 8, self.regs[rs2])?,
                     0x1 => self.bus.store(addr, 16, self.regs[rs2])?,
                     0x2 => self.bus.store(addr, 32, self.regs[rs2])?,
                     0x3 => self.bus.store(addr, 64, self.regs[rs2])?,
@@ -217,10 +226,10 @@ impl Cpu {
             }
             0x6f => {
                 // jal
-                let imm = ((inst & 0x80000000) as i32 as i64 >> 11) as u64 | 
-                          ((inst & 0x7fe00000) as u64) >> 20 |
-                          ((inst & 0x100000) as u64) >> 9 |
-                          ((inst & 0xff000) as u64);
+                let imm = ((inst & 0x80000000) as i32 as i64 >> 11) as u64
+                    | ((inst & 0x7fe00000) as u64) >> 20
+                    | ((inst & 0x100000) as u64) >> 9
+                    | ((inst & 0xff000) as u64);
                 println!(
                     "{:>#x} : {:>#2x}({}), dest:{}, offset:{}({:>#x})",
                     self.pc, opcode, "jal", rd, imm as i64, imm as i64
@@ -239,7 +248,8 @@ impl Cpu {
                             self.pc, opcode, "jalr", rd, rs1, imm, imm
                         );
                         self.regs[rd] = self.pc.wrapping_add(4);
-                        self.pc = self.regs[rs1].wrapping_add(imm).wrapping_sub(4); // subtract 4 because 4 will be added
+                        self.pc = self.regs[rs1].wrapping_add(imm).wrapping_sub(4);
+                        // subtract 4 because 4 will be added
                     }
                     _ => {}
                 }
@@ -265,10 +275,10 @@ impl Cpu {
             }
             0x63 => {
                 // branch instructions
-                let imm = ((inst & 0x80000000) as i32 as i64 >> 19) as u64 | 
-                          ((inst & 0x7e000000) as u64) >> 20 |
-                          ((inst & 0xf00) as u64) >> 7 |
-                          ((inst & 0x80) as u64) <<  5;
+                let imm = ((inst & 0x80000000) as i32 as i64 >> 19) as u64
+                    | ((inst & 0x7e000000) as u64) >> 20
+                    | ((inst & 0xf00) as u64) >> 7
+                    | ((inst & 0x80) as u64) << 5;
                 match funct3 {
                     0x0 => {
                         // beq

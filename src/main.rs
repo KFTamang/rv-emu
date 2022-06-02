@@ -32,19 +32,19 @@ fn main() -> io::Result<()> {
     let mut cpu = Cpu::new(code);
 
     loop {
-        let inst = match cpu.fetch(){
+        let inst = match cpu.fetch() {
             Ok(inst) => inst,
             Err(_) => break,
         };
 
-        match cpu.execute(inst as u32){
-            Ok(_) => {},
+        match cpu.execute(inst as u32) {
+            Ok(_) => {}
             Err(_) => break,
         };
 
         cpu.pc = cpu.pc + 4;
 
-        if cpu.pc == 0{
+        if cpu.pc == 0 {
             break;
         }
 

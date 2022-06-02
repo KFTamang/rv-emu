@@ -4,7 +4,6 @@ mod dram;
 use crate::cpu::*;
 use clap::Parser; // command-line option parser
 
-use std::env;
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;

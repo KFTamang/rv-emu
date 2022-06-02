@@ -17,6 +17,8 @@ struct Cli {
     bin: std::path::PathBuf,
     #[clap(short, long, parse(from_occurrences))]
     dump: usize,
+    #[clap(short, long)]
+    count: Option<u32>,
 }
 
 fn main() -> io::Result<()> {
@@ -26,6 +28,7 @@ fn main() -> io::Result<()> {
     file.read_to_end(&mut code)?;
 
     let reg_dump = cli.dump > 0;
+    let mut counter = 0;
 
     let mut cpu = Cpu::new(code);
 
@@ -48,6 +51,13 @@ fn main() -> io::Result<()> {
 
         if reg_dump {
             cpu.dump_registers();
+        }
+
+        if let Some(count_max) = cli.count {
+            counter = counter + 1;
+            if counter == count_max {
+                break;
+            }
         }
     }
 

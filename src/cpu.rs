@@ -369,7 +369,43 @@ impl Cpu {
                             return Err(());
                         }
                     }
-                    _ => {}
+                    0x1 => {
+                        if funct7 == 0x0 {
+                            // sllw
+                            println!(
+                                "{:>#x} : {:>#2x}({}), dest:{}, rs1:{}, rs2:{}",
+                                self.pc, opcode, "sllw", rd, rs1, rs2
+                            );
+                            let shamt = (self.regs[rs2] as u64) & 0x1f;
+                            self.regs[rd] = ((self.regs[rs1] as u32) << shamt) as u64;
+                        } else {
+                            println!("This should not be reached!");
+                            return Err(());
+                        }
+                    }
+                    0x5 => {
+                        if funct7 == 0x0 {
+                            // srlw
+                            println!(
+                                "{:>#x} : {:>#2x}({}), dest:{}, rs1:{}, rs2:{}",
+                                self.pc, opcode, "srlw", rd, rs1, rs2
+                            );
+                            let shamt = (self.regs[rs2] as u64) & 0x1f;
+                            self.regs[rd] = ((self.regs[rs1] as u32) >> shamt) as u64;
+                        }else if funct7 == 0x20 {
+                            // sraw
+                            println!(
+                                "{:>#x} : {:>#2x}({}), dest:{}, rs1:{}, rs2:{}",
+                                self.pc, opcode, "sraw", rd, rs1, rs2
+                            );
+                            let shamt = (self.regs[rs2] as u64) & 0x1f;
+                            self.regs[rd] = ((self.regs[rs1] as i32) >> shamt) as i64 as u64;
+                        }else{
+                            println!("This should not be reached!");
+                            return Err(());
+                        }
+                    }
+                        _ => {}
                 }
                 Ok(())
             }

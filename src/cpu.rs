@@ -344,6 +344,21 @@ impl Cpu {
                 }
                 Ok(())
             }
+            0x3b => {
+                match funct3 {
+                    0x0 => {
+                        // addw
+                        println!(
+                            "{:>#x} : {:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                            self.pc, opcode, "addw", rd, rs1, rs2
+                        );
+                        let add_val = (self.regs[rs1] as i32).wrapping_add(self.regs[rs2] as i32);
+                        self.regs[rd] = add_val as i64 as u64;
+                    }
+                    _ => {}
+                }
+                Ok(())
+            }
             _ => {
                 println!("not implemented yet!");
                 println!("pc=0x{:x}", self.pc);

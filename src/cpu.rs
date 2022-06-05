@@ -345,7 +345,9 @@ impl Cpu {
                 Ok(())
             }
             _ => {
-                dbg!("not implemented yet!");
+                println!("not implemented yet!");
+                println!("pc=0x{:x}", self.pc);
+                println!("inst:{inst:b}");
                 Err(())
             }
         }

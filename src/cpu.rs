@@ -31,6 +31,7 @@ impl Cpu {
         let rs1 = ((inst >> 15) & 0x1f) as usize;
         let rs2 = ((inst >> 20) & 0x1f) as usize;
         let funct3 = ((inst >> 12) & 0x7) as usize;
+        let funct7 = ((inst >> 25) & 0x7f) as usize;
 
         match opcode {
             0x33 => {
@@ -347,13 +348,26 @@ impl Cpu {
             0x3b => {
                 match funct3 {
                     0x0 => {
-                        // addw
-                        println!(
-                            "{:>#x} : {:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
-                            self.pc, opcode, "addw", rd, rs1, rs2
-                        );
-                        let add_val = (self.regs[rs1] as i32).wrapping_add(self.regs[rs2] as i32);
-                        self.regs[rd] = add_val as i64 as u64;
+                        if funct7 == 0x0 {
+                            // addw
+                            println!(
+                                "{:>#x} : {:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                                self.pc, opcode, "addw", rd, rs1, rs2
+                            );
+                            let add_val = (self.regs[rs1] as i32).wrapping_add(self.regs[rs2] as i32);
+                            self.regs[rd] = add_val as i64 as u64;
+                        }else if funct7 == 0x20 {
+                            // subw
+                            println!(
+                                "{:>#x} : {:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
+                                self.pc, opcode, "subw", rd, rs1, rs2
+                            );
+                            let add_val = (self.regs[rs1] as i32).wrapping_sub(self.regs[rs2] as i32);
+                            self.regs[rd] = add_val as i64 as u64;
+                        }else{
+                            println!("This should not be reached!");
+                            return Err(());
+                        }
                     }
                     _ => {}
                 }

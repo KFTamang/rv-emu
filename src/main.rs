@@ -41,6 +41,7 @@ fn main() -> io::Result<()> {
             Ok(_) => {}
             Err(_) => break,
         };
+        cpu.regs[0] = 0;
 
         cpu.pc = cpu.pc + 4;
 

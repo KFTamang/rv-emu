@@ -25,6 +25,35 @@ impl Cpu {
             Err(_) => Err(()),
         }
     }
+
+    fn print_inst_r(&self, name: &str, rd: usize, rs1: usize, rs2: usize){
+        println!(
+            "{:>#x} : {}, dest:{}, rs1:{}, rs2:{}",
+            self.pc, name, rd, rs1, rs2
+        );
+    }
+
+    fn print_inst_i(&self, name: &str, rs1: usize, rs2: usize, imm: u64){
+        println!(
+            "{:>#x} : {}, rs1:{}, rs2:{}, imm:{}({:>#x})",
+            self.pc, name, rs1, rs2, imm as i32, imm as i32
+        );
+    }
+
+    fn print_inst_s(&self, name: &str, rs1: usize, rs2: usize, imm: u64){
+        println!(
+            "{:>#x} : {}, offset:{}, base:{}, src:{}",
+            self.pc, name, imm as i64, rs1, rs2
+        );
+    }
+
+    fn print_inst_j(&self, name: &str, rd: usize, imm: u64){
+        println!(
+            "{:>#x} : {}, dest:{}, offset:{}({:>#x})",
+            self.pc, name, rd, imm as i64, imm as i64
+        );
+    }
+
     pub fn execute(&mut self, inst: u32) -> Result<(), ()> {
         let opcode = inst & 0x7f;
         let rd = ((inst >> 7) & 0x1f) as usize;
@@ -35,31 +64,63 @@ impl Cpu {
 
         match opcode {
             0x33 => {
-                // add
-                println!(
-                    "{:>#x} : {:>#2x}({}), dest:{}, src1:{}, src2:{}",
-                    self.pc, opcode, "add", rd, rs1, rs2
-                );
-                self.regs[rd] = self.regs[rs1].wrapping_add(self.regs[rs2]);
-                Ok(())
+                match (funct3, funct7) {
+                    (0x0, 0x0) => {
+                        self.print_inst_r("add", rd, rs1, rs2);
+                        self.regs[rd] = self.regs[rs1].wrapping_add(self.regs[rs2]);
+                    }
+                    (0x0, 0x20) => {
+                        self.print_inst_r("sub", rd, rs1, rs2);
+                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                    }
+                    (0x1, 0x0) => {
+                        self.print_inst_r("sll", rd, rs1, rs2);
+                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                    }
+                    (0x2, 0x0) => {
+                        self.print_inst_r("slt", rd, rs1, rs2);
+                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                    }
+                    (0x3, 0x0) => {
+                        self.print_inst_r("sltu", rd, rs1, rs2);
+                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                    }
+                    (0x4, 0x0) => {
+                        self.print_inst_r("xor", rd, rs1, rs2);
+                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                    }
+                    (0x5, 0x0) => {
+                        self.print_inst_r("srl", rd, rs1, rs2);
+                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                    }
+                    (0x5, 0x20) => {
+                        self.print_inst_r("sra", rd, rs1, rs2);
+                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                    }
+                    (0x6, 0x0) => {
+                        self.print_inst_r("or", rd, rs1, rs2);
+                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                    }
+                    (0x7, 0x0) => {
+                        self.print_inst_r("and", rd, rs1, rs2);
+                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                    }
+                    (_, _) => {
+                        println!("This should not be reached!");
+                        return Err(());
+                    }
             }
+            Ok(())
+        }
             0x13 => {
                 let imm = (inst as i32 as i64 >> 20) as u64;
                 match funct3 {
                     0x0 => {
-                        // addi
-                        println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            self.pc, opcode, "addi", rd, rs1, imm as i64
-                        );
+                        self.print_inst_i("addi", rs1, rs2, imm);
                         self.regs[rd] = self.regs[rs1].wrapping_add(imm);
                     }
                     0x2 => {
-                        // slti
-                        println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            self.pc, opcode, "slti", rd, rs1, imm
-                        );
+                        self.print_inst_i("slti", rs1, rs2, imm);
                         let result = if (self.regs[rs1] as i32 as i64) < (imm as i64) {
                             1
                         } else {
@@ -68,11 +129,7 @@ impl Cpu {
                         self.regs[rd] = result;
                     }
                     0x3 => {
-                        // sltiu
-                        println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            self.pc, opcode, "sltiu", rd, rs1, imm
-                        );
+                        self.print_inst_i("sltiu", rs1, rs2, imm);
                         let result = if (self.regs[rs1] as i32 as i64 as u64) < imm {
                             1
                         } else {
@@ -81,47 +138,27 @@ impl Cpu {
                         self.regs[rd] = result;
                     }
                     0x4 => {
-                        // xori
-                        println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            self.pc, opcode, "xori", rd, rs1, imm
-                        );
+                        self.print_inst_i("xori", rs1, rs2, imm);
                         let val = ((self.regs[rs1] as i32) ^ (imm as i32)) as u64;
                         self.regs[rd] = val;
                     }
                     0x6 => {
-                        // ori
-                        println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            self.pc, opcode, "ori", rd, rs1, imm
-                        );
+                        self.print_inst_i("ori", rs1, rs2, imm);
                         let val = ((self.regs[rs1] as i32) | (imm as i32)) as u64;
                         self.regs[rd] = val;
                     }
                     0x7 => {
-                        // andi
-                        println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            self.pc, opcode, "andi", rd, rs1, imm
-                        );
+                        self.print_inst_i("andi", rs1, rs2, imm);
                         let val = ((self.regs[rs1] as i32) & (imm as i32)) as u64;
                         self.regs[rd] = val;
                     }
                     0x1 => {
-                        // slli
-                        println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            self.pc, opcode, "slli", rd, rs1, imm
-                        );
+                        self.print_inst_i("slli", rs1, rs2, imm);
                         let shamt = self.regs[rs2] as u64;
                         self.regs[rd] = (self.regs[rs1] as u64) << shamt;
                     }
                     0x5 => {
-                        // srli
-                        println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, src:{}, imm:{}",
-                            self.pc, opcode, "srli", rd, rs1, imm
-                        );
+                        self.print_inst_i("srli", rs1, rs2, imm);
                         let shamt = self.regs[rs2] as u64;
                         let logical_shift = (imm >> 10) & 0x1;
                         if logical_shift != 0 {
@@ -141,65 +178,37 @@ impl Cpu {
                 let addr = self.regs[rs1].wrapping_add(imm);
                 match funct3 {
                     0x0 => {
-                        // lb
-                        println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            self.pc, opcode, "lb", rd, rs1, imm as i64
-                        );
+                        self.print_inst_i("lb", rs1, rs2, imm);
                         let val = self.bus.load(addr, 8)?;
                         self.regs[rd] = val as i8 as i64 as u64;
                     }
                     0x1 => {
-                        // lh
-                        println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            self.pc, opcode, "lh", rd, rs1, imm as i64
-                        );
+                        self.print_inst_i("lh", rs1, rs2, imm);
                         let val = self.bus.load(addr, 16)?;
                         self.regs[rd] = val as i16 as i64 as u64;
                     }
                     0x2 => {
-                        // lw
-                        println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            self.pc, opcode, "lw", rd, rs1, imm as i64
-                        );
+                        self.print_inst_i("lw", rs1, rs2, imm);
                         let val = self.bus.load(addr, 32)?;
                         self.regs[rd] = val as i32 as i64 as u64;
                     }
                     0x3 => {
-                        // ld
-                        println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            self.pc, opcode, "ld", rd, rs1, imm as i64
-                        );
+                        self.print_inst_i("ld", rs1, rs2, imm);
                         let val = self.bus.load(addr, 64)?;
                         self.regs[rd] = val;
                     }
                     0x4 => {
-                        // lbu
-                        println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            self.pc, opcode, "lbu", rd, rs1, imm as i64
-                        );
+                        self.print_inst_i("lbu", rs1, rs2, imm);
                         let val = self.bus.load(addr, 8)?;
                         self.regs[rd] = val;
                     }
                     0x5 => {
-                        // lhu
-                        println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            self.pc, opcode, "lhu", rd, rs1, imm as i64
-                        );
+                        self.print_inst_i("lhu", rs1, rs2, imm);
                         let val = self.bus.load(addr, 16)?;
                         self.regs[rd] = val;
                     }
                     0x6 => {
-                        // lwu
-                        println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, imm:{}",
-                            self.pc, opcode, "lwu", rd, rs1, imm as i64
-                        );
+                        self.print_inst_i("lwu", rs1, rs2, imm);
                         let val = self.bus.load(addr, 32)?;
                         self.regs[rd] = val;
                     }
@@ -212,10 +221,7 @@ impl Cpu {
                 let imm = (((inst & 0xfe000000) as i32 as i64 >> 20) as u64)
                     | ((inst >> 7) & 0x1f) as u64;
                 let addr = self.regs[rs1].wrapping_add(imm);
-                println!(
-                    "{:>#x} : {:>#2x}({}), offset:{}, base:{}, src:{}",
-                    self.pc, opcode, "s?", imm as i64, rs1, rs2
-                );
+                self.print_inst_s("s?", rs1, rs2, imm);
                 match funct3 {
                     0x0 => self.bus.store(addr, 8, self.regs[rs2])?,
                     0x1 => self.bus.store(addr, 16, self.regs[rs2])?,
@@ -231,23 +237,16 @@ impl Cpu {
                     | ((inst & 0x7fe00000) as u64) >> 20
                     | ((inst & 0x100000) as u64) >> 9
                     | ((inst & 0xff000) as u64);
-                println!(
-                    "{:>#x} : {:>#2x}({}), dest:{}, offset:{}({:>#x})",
-                    self.pc, opcode, "jal", rd, imm as i64, imm as i64
-                );
+                self.print_inst_j("jal", rd, imm);
                 self.regs[rd] = self.pc.wrapping_add(4);
                 self.pc = self.pc.wrapping_add(imm).wrapping_sub(4); // subtract 4 because 4 will be added
                 Ok(())
             }
             0x67 => {
-                // jalr
                 match funct3 {
                     0x0 => {
                         let imm = ((inst as i32 as i64) >> 20) as u64;
-                        println!(
-                            "{:>#x} : {:>#2x}({}), dest:{}, base:{}, offset:{}({:>#x})",
-                            self.pc, opcode, "jalr", rd, rs1, imm, imm
-                        );
+                        self.print_inst_i("jalr", rs1, rs2, imm);
                         self.regs[rd] = self.pc.wrapping_add(4);
                         self.pc = self.regs[rs1].wrapping_add(imm).wrapping_sub(4);
                         // subtract 4 because 4 will be added
@@ -262,10 +261,7 @@ impl Cpu {
                         // addiw
                         // I-type format
                         let imm = (inst as i32) >> 20;
-                        println!(
-                            "{:>#x} : {:>#2x}({}), rd:{}, rs1:{}, imm:{}({:>#x})",
-                            self.pc, opcode, "addiw", rd, rs1, imm, imm
-                        );
+                        self.print_inst_i("addiw", rs1, rs2, imm as u32 as u64);
                         let src = self.regs[rs1] as i32;
                         let val = src.wrapping_add(imm);
                         self.regs[rd] = val as i64 as u64;
@@ -282,61 +278,37 @@ impl Cpu {
                     | ((inst & 0x80) as u64) << 5;
                 match funct3 {
                     0x0 => {
-                        // beq
-                        println!(
-                            "{:>#x} : {:>#2x}({}), rs1:{}, rs2:{}, imm:{}({:>#x})",
-                            self.pc, opcode, "beq", rs1, rs2, imm as i32, imm as i32
-                        );
+                        self.print_inst_i("beq", rs1, rs2, imm);
                         if self.regs[rs1] == self.regs[rs2] {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x1 => {
-                        // bne
-                        println!(
-                            "{:>#x} : {:>#2x}({}), rs1:{}, rs2:{}, imm:{}({:>#x})",
-                            self.pc, opcode, "bne", rs1, rs2, imm as i32, imm as i32
-                        );
+                        self.print_inst_i("bne", rs1, rs2, imm);
                         if self.regs[rs1] != self.regs[rs2] {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x4 => {
-                        // blt
-                        println!(
-                            "{:>#x} : {:>#2x}({}), rs1:{}, rs2:{}, imm:{}({:>#x})",
-                            self.pc, opcode, "blt", rs1, rs2, imm as i32, imm as i32
-                        );
+                        self.print_inst_i("blt", rs1, rs2, imm);
                         if (self.regs[rs1] as i64) < (self.regs[rs2] as i64) {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x5 => {
-                        // bge
-                        println!(
-                            "{:>#x} : {:>#2x}({}), rs1:{}, rs2:{}, imm:{}({:>#x})",
-                            self.pc, opcode, "bge", rs1, rs2, imm as i32, imm as i32
-                        );
+                        self.print_inst_i("bge", rs1, rs2, imm);
                         if (self.regs[rs1] as i64) >= (self.regs[rs2] as i64) {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x6 => {
-                        // bltu
-                        println!(
-                            "{:>#x} : {:>#2x}({}), rs1:{}, rs2:{}, imm:{}({:>#x})",
-                            self.pc, opcode, "bltu", rs1, rs2, imm as i32, imm as i32
-                        );
+                        self.print_inst_i("bltu", rs1, rs2, imm);
                         if self.regs[rs1] < self.regs[rs2] {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x7 => {
-                        // bgeu
-                        println!(
-                            "{:>#x} : {:>#2x}({}), rs1:{}, rs2:{}, imm:{}({:>#x})",
-                            self.pc, opcode, "bgeu", rs1, rs2, imm as i32, imm as i32
-                        );
+                        self.print_inst_i("bgeu", rs1, rs2, imm);
                         if self.regs[rs1] >= self.regs[rs2] {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
@@ -349,19 +321,11 @@ impl Cpu {
                 match funct3 {
                     0x0 => {
                         if funct7 == 0x0 {
-                            // addw
-                            println!(
-                                "{:>#x} : {:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
-                                self.pc, opcode, "addw", rd, rs1, rs2
-                            );
+                            self.print_inst_r("addw", rd, rs1, rs2);
                             let add_val = (self.regs[rs1] as i32).wrapping_add(self.regs[rs2] as i32);
                             self.regs[rd] = add_val as i64 as u64;
                         }else if funct7 == 0x20 {
-                            // subw
-                            println!(
-                                "{:>#x} : {:>#2x}({}), rd:{}, rs1:{}, rs2:{}",
-                                self.pc, opcode, "subw", rd, rs1, rs2
-                            );
+                            self.print_inst_r("subw", rd, rs1, rs2);
                             let add_val = (self.regs[rs1] as i32).wrapping_sub(self.regs[rs2] as i32);
                             self.regs[rd] = add_val as i64 as u64;
                         }else{
@@ -371,11 +335,7 @@ impl Cpu {
                     }
                     0x1 => {
                         if funct7 == 0x0 {
-                            // sllw
-                            println!(
-                                "{:>#x} : {:>#2x}({}), dest:{}, rs1:{}, rs2:{}",
-                                self.pc, opcode, "sllw", rd, rs1, rs2
-                            );
+                            self.print_inst_r("sllw", rd, rs1, rs2);
                             let shamt = (self.regs[rs2] as u64) & 0x1f;
                             self.regs[rd] = ((self.regs[rs1] as u32) << shamt) as u64;
                         } else {
@@ -385,19 +345,11 @@ impl Cpu {
                     }
                     0x5 => {
                         if funct7 == 0x0 {
-                            // srlw
-                            println!(
-                                "{:>#x} : {:>#2x}({}), dest:{}, rs1:{}, rs2:{}",
-                                self.pc, opcode, "srlw", rd, rs1, rs2
-                            );
+                            self.print_inst_r("srlw", rd, rs1, rs2);
                             let shamt = (self.regs[rs2] as u64) & 0x1f;
                             self.regs[rd] = ((self.regs[rs1] as u32) >> shamt) as u64;
                         }else if funct7 == 0x20 {
-                            // sraw
-                            println!(
-                                "{:>#x} : {:>#2x}({}), dest:{}, rs1:{}, rs2:{}",
-                                self.pc, opcode, "sraw", rd, rs1, rs2
-                            );
+                            self.print_inst_r("sraw", rd, rs1, rs2);
                             let shamt = (self.regs[rs2] as u64) & 0x1f;
                             self.regs[rd] = ((self.regs[rs1] as i32) >> shamt) as i64 as u64;
                         }else{

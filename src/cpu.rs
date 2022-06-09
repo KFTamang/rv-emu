@@ -384,6 +384,11 @@ impl Cpu {
                 self.regs[rd] = imm.wrapping_add(self.pc as u32) as u64;
                 Ok(())
             }
+            0x0f => {
+                println!("pc=0x{:x}", self.pc);
+                println!("fence(do nothing)");
+                Ok(())
+            }
             _ => {
                 println!("not implemented yet!");
                 println!("pc=0x{:x}", self.pc);

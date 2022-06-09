@@ -75,35 +75,46 @@ impl Cpu {
                     }
                     (0x1, 0x0) => {
                         self.print_inst_r("sll", rd, rs1, rs2);
-                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                        let shamt = self.regs[rs2] & 0x1f;
+                        self.regs[rd] = (self.regs[rs1] as u64) << shamt;
                     }
                     (0x2, 0x0) => {
                         self.print_inst_r("slt", rd, rs1, rs2);
-                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                        self.regs[rd] = if (rs1 as i64) < (rs2 as i64) {
+                            1
+                        }else{
+                            0
+                        }
                     }
                     (0x3, 0x0) => {
                         self.print_inst_r("sltu", rd, rs1, rs2);
-                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                        self.regs[rd] = if (rs1 as u64) < (rs2 as u64) {
+                            1
+                        }else{
+                            0
+                        }
                     }
                     (0x4, 0x0) => {
                         self.print_inst_r("xor", rd, rs1, rs2);
-                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                        self.regs[rd] = self.regs[rs1] ^ self.regs[rs2];
                     }
                     (0x5, 0x0) => {
                         self.print_inst_r("srl", rd, rs1, rs2);
-                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                        let shamt = self.regs[rs2] & 0x1f;
+                        self.regs[rd] = self.regs[rs1] as u64 >> shamt;
                     }
                     (0x5, 0x20) => {
                         self.print_inst_r("sra", rd, rs1, rs2);
-                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                        let shamt = self.regs[rs2] & 0x1f;
+                        self.regs[rd] = (self.regs[rs1] as i64 as u64) >> shamt;
                     }
                     (0x6, 0x0) => {
                         self.print_inst_r("or", rd, rs1, rs2);
-                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                        self.regs[rd] = self.regs[rs1] | self.regs[rs2];
                     }
                     (0x7, 0x0) => {
                         self.print_inst_r("and", rd, rs1, rs2);
-                        self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
+                        self.regs[rd] = self.regs[rs1] & self.regs[rs2];
                     }
                     (_, _) => {
                         println!("This should not be reached!");

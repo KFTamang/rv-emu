@@ -372,6 +372,12 @@ impl Cpu {
                 }
                 Ok(())
             }
+            0x37 => {
+                let imm = inst & 0xfffff000;
+                self.print_inst_j("lui", rd, imm as u64);
+                self.regs[rd] = imm as u64;
+                Ok(())
+            }
             _ => {
                 println!("not implemented yet!");
                 println!("pc=0x{:x}", self.pc);

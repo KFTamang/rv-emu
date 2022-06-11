@@ -26,28 +26,28 @@ impl Cpu {
         }
     }
 
-    fn print_inst_r(&self, name: &str, rd: usize, rs1: usize, rs2: usize){
+    fn print_inst_r(&self, name: &str, rd: usize, rs1: usize, rs2: usize) {
         println!(
             "{:>#x} : {}, dest:{}, rs1:{}, rs2:{}",
             self.pc, name, rd, rs1, rs2
         );
     }
 
-    fn print_inst_i(&self, name: &str, rs1: usize, rs2: usize, imm: u64){
+    fn print_inst_i(&self, name: &str, rs1: usize, rs2: usize, imm: u64) {
         println!(
             "{:>#x} : {}, rs1:{}, rs2:{}, imm:{}({:>#x})",
             self.pc, name, rs1, rs2, imm as i32, imm as i32
         );
     }
 
-    fn print_inst_s(&self, name: &str, rs1: usize, rs2: usize, imm: u64){
+    fn print_inst_s(&self, name: &str, rs1: usize, rs2: usize, imm: u64) {
         println!(
             "{:>#x} : {}, offset:{}, base:{}, src:{}",
             self.pc, name, imm as i64, rs1, rs2
         );
     }
 
-    fn print_inst_j(&self, name: &str, rd: usize, imm: u64){
+    fn print_inst_j(&self, name: &str, rd: usize, imm: u64) {
         println!(
             "{:>#x} : {}, dest:{}, offset:{}({:>#x})",
             self.pc, name, rd, imm as i64, imm as i64
@@ -80,19 +80,11 @@ impl Cpu {
                     }
                     (0x2, 0x0) => {
                         self.print_inst_r("slt", rd, rs1, rs2);
-                        self.regs[rd] = if (rs1 as i64) < (rs2 as i64) {
-                            1
-                        }else{
-                            0
-                        }
+                        self.regs[rd] = if (rs1 as i64) < (rs2 as i64) { 1 } else { 0 }
                     }
                     (0x3, 0x0) => {
                         self.print_inst_r("sltu", rd, rs1, rs2);
-                        self.regs[rd] = if (rs1 as u64) < (rs2 as u64) {
-                            1
-                        }else{
-                            0
-                        }
+                        self.regs[rd] = if (rs1 as u64) < (rs2 as u64) { 1 } else { 0 }
                     }
                     (0x4, 0x0) => {
                         self.print_inst_r("xor", rd, rs1, rs2);
@@ -120,9 +112,9 @@ impl Cpu {
                         println!("This should not be reached!");
                         return Err(());
                     }
+                }
+                Ok(())
             }
-            Ok(())
-        }
             0x13 => {
                 let imm = (inst as i32 as i64 >> 20) as u64;
                 match funct3 {
@@ -286,7 +278,7 @@ impl Cpu {
                 let imm = ((inst & 0x80000000) as i32 as i64 >> 19) as u64
                     | ((inst & 0x7e000000) as u64) >> 20
                     | ((inst & 0xf00) as u64) >> 7
-                    | ((inst & 0x80) as u64) << 5;
+                    | ((inst & 0x80) as u64) << 4;
                 match funct3 {
                     0x0 => {
                         self.print_inst_i("beq", rs1, rs2, imm);
@@ -333,13 +325,15 @@ impl Cpu {
                     0x0 => {
                         if funct7 == 0x0 {
                             self.print_inst_r("addw", rd, rs1, rs2);
-                            let add_val = (self.regs[rs1] as i32).wrapping_add(self.regs[rs2] as i32);
+                            let add_val =
+                                (self.regs[rs1] as i32).wrapping_add(self.regs[rs2] as i32);
                             self.regs[rd] = add_val as i64 as u64;
-                        }else if funct7 == 0x20 {
+                        } else if funct7 == 0x20 {
                             self.print_inst_r("subw", rd, rs1, rs2);
-                            let add_val = (self.regs[rs1] as i32).wrapping_sub(self.regs[rs2] as i32);
+                            let add_val =
+                                (self.regs[rs1] as i32).wrapping_sub(self.regs[rs2] as i32);
                             self.regs[rd] = add_val as i64 as u64;
-                        }else{
+                        } else {
                             println!("This should not be reached!");
                             return Err(());
                         }
@@ -359,16 +353,16 @@ impl Cpu {
                             self.print_inst_r("srlw", rd, rs1, rs2);
                             let shamt = (self.regs[rs2] as u64) & 0x1f;
                             self.regs[rd] = ((self.regs[rs1] as u32) >> shamt) as u64;
-                        }else if funct7 == 0x20 {
+                        } else if funct7 == 0x20 {
                             self.print_inst_r("sraw", rd, rs1, rs2);
                             let shamt = (self.regs[rs2] as u64) & 0x1f;
                             self.regs[rd] = ((self.regs[rs1] as i32) >> shamt) as i64 as u64;
-                        }else{
+                        } else {
                             println!("This should not be reached!");
                             return Err(());
                         }
                     }
-                        _ => {}
+                    _ => {}
                 }
                 Ok(())
             }

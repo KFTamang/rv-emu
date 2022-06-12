@@ -33,10 +33,10 @@ impl Cpu {
         );
     }
 
-    fn print_inst_i(&self, name: &str, rs1: usize, rs2: usize, imm: u64) {
+    fn print_inst_i(&self, name: &str, rd: usize, rs1: usize, imm: u64) {
         println!(
-            "{:>#x} : {}, rs1:{}, rs2:{}, imm:{}({:>#x})",
-            self.pc, name, rs1, rs2, imm as i32, imm as i32
+            "{:>#x} : {}, rd:{}, rs1:{}, imm:{}({:>#x})",
+            self.pc, name, rd, rs1, imm as i32, imm as i32
         );
     }
 
@@ -119,11 +119,11 @@ impl Cpu {
                 let imm = (inst as i32 as i64 >> 20) as u64;
                 match funct3 {
                     0x0 => {
-                        self.print_inst_i("addi", rs1, rs2, imm);
+                        self.print_inst_i("addi", rd, rs1, imm);
                         self.regs[rd] = self.regs[rs1].wrapping_add(imm);
                     }
                     0x2 => {
-                        self.print_inst_i("slti", rs1, rs2, imm);
+                        self.print_inst_i("slti", rd, rs1, imm);
                         let result = if (self.regs[rs1] as i32 as i64) < (imm as i64) {
                             1
                         } else {
@@ -132,7 +132,7 @@ impl Cpu {
                         self.regs[rd] = result;
                     }
                     0x3 => {
-                        self.print_inst_i("sltiu", rs1, rs2, imm);
+                        self.print_inst_i("sltiu", rd, rs1, imm);
                         let result = if (self.regs[rs1] as i32 as i64 as u64) < imm {
                             1
                         } else {
@@ -141,27 +141,27 @@ impl Cpu {
                         self.regs[rd] = result;
                     }
                     0x4 => {
-                        self.print_inst_i("xori", rs1, rs2, imm);
+                        self.print_inst_i("xori", rd, rs1, imm);
                         let val = ((self.regs[rs1] as i32) ^ (imm as i32)) as u64;
                         self.regs[rd] = val;
                     }
                     0x6 => {
-                        self.print_inst_i("ori", rs1, rs2, imm);
+                        self.print_inst_i("ori", rd, rs1, imm);
                         let val = ((self.regs[rs1] as i32) | (imm as i32)) as u64;
                         self.regs[rd] = val;
                     }
                     0x7 => {
-                        self.print_inst_i("andi", rs1, rs2, imm);
+                        self.print_inst_i("andi", rd, rs1, imm);
                         let val = ((self.regs[rs1] as i32) & (imm as i32)) as u64;
                         self.regs[rd] = val;
                     }
                     0x1 => {
-                        self.print_inst_i("slli", rs1, rs2, imm);
+                        self.print_inst_i("slli", rd, rs1, imm);
                         let shamt = self.regs[rs2] as u64;
                         self.regs[rd] = (self.regs[rs1] as u64) << shamt;
                     }
                     0x5 => {
-                        self.print_inst_i("srli", rs1, rs2, imm);
+                        self.print_inst_i("srli", rd, rs1, imm);
                         let shamt = self.regs[rs2] as u64;
                         let logical_shift = (imm >> 10) & 0x1;
                         if logical_shift != 0 {
@@ -181,37 +181,37 @@ impl Cpu {
                 let addr = self.regs[rs1].wrapping_add(imm);
                 match funct3 {
                     0x0 => {
-                        self.print_inst_i("lb", rs1, rs2, imm);
+                        self.print_inst_i("lb", rd, rs1, imm);
                         let val = self.bus.load(addr, 8)?;
                         self.regs[rd] = val as i8 as i64 as u64;
                     }
                     0x1 => {
-                        self.print_inst_i("lh", rs1, rs2, imm);
+                        self.print_inst_i("lh", rd, rs1, imm);
                         let val = self.bus.load(addr, 16)?;
                         self.regs[rd] = val as i16 as i64 as u64;
                     }
                     0x2 => {
-                        self.print_inst_i("lw", rs1, rs2, imm);
+                        self.print_inst_i("lw", rd, rs1, imm);
                         let val = self.bus.load(addr, 32)?;
                         self.regs[rd] = val as i32 as i64 as u64;
                     }
                     0x3 => {
-                        self.print_inst_i("ld", rs1, rs2, imm);
+                        self.print_inst_i("ld", rd, rs1, imm);
                         let val = self.bus.load(addr, 64)?;
                         self.regs[rd] = val;
                     }
                     0x4 => {
-                        self.print_inst_i("lbu", rs1, rs2, imm);
+                        self.print_inst_i("lbu", rd, rs1, imm);
                         let val = self.bus.load(addr, 8)?;
                         self.regs[rd] = val;
                     }
                     0x5 => {
-                        self.print_inst_i("lhu", rs1, rs2, imm);
+                        self.print_inst_i("lhu", rd, rs1, imm);
                         let val = self.bus.load(addr, 16)?;
                         self.regs[rd] = val;
                     }
                     0x6 => {
-                        self.print_inst_i("lwu", rs1, rs2, imm);
+                        self.print_inst_i("lwu", rd, rs1, imm);
                         let val = self.bus.load(addr, 32)?;
                         self.regs[rd] = val;
                     }
@@ -249,7 +249,7 @@ impl Cpu {
                 match funct3 {
                     0x0 => {
                         let imm = ((inst as i32 as i64) >> 20) as u64;
-                        self.print_inst_i("jalr", rs1, rs2, imm);
+                        self.print_inst_i("jalr", rd, rs1, imm);
                         self.regs[rd] = self.pc.wrapping_add(4);
                         self.pc = self.regs[rs1].wrapping_add(imm).wrapping_sub(4);
                         // subtract 4 because 4 will be added
@@ -264,7 +264,7 @@ impl Cpu {
                         // addiw
                         // I-type format
                         let imm = (inst as i32) >> 20;
-                        self.print_inst_i("addiw", rs1, rs2, imm as u32 as u64);
+                        self.print_inst_i("addiw", rd, rs1, imm as u32 as u64);
                         let src = self.regs[rs1] as i32;
                         let val = src.wrapping_add(imm);
                         self.regs[rd] = val as i64 as u64;
@@ -281,37 +281,37 @@ impl Cpu {
                     | ((inst & 0x80) as u64) << 4;
                 match funct3 {
                     0x0 => {
-                        self.print_inst_i("beq", rs1, rs2, imm);
+                        self.print_inst_i("beq", rd, rs1, imm);
                         if self.regs[rs1] == self.regs[rs2] {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x1 => {
-                        self.print_inst_i("bne", rs1, rs2, imm);
+                        self.print_inst_i("bne", rd, rs1, imm);
                         if self.regs[rs1] != self.regs[rs2] {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x4 => {
-                        self.print_inst_i("blt", rs1, rs2, imm);
+                        self.print_inst_i("blt", rd, rs1, imm);
                         if (self.regs[rs1] as i64) < (self.regs[rs2] as i64) {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x5 => {
-                        self.print_inst_i("bge", rs1, rs2, imm);
+                        self.print_inst_i("bge", rd, rs1, imm);
                         if (self.regs[rs1] as i64) >= (self.regs[rs2] as i64) {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x6 => {
-                        self.print_inst_i("bltu", rs1, rs2, imm);
+                        self.print_inst_i("bltu", rd, rs1, imm);
                         if self.regs[rs1] < self.regs[rs2] {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x7 => {
-                        self.print_inst_i("bgeu", rs1, rs2, imm);
+                        self.print_inst_i("bgeu", rd, rs1, imm);
                         if self.regs[rs1] >= self.regs[rs2] {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
@@ -346,6 +346,26 @@ impl Cpu {
                         self.print_inst_r("sraw", rd, rs1, rs2);
                         let shamt = (self.regs[rs2] as u64) & 0x1f;
                         self.regs[rd] = ((self.regs[rs1] as i32) >> shamt) as i64 as u64;
+                    }
+                    (0x4, 0x1) => {
+                        self.print_inst_r("divw", rd, rs1, rs2);
+                        let rem = (self.regs[rs2] as u32) / (self.regs[rs2] as u32);
+                        self.regs[rd] = rem as u64;
+                    }
+                    (0x5, 0x1) => {
+                        self.print_inst_r("divuw", rd, rs1, rs2);
+                        let rem = (self.regs[rs2] as i32) / (self.regs[rs2] as i32);
+                        self.regs[rd] = rem as i64 as u64;
+                    }
+                    (0x6, 0x1) => {
+                        self.print_inst_r("remw", rd, rs1, rs2);
+                        let rem = (self.regs[rs2] as i32) % (self.regs[rs2] as i32);
+                        self.regs[rd] = rem as i64 as u64;
+                    }
+                    (0x7, 0x1) => {
+                        self.print_inst_r("remuw", rd, rs1, rs2);
+                        let rem = (self.regs[rs2] as u32) % (self.regs[rs2] as u32);
+                        self.regs[rd] = rem as u64;
                     }
                     _ => {
                         println!("This should not be reached!");

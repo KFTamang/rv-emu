@@ -1,10 +1,15 @@
 use crate::bus::*;
 use crate::dram::*;
 
+const REG_NUM: usize = 32;
+
 pub struct Cpu {
     pub regs: [u64; 32],
     pub pc: u64,
     pub bus: Bus,
+    dest: usize,
+    src1: usize,
+    src2: usize,
 }
 
 impl Cpu {
@@ -15,6 +20,9 @@ impl Cpu {
             regs,
             pc: DRAM_BASE,
             bus: Bus::new(binary),
+            dest: REG_NUM,
+            src1: REG_NUM,
+            src2: REG_NUM,
         }
     }
 
@@ -54,6 +62,24 @@ impl Cpu {
         );
     }
 
+    fn mark_as_dest(&mut self, reg: usize) {
+        self.dest = reg;
+    }
+
+    fn mark_as_src1(&mut self, reg: usize) {
+        self.src1 = reg;
+    }
+
+    fn mark_as_src2(&mut self, reg: usize) {
+        self.src2 = reg;
+    }
+
+    fn clear_reg_marks(&mut self) {
+        self.dest = REG_NUM;
+        self.src1 = REG_NUM;
+        self.src2 = REG_NUM;
+    }
+
     pub fn execute(&mut self, inst: u32) -> Result<(), ()> {
         let opcode = inst & 0x7f;
         let rd = ((inst >> 7) & 0x1f) as usize;
@@ -61,6 +87,8 @@ impl Cpu {
         let rs2 = ((inst >> 20) & 0x1f) as usize;
         let funct3 = ((inst >> 12) & 0x7) as usize;
         let funct7 = ((inst >> 25) & 0x7f) as usize;
+
+        self.clear_reg_marks();
 
         match opcode {
             0x33 => {
@@ -113,6 +141,9 @@ impl Cpu {
                         return Err(());
                     }
                 }
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
                 Ok(())
             }
             0x13 => {
@@ -172,6 +203,8 @@ impl Cpu {
                     }
                     _ => {}
                 }
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
                 Ok(())
             }
             0x03 => {
@@ -217,6 +250,8 @@ impl Cpu {
                     }
                     _ => {}
                 }
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
                 Ok(())
             }
             0x23 => {
@@ -232,6 +267,8 @@ impl Cpu {
                     0x3 => self.bus.store(addr, 64, self.regs[rs2])?,
                     _ => {}
                 }
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
                 Ok(())
             }
             0x6f => {
@@ -243,6 +280,7 @@ impl Cpu {
                 self.print_inst_j("jal", rd, imm);
                 self.regs[rd] = self.pc.wrapping_add(4);
                 self.pc = self.pc.wrapping_add(imm).wrapping_sub(4); // subtract 4 because 4 will be added
+                self.mark_as_dest(rd);
                 Ok(())
             }
             0x67 => {
@@ -256,6 +294,8 @@ impl Cpu {
                     }
                     _ => {}
                 }
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
                 Ok(())
             }
             0x1b => {
@@ -271,6 +311,8 @@ impl Cpu {
                     }
                     _ => {}
                 }
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
                 Ok(())
             }
             0x63 => {
@@ -318,6 +360,8 @@ impl Cpu {
                     }
                     _ => {}
                 }
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
                 Ok(())
             }
             0x3b => {
@@ -372,18 +416,23 @@ impl Cpu {
                         return Err(());
                     }
                 }
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
                 Ok(())
             }
             0x37 => {
                 let imm = inst & 0xfffff000;
                 self.print_inst_j("lui", rd, imm as u64);
                 self.regs[rd] = imm as u64;
+                self.mark_as_dest(rd);
                 Ok(())
             }
             0x27 => {
                 let imm = inst & 0xfffff000;
                 self.print_inst_j("lui", rd, imm as u64);
                 self.regs[rd] = imm.wrapping_add(self.pc as u32) as u64;
+                self.mark_as_dest(rd);
                 Ok(())
             }
             0x0f => {
@@ -406,29 +455,36 @@ impl Cpu {
             " a1 ", " a2 ", " a3 ", " a4 ", " a5 ", " a6 ", " a7 ", " s2 ", " s3 ", " s4 ", " s5 ",
             " s6 ", " s7 ", " s8 ", " s9 ", " s10", " s11", " t3 ", " t4 ", " t5 ", " t6 ",
         ];
-        let mut output = format!("pc={:>#18x}", self.pc);
-        for i in (0..32).step_by(4) {
+        let mut output = format!("pc={:>#18x}\n", self.pc);
+        const SEQ_RED: &str = "\x1b[91m";
+        const SEQ_GREEN: &str = "\x1b[92m";
+        const SEQ_CLEAR: &str = "\x1b[0m";
+        for i in 0..32 {
             output = format!(
-                "{}\n{}",
+                "{}{}",
                 output,
                 format!(
-                    "x{:02}({})={:>#18x}, x{:02}({})={:>#18x}, x{:02}({})={:>#18x}, x{:02}({})={:>#18x}",
+                    "{}x{:02}({})={:>#18x}{}{}",
+                    if i == self.dest {
+                        SEQ_RED
+                    } else if (i == self.src1) || (i == self.src2) {
+                        SEQ_GREEN
+                    } else {
+                        ""
+                    },
                     i,
                     abi[i],
                     self.regs[i],
-                    i+1,
-                    abi[i+1],
-                    self.regs[i+1],
-                    i+2,
-                    abi[i+2],
-                    self.regs[i+2],
-                    i+3,
-                    abi[i+3],
-                    self.regs[i+3]
+                    if (i == self.dest) || (i == self.src1) || (i == self.src2) {
+                        SEQ_CLEAR
+                    } else {
+                        ""
+                    },
+                    if i % 4 == 3 { "\n" } else { ", " }
                 )
             )
         }
-        println!("{}", output);
+        print!("{}", output);
         println!("----");
     }
 }

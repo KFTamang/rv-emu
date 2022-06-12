@@ -321,48 +321,36 @@ impl Cpu {
                 Ok(())
             }
             0x3b => {
-                match funct3 {
-                    0x0 => {
-                        if funct7 == 0x0 {
-                            self.print_inst_r("addw", rd, rs1, rs2);
-                            let add_val =
-                                (self.regs[rs1] as i32).wrapping_add(self.regs[rs2] as i32);
-                            self.regs[rd] = add_val as i64 as u64;
-                        } else if funct7 == 0x20 {
-                            self.print_inst_r("subw", rd, rs1, rs2);
-                            let add_val =
-                                (self.regs[rs1] as i32).wrapping_sub(self.regs[rs2] as i32);
-                            self.regs[rd] = add_val as i64 as u64;
-                        } else {
-                            println!("This should not be reached!");
-                            return Err(());
-                        }
+                match (funct3, funct7) {
+                    (0x0, 0x0) => {
+                        self.print_inst_r("addw", rd, rs1, rs2);
+                        let add_val = (self.regs[rs1] as i32).wrapping_add(self.regs[rs2] as i32);
+                        self.regs[rd] = add_val as i64 as u64;
                     }
-                    0x1 => {
-                        if funct7 == 0x0 {
-                            self.print_inst_r("sllw", rd, rs1, rs2);
-                            let shamt = (self.regs[rs2] as u64) & 0x1f;
-                            self.regs[rd] = ((self.regs[rs1] as u32) << shamt) as u64;
-                        } else {
-                            println!("This should not be reached!");
-                            return Err(());
-                        }
+                    (0x0, 0x20) => {
+                        self.print_inst_r("subw", rd, rs1, rs2);
+                        let add_val = (self.regs[rs1] as i32).wrapping_sub(self.regs[rs2] as i32);
+                        self.regs[rd] = add_val as i64 as u64;
                     }
-                    0x5 => {
-                        if funct7 == 0x0 {
-                            self.print_inst_r("srlw", rd, rs1, rs2);
-                            let shamt = (self.regs[rs2] as u64) & 0x1f;
-                            self.regs[rd] = ((self.regs[rs1] as u32) >> shamt) as u64;
-                        } else if funct7 == 0x20 {
-                            self.print_inst_r("sraw", rd, rs1, rs2);
-                            let shamt = (self.regs[rs2] as u64) & 0x1f;
-                            self.regs[rd] = ((self.regs[rs1] as i32) >> shamt) as i64 as u64;
-                        } else {
-                            println!("This should not be reached!");
-                            return Err(());
-                        }
+                    (0x1, 0x0) => {
+                        self.print_inst_r("sllw", rd, rs1, rs2);
+                        let shamt = (self.regs[rs2] as u64) & 0x1f;
+                        self.regs[rd] = ((self.regs[rs1] as u32) << shamt) as u64;
                     }
-                    _ => {}
+                    (0x5, 0x0) => {
+                        self.print_inst_r("srlw", rd, rs1, rs2);
+                        let shamt = (self.regs[rs2] as u64) & 0x1f;
+                        self.regs[rd] = ((self.regs[rs1] as u32) >> shamt) as u64;
+                    }
+                    (0x5, 0x20) => {
+                        self.print_inst_r("sraw", rd, rs1, rs2);
+                        let shamt = (self.regs[rs2] as u64) & 0x1f;
+                        self.regs[rd] = ((self.regs[rs1] as i32) >> shamt) as i64 as u64;
+                    }
+                    _ => {
+                        println!("This should not be reached!");
+                        return Err(());
+                    }
                 }
                 Ok(())
             }

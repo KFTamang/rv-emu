@@ -14,6 +14,7 @@ void fizzbuzz(int max)
     int i = 0;
     while (i < max)
     {
+        i++;
         if (i % 3 == 0 && i % 5 == 0)
         {
             answer[i] = '*';
@@ -24,7 +25,7 @@ void fizzbuzz(int max)
             answer[i] = 'F';
             continue;
         }
-        if (i % 3 == 0)
+        if (i % 5 == 0)
         {
             answer[i] = 'B';
             continue;

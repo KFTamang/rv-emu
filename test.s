@@ -34,6 +34,9 @@ fizzbuzz:
 	j	.L4
 .L8:
 	lw	a5,-20(s0)
+	addiw	a5,a5,1
+	sw	a5,-20(s0)
+	lw	a5,-20(s0)
 	mv	a4,a5
 	li	a5,3
 	remw	a5,a4,a5
@@ -67,7 +70,7 @@ fizzbuzz:
 .L6:
 	lw	a5,-20(s0)
 	mv	a4,a5
-	li	a5,3
+	li	a5,5
 	remw	a5,a4,a5
 	sext.w	a5,a5
 	bne	a5,zero,.L7

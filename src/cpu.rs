@@ -138,6 +138,7 @@ impl Cpu {
                     }
                     (_, _) => {
                         println!("This should not be reached!");
+                        println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
                         return Err(());
                     }
                 }
@@ -201,7 +202,11 @@ impl Cpu {
                             self.regs[rd] = ((self.regs[rs1] as i64) >> shamt) as u64;
                         }
                     }
-                    _ => {}
+                    _ => {
+                        println!("This should not be reached!");
+                        println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        return Err(());
+                    }
                 }
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
@@ -248,7 +253,11 @@ impl Cpu {
                         let val = self.bus.load(addr, 32)?;
                         self.regs[rd] = val;
                     }
-                    _ => {}
+                    _ => {
+                        println!("This should not be reached!");
+                        println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        return Err(());
+                    }
                 }
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
@@ -265,7 +274,11 @@ impl Cpu {
                     0x1 => self.bus.store(addr, 16, self.regs[rs2])?,
                     0x2 => self.bus.store(addr, 32, self.regs[rs2])?,
                     0x3 => self.bus.store(addr, 64, self.regs[rs2])?,
-                    _ => {}
+                    _ => {
+                        println!("This should not be reached!");
+                        println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        return Err(());
+                    }
                 }
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
@@ -292,7 +305,11 @@ impl Cpu {
                         self.pc = self.regs[rs1].wrapping_add(imm).wrapping_sub(4);
                         // subtract 4 because 4 will be added
                     }
-                    _ => {}
+                    _ => {
+                        println!("This should not be reached!");
+                        println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        return Err(());
+                    }
                 }
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
@@ -309,7 +326,11 @@ impl Cpu {
                         let val = src.wrapping_add(imm);
                         self.regs[rd] = val as i64 as u64;
                     }
-                    _ => {}
+                    _ => {
+                        println!("This should not be reached!");
+                        println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        return Err(());
+                    }
                 }
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
@@ -358,7 +379,11 @@ impl Cpu {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
-                    _ => {}
+                    _ => {
+                        println!("This should not be reached!");
+                        println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        return Err(());
+                    }
                 }
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);

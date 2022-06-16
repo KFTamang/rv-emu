@@ -55,6 +55,13 @@ impl Cpu {
         );
     }
 
+    fn print_inst_b(&self, name: &str, rs1: usize, rs2: usize, imm: u64) {
+        println!(
+            "{:>#x} : {}, rs1:{}, rs2:{}, offset:{}",
+            self.pc, name, rs1, rs2, imm as i64
+        );
+    }
+
     fn print_inst_j(&self, name: &str, rd: usize, imm: u64) {
         println!(
             "{:>#x} : {}, dest:{}, offset:{}({:>#x})",
@@ -344,37 +351,37 @@ impl Cpu {
                     | ((inst & 0x80) as u64) << 4;
                 match funct3 {
                     0x0 => {
-                        self.print_inst_i("beq", rd, rs1, imm);
+                        self.print_inst_b("beq", rs1, rs2, imm);
                         if self.regs[rs1] == self.regs[rs2] {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x1 => {
-                        self.print_inst_i("bne", rd, rs1, imm);
+                        self.print_inst_b("bne", rs1, rs2, imm);
                         if self.regs[rs1] != self.regs[rs2] {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x4 => {
-                        self.print_inst_i("blt", rd, rs1, imm);
+                        self.print_inst_b("blt", rs1, rs2, imm);
                         if (self.regs[rs1] as i64) < (self.regs[rs2] as i64) {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x5 => {
-                        self.print_inst_i("bge", rd, rs1, imm);
+                        self.print_inst_b("bge", rs1, rs2, imm);
                         if (self.regs[rs1] as i64) >= (self.regs[rs2] as i64) {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x6 => {
-                        self.print_inst_i("bltu", rd, rs1, imm);
+                        self.print_inst_b("bltu", rs1, rs2, imm);
                         if self.regs[rs1] < self.regs[rs2] {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x7 => {
-                        self.print_inst_i("bgeu", rd, rs1, imm);
+                        self.print_inst_b("bgeu", rs1, rs2, imm);
                         if self.regs[rs1] >= self.regs[rs2] {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
@@ -385,8 +392,8 @@ impl Cpu {
                         return Err(());
                     }
                 }
-                self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
                 Ok(())
             }
             0x3b => {

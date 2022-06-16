@@ -4,7 +4,7 @@ void fizzbuzz(int);
 
 int main(void)
 {
-    fizzbuzz(100);
+    fizzbuzz(3);
     return 0;
 }
 

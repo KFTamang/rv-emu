@@ -1,0 +1,85 @@
+
+test.bin:     file format binary
+
+
+Disassembly of section .data:
+
+0000000000000000 <.data>:
+   0:	ff010113          	addi	sp,sp,-16
+   4:	00113423          	.4byte	0x113423
+   8:	00813023          	.4byte	0x813023
+   c:	01010413          	addi	s0,sp,16
+  10:	00300513          	li	a0,3
+  14:	01c000ef          	jal	ra,0x30
+  18:	00000793          	li	a5,0
+  1c:	00078513          	mv	a0,a5
+  20:	00813083          	.4byte	0x813083
+  24:	00013403          	.4byte	0x13403
+  28:	01010113          	addi	sp,sp,16
+  2c:	00008067          	ret
+  30:	de010113          	addi	sp,sp,-544
+  34:	20813c23          	.4byte	0x20813c23
+  38:	22010413          	addi	s0,sp,544
+  3c:	00050793          	mv	a5,a0
+  40:	def42623          	sw	a5,-532(s0)
+  44:	fe042623          	sw	zero,-20(s0)
+  48:	0c40006f          	j	0x10c
+  4c:	fec42783          	lw	a5,-20(s0)
+  50:	00078713          	mv	a4,a5
+  54:	00300793          	li	a5,3
+  58:	02f767bb          	.4byte	0x2f767bb
+  5c:	0007879b          	.4byte	0x7879b
+  60:	02079a63          	bnez	a5,0x94
+  64:	fec42783          	lw	a5,-20(s0)
+  68:	00078713          	mv	a4,a5
+  6c:	00500793          	li	a5,5
+  70:	02f767bb          	.4byte	0x2f767bb
+  74:	0007879b          	.4byte	0x7879b
+  78:	00079e63          	bnez	a5,0x94
+  7c:	fec42783          	lw	a5,-20(s0)
+  80:	ff078793          	addi	a5,a5,-16
+  84:	008787b3          	add	a5,a5,s0
+  88:	02a00713          	li	a4,42
+  8c:	e0e78423          	sb	a4,-504(a5)
+  90:	07c0006f          	j	0x10c
+  94:	fec42783          	lw	a5,-20(s0)
+  98:	00078713          	mv	a4,a5
+  9c:	00300793          	li	a5,3
+  a0:	02f767bb          	.4byte	0x2f767bb
+  a4:	0007879b          	.4byte	0x7879b
+  a8:	00079e63          	bnez	a5,0xc4
+  ac:	fec42783          	lw	a5,-20(s0)
+  b0:	ff078793          	addi	a5,a5,-16
+  b4:	008787b3          	add	a5,a5,s0
+  b8:	04600713          	li	a4,70
+  bc:	e0e78423          	sb	a4,-504(a5)
+  c0:	04c0006f          	j	0x10c
+  c4:	fec42783          	lw	a5,-20(s0)
+  c8:	00078713          	mv	a4,a5
+  cc:	00300793          	li	a5,3
+  d0:	02f767bb          	.4byte	0x2f767bb
+  d4:	0007879b          	.4byte	0x7879b
+  d8:	00079e63          	bnez	a5,0xf4
+  dc:	fec42783          	lw	a5,-20(s0)
+  e0:	ff078793          	addi	a5,a5,-16
+  e4:	008787b3          	add	a5,a5,s0
+  e8:	04200713          	li	a4,66
+  ec:	e0e78423          	sb	a4,-504(a5)
+  f0:	01c0006f          	j	0x10c
+  f4:	fec42783          	lw	a5,-20(s0)
+  f8:	0ff7f713          	zext.b	a4,a5
+  fc:	fec42783          	lw	a5,-20(s0)
+ 100:	ff078793          	addi	a5,a5,-16
+ 104:	008787b3          	add	a5,a5,s0
+ 108:	e0e78423          	sb	a4,-504(a5)
+ 10c:	fec42783          	lw	a5,-20(s0)
+ 110:	00078713          	mv	a4,a5
+ 114:	dec42783          	lw	a5,-532(s0)
+ 118:	0007071b          	.4byte	0x7071b
+ 11c:	0007879b          	.4byte	0x7879b
+ 120:	f2f746e3          	blt	a4,a5,0x4c
+ 124:	00000013          	nop
+ 128:	00000013          	nop
+ 12c:	21813403          	.4byte	0x21813403
+ 130:	22010113          	addi	sp,sp,544
+ 134:	00008067          	ret

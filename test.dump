@@ -6,38 +6,38 @@ Disassembly of section .data:
 
 0000000000000000 <.data>:
    0:	ff010113          	addi	sp,sp,-16
-   4:	00113423          	.4byte	0x113423
-   8:	00813023          	.4byte	0x813023
+   4:	00113423          	sd	ra,8(sp)
+   8:	00813023          	sd	s0,0(sp)
    c:	01010413          	addi	s0,sp,16
   10:	00300513          	li	a0,3
   14:	01c000ef          	jal	ra,0x30
   18:	00000793          	li	a5,0
   1c:	00078513          	mv	a0,a5
-  20:	00813083          	.4byte	0x813083
-  24:	00013403          	.4byte	0x13403
+  20:	00813083          	ld	ra,8(sp)
+  24:	00013403          	ld	s0,0(sp)
   28:	01010113          	addi	sp,sp,16
   2c:	00008067          	ret
   30:	de010113          	addi	sp,sp,-544
-  34:	20813c23          	.4byte	0x20813c23
+  34:	20813c23          	sd	s0,536(sp)
   38:	22010413          	addi	s0,sp,544
   3c:	00050793          	mv	a5,a0
   40:	def42623          	sw	a5,-532(s0)
   44:	fe042623          	sw	zero,-20(s0)
   48:	0d00006f          	j	0x118
   4c:	fec42783          	lw	a5,-20(s0)
-  50:	0017879b          	.4byte	0x17879b
+  50:	0017879b          	addiw	a5,a5,1
   54:	fef42623          	sw	a5,-20(s0)
   58:	fec42783          	lw	a5,-20(s0)
   5c:	00078713          	mv	a4,a5
   60:	00300793          	li	a5,3
-  64:	02f767bb          	.4byte	0x2f767bb
-  68:	0007879b          	.4byte	0x7879b
+  64:	02f767bb          	remw	a5,a4,a5
+  68:	0007879b          	sext.w	a5,a5
   6c:	02079a63          	bnez	a5,0xa0
   70:	fec42783          	lw	a5,-20(s0)
   74:	00078713          	mv	a4,a5
   78:	00500793          	li	a5,5
-  7c:	02f767bb          	.4byte	0x2f767bb
-  80:	0007879b          	.4byte	0x7879b
+  7c:	02f767bb          	remw	a5,a4,a5
+  80:	0007879b          	sext.w	a5,a5
   84:	00079e63          	bnez	a5,0xa0
   88:	fec42783          	lw	a5,-20(s0)
   8c:	ff078793          	addi	a5,a5,-16
@@ -48,8 +48,8 @@ Disassembly of section .data:
   a0:	fec42783          	lw	a5,-20(s0)
   a4:	00078713          	mv	a4,a5
   a8:	00300793          	li	a5,3
-  ac:	02f767bb          	.4byte	0x2f767bb
-  b0:	0007879b          	.4byte	0x7879b
+  ac:	02f767bb          	remw	a5,a4,a5
+  b0:	0007879b          	sext.w	a5,a5
   b4:	00079e63          	bnez	a5,0xd0
   b8:	fec42783          	lw	a5,-20(s0)
   bc:	ff078793          	addi	a5,a5,-16
@@ -60,8 +60,8 @@ Disassembly of section .data:
   d0:	fec42783          	lw	a5,-20(s0)
   d4:	00078713          	mv	a4,a5
   d8:	00500793          	li	a5,5
-  dc:	02f767bb          	.4byte	0x2f767bb
-  e0:	0007879b          	.4byte	0x7879b
+  dc:	02f767bb          	remw	a5,a4,a5
+  e0:	0007879b          	sext.w	a5,a5
   e4:	00079e63          	bnez	a5,0x100
   e8:	fec42783          	lw	a5,-20(s0)
   ec:	ff078793          	addi	a5,a5,-16
@@ -78,11 +78,11 @@ Disassembly of section .data:
  118:	fec42783          	lw	a5,-20(s0)
  11c:	00078713          	mv	a4,a5
  120:	dec42783          	lw	a5,-532(s0)
- 124:	0007071b          	.4byte	0x7071b
- 128:	0007879b          	.4byte	0x7879b
+ 124:	0007071b          	sext.w	a4,a4
+ 128:	0007879b          	sext.w	a5,a5
  12c:	f2f740e3          	blt	a4,a5,0x4c
  130:	00000013          	nop
  134:	00000013          	nop
- 138:	21813403          	.4byte	0x21813403
+ 138:	21813403          	ld	s0,536(sp)
  13c:	22010113          	addi	sp,sp,544
  140:	00008067          	ret

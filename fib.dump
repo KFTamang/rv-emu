@@ -6,51 +6,51 @@ Disassembly of section .data:
 
 0000000000000000 <.data>:
    0:	ff010113          	addi	sp,sp,-16
-   4:	00113423          	.4byte	0x113423
-   8:	00813023          	.4byte	0x813023
+   4:	00113423          	sd	ra,8(sp)
+   8:	00813023          	sd	s0,0(sp)
    c:	01010413          	addi	s0,sp,16
   10:	00a00513          	li	a0,10
   14:	01c000ef          	jal	ra,0x30
   18:	00050793          	mv	a5,a0
   1c:	00078513          	mv	a0,a5
-  20:	00813083          	.4byte	0x813083
-  24:	00013403          	.4byte	0x13403
+  20:	00813083          	ld	ra,8(sp)
+  24:	00013403          	ld	s0,0(sp)
   28:	01010113          	addi	sp,sp,16
   2c:	00008067          	ret
   30:	fd010113          	addi	sp,sp,-48
-  34:	02113423          	.4byte	0x2113423
-  38:	02813023          	.4byte	0x2813023
-  3c:	00913c23          	.4byte	0x913c23
+  34:	02113423          	sd	ra,40(sp)
+  38:	02813023          	sd	s0,32(sp)
+  3c:	00913c23          	sd	s1,24(sp)
   40:	03010413          	addi	s0,sp,48
   44:	00050793          	mv	a5,a0
   48:	fcf42e23          	sw	a5,-36(s0)
   4c:	fdc42783          	lw	a5,-36(s0)
-  50:	0007879b          	.4byte	0x7879b
+  50:	0007879b          	sext.w	a5,a5
   54:	00078a63          	beqz	a5,0x68
   58:	fdc42783          	lw	a5,-36(s0)
-  5c:	0007871b          	.4byte	0x7871b
+  5c:	0007871b          	sext.w	a4,a5
   60:	00100793          	li	a5,1
   64:	00f71663          	bne	a4,a5,0x70
   68:	fdc42783          	lw	a5,-36(s0)
   6c:	0400006f          	j	0xac
   70:	fdc42783          	lw	a5,-36(s0)
-  74:	fff7879b          	.4byte	0xfff7879b
-  78:	0007879b          	.4byte	0x7879b
+  74:	fff7879b          	addiw	a5,a5,-1
+  78:	0007879b          	sext.w	a5,a5
   7c:	00078513          	mv	a0,a5
   80:	fb1ff0ef          	jal	ra,0x30
   84:	00050793          	mv	a5,a0
   88:	00078493          	mv	s1,a5
   8c:	fdc42783          	lw	a5,-36(s0)
-  90:	ffe7879b          	.4byte	0xffe7879b
-  94:	0007879b          	.4byte	0x7879b
+  90:	ffe7879b          	addiw	a5,a5,-2
+  94:	0007879b          	sext.w	a5,a5
   98:	00078513          	mv	a0,a5
   9c:	f95ff0ef          	jal	ra,0x30
   a0:	00050793          	mv	a5,a0
-  a4:	00f487bb          	.4byte	0xf487bb
-  a8:	0007879b          	.4byte	0x7879b
+  a4:	00f487bb          	addw	a5,s1,a5
+  a8:	0007879b          	sext.w	a5,a5
   ac:	00078513          	mv	a0,a5
-  b0:	02813083          	.4byte	0x2813083
-  b4:	02013403          	.4byte	0x2013403
-  b8:	01813483          	.4byte	0x1813483
+  b0:	02813083          	ld	ra,40(sp)
+  b4:	02013403          	ld	s0,32(sp)
+  b8:	01813483          	ld	s1,24(sp)
   bc:	03010113          	addi	sp,sp,48
   c0:	00008067          	ret

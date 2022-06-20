@@ -43,9 +43,11 @@ fn main() -> io::Result<()> {
         };
         cpu.regs[0] = 0;
 
-        cpu.pc = cpu.pc + 4;
+        cpu.pc = cpu.pc.wrapping_add(4);
 
         if cpu.pc == 0 {
+            cpu.dump_registers();
+            println!("Program finished!");
             break;
         }
 

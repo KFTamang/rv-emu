@@ -11,4 +11,8 @@ fib:fib.s ${src}
 	riscv64-unknown-elf-objdump -b binary --adjust-vma=0x0 -D -m riscv:rv64 fib.bin > fib.dump
 	cargo run fib.bin -c 1000 -d > output.log
 
+run:test.bin fib.bin ${src}
+	cargo run test.bin -c 1000 -d > output_test.log
+	cargo run fib.bin -c 1000 -d > output.log
+
 all:fib test

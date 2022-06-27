@@ -58,6 +58,7 @@ fn main() -> io::Result<()> {
         if let Some(count_max) = cli.count {
             counter = counter + 1;
             if counter == count_max {
+                println!("Program readched execution limit.");
                 break;
             }
         }

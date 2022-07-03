@@ -14,5 +14,6 @@ fib:fib.s ${src}
 run:test.bin fib.bin ${src}
 	cargo run test.bin -c 1000 -d > output_test.log
 	cargo run fib.bin -c 1000 -d > output.log
+	cargo run csr.bin -c 1000 -d > output_csr.log
 
 all:fib test

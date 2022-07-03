@@ -7,6 +7,7 @@ pub struct Cpu {
     pub regs: [u64; 32],
     pub pc: u64,
     pub bus: Bus,
+    csr: [u32; 4096],
     dest: usize,
     src1: usize,
     src2: usize,
@@ -20,6 +21,7 @@ impl Cpu {
             regs,
             pc: DRAM_BASE,
             bus: Bus::new(binary),
+            csr: [0; 4096],
             dest: REG_NUM,
             src1: REG_NUM,
             src2: REG_NUM,
@@ -467,6 +469,22 @@ impl Cpu {
                 self.mark_as_dest(rd);
                 Ok(())
             }
+            0x73 => {
+                let imm = ((inst as u32) >> 20) as usize;
+                match funct3 {
+                    0x1 => {
+                        self.print_inst_i("csrrw", rd, rs1, imm as u64);
+                        self.regs[rd] = self.load_csrs(imm) as u64;
+                        self.store_csrs(imm, self.regs[rs1] as u32);
+                    }
+                    _ => {
+                        println!("Unsupported CSR instruction!");
+                        println!("funct3:{}, funct7:{}", funct3, funct7);
+                        return Err(());
+                    }
+                }
+                Ok(())
+            }
             0x0f => {
                 println!("pc=0x{:x}", self.pc);
                 println!("fence(do nothing)");
@@ -479,6 +497,14 @@ impl Cpu {
                 Err(())
             }
         }
+    }
+
+    fn load_csrs(&self, addr: usize) -> u32{
+        self.csr[addr]
+    }
+
+    fn store_csrs(&mut self, addr: usize, val: u32){
+        self.csr[addr] = val;
     }
 
     pub fn dump_registers(&self) {

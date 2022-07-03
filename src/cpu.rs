@@ -71,6 +71,13 @@ impl Cpu {
         );
     }
 
+    fn print_inst_csr(&self, name: &str, rd: usize, rs1: usize, csr: u64) {
+        println!(
+            "{:>#x} : {}, dest:{}, rs1:{}, csr:{}({:>#x})",
+            self.pc, name, rd, rs1, csr, csr
+        );
+    }
+
     fn mark_as_dest(&mut self, reg: usize) {
         self.dest = reg;
     }
@@ -470,29 +477,30 @@ impl Cpu {
                 Ok(())
             }
             0x73 => {
+                let csr = ((inst as u32) >> 20) as usize;
                 let imm = ((inst as u32) >> 20) as usize;
                 match funct3 {
                     0x1 => {
-                        self.print_inst_i("csrrw", rd, rs1, imm as u64);
+                        self.print_inst_csr("csrrw", rd, rs1, csr as u64);
                         if rd != 0 {
-                            self.regs[rd] = self.load_csrs(imm) as u64;
+                            self.regs[rd] = self.load_csrs(csr) as u64;
                         }
-                        self.store_csrs(imm, self.regs[rs1] as u32);
+                        self.store_csrs(csr, self.regs[rs1] as u32);
                     }
                     0x2 => {
-                        self.print_inst_i("csrrs", rd, rs1, imm as u64);
-                        let old_val = self.load_csrs(imm) as u64;
+                        self.print_inst_csr("csrrs", rd, rs1, csr as u64);
+                        let old_val = self.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
                         if rs1 != 0 {
-                            self.store_csrs(imm, (self.regs[rs1] | old_val) as u32);
+                            self.store_csrs(csr, (self.regs[rs1] | old_val) as u32);
                         }
                     }
                     0x3 => {
-                        self.print_inst_i("csrrc", rd, rs1, imm as u64);
-                        let old_val = self.load_csrs(imm) as u64;
+                        self.print_inst_csr("csrrc", rd, rs1, csr as u64);
+                        let old_val = self.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
                         if rs1 != 0 {
-                            self.store_csrs(imm, (self.regs[rs1] & !old_val) as u32);
+                            self.store_csrs(csr, (self.regs[rs1] & !old_val) as u32);
                        }
                     }
                     _ => {

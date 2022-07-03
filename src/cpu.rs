@@ -517,6 +517,22 @@ impl Cpu {
                         }
                         self.store_csrs(csr, uimm);
                     }
+                    0x6 => {
+                        self.print_inst_csri("csrrsi", rd, csr as u64, uimm as u64);
+                        let old_val = self.load_csrs(csr) as u64;
+                        self.regs[rd] = old_val;
+                        if rs1 != 0 {
+                            self.store_csrs(csr, uimm | old_val as u32);
+                        }
+                    }
+                    0x7 => {
+                        self.print_inst_csri("csrrci", rd, csr as u64, uimm as u64);
+                        let old_val = self.load_csrs(csr) as u64;
+                        self.regs[rd] = old_val;
+                        if rs1 != 0 {
+                            self.store_csrs(csr, uimm & !old_val as u32);
+                       }
+                    }
                     _ => {
                         println!("Unsupported CSR instruction!");
                         println!("funct3:{}, funct7:{}", funct3, funct7);

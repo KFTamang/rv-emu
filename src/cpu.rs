@@ -78,6 +78,13 @@ impl Cpu {
         );
     }
 
+    fn print_inst_csri(&self, name: &str, rd: usize, csr: u64, uimm: u64) {
+        println!(
+            "{:>#x} : {}, dest:{}, csr:{}({:>#x}), uimm:{}({:>#x})",
+            self.pc, name, rd, csr, csr, uimm, uimm
+        );
+    }
+
     fn mark_as_dest(&mut self, reg: usize) {
         self.dest = reg;
     }
@@ -478,7 +485,7 @@ impl Cpu {
             }
             0x73 => {
                 let csr = ((inst as u32) >> 20) as usize;
-                let imm = ((inst as u32) >> 20) as usize;
+                let uimm = ((inst & 0xf8000) as u32) >> 15;
                 match funct3 {
                     0x1 => {
                         self.print_inst_csr("csrrw", rd, rs1, csr as u64);
@@ -502,6 +509,13 @@ impl Cpu {
                         if rs1 != 0 {
                             self.store_csrs(csr, (self.regs[rs1] & !old_val) as u32);
                        }
+                    }
+                    0x5 => {
+                        self.print_inst_csri("csrrwi", rd, csr as u64, uimm as u64);
+                        if rd != 0 {
+                            self.regs[rd] = self.load_csrs(csr) as u64;
+                        }
+                        self.store_csrs(csr, uimm);
                     }
                     _ => {
                         println!("Unsupported CSR instruction!");

@@ -1,4 +1,5 @@
 use crate::bus::*;
+use crate::csr::*;
 use crate::dram::*;
 
 const REG_NUM: usize = 32;
@@ -7,7 +8,7 @@ pub struct Cpu {
     pub regs: [u64; 32],
     pub pc: u64,
     pub bus: Bus,
-    csr: [u32; 4096],
+    csr: Csr,
     dest: usize,
     src1: usize,
     src2: usize,
@@ -21,7 +22,7 @@ impl Cpu {
             regs,
             pc: DRAM_BASE,
             bus: Bus::new(binary),
-            csr: [0; 4096],
+            csr: Csr::new(),
             dest: REG_NUM,
             src1: REG_NUM,
             src2: REG_NUM,
@@ -490,48 +491,48 @@ impl Cpu {
                     0x1 => {
                         self.print_inst_csr("csrrw", rd, rs1, csr as u64);
                         if rd != 0 {
-                            self.regs[rd] = self.load_csrs(csr) as u64;
+                            self.regs[rd] = self.csr.load_csrs(csr) as u64;
                         }
-                        self.store_csrs(csr, self.regs[rs1] as u32);
+                        self.csr.store_csrs(csr, self.regs[rs1] as u32);
                     }
                     0x2 => {
                         self.print_inst_csr("csrrs", rd, rs1, csr as u64);
-                        let old_val = self.load_csrs(csr) as u64;
+                        let old_val = self.csr.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
                         if rs1 != 0 {
-                            self.store_csrs(csr, (self.regs[rs1] | old_val) as u32);
+                            self.csr.store_csrs(csr, (self.regs[rs1] | old_val) as u32);
                         }
                     }
                     0x3 => {
                         self.print_inst_csr("csrrc", rd, rs1, csr as u64);
-                        let old_val = self.load_csrs(csr) as u64;
+                        let old_val = self.csr.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
                         if rs1 != 0 {
-                            self.store_csrs(csr, (self.regs[rs1] & !old_val) as u32);
-                       }
+                            self.csr.store_csrs(csr, (self.regs[rs1] & !old_val) as u32);
+                        }
                     }
                     0x5 => {
                         self.print_inst_csri("csrrwi", rd, csr as u64, uimm as u64);
                         if rd != 0 {
-                            self.regs[rd] = self.load_csrs(csr) as u64;
+                            self.regs[rd] = self.csr.load_csrs(csr) as u64;
                         }
-                        self.store_csrs(csr, uimm);
+                        self.csr.store_csrs(csr, uimm);
                     }
                     0x6 => {
                         self.print_inst_csri("csrrsi", rd, csr as u64, uimm as u64);
-                        let old_val = self.load_csrs(csr) as u64;
+                        let old_val = self.csr.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
                         if rs1 != 0 {
-                            self.store_csrs(csr, uimm | old_val as u32);
+                            self.csr.store_csrs(csr, uimm | old_val as u32);
                         }
                     }
                     0x7 => {
                         self.print_inst_csri("csrrci", rd, csr as u64, uimm as u64);
-                        let old_val = self.load_csrs(csr) as u64;
+                        let old_val = self.csr.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
                         if rs1 != 0 {
-                            self.store_csrs(csr, uimm & !old_val as u32);
-                       }
+                            self.csr.store_csrs(csr, uimm & !old_val as u32);
+                        }
                     }
                     _ => {
                         println!("Unsupported CSR instruction!");
@@ -553,14 +554,6 @@ impl Cpu {
                 Err(())
             }
         }
-    }
-
-    fn load_csrs(&self, addr: usize) -> u32{
-        self.csr[addr]
-    }
-
-    fn store_csrs(&mut self, addr: usize, val: u32){
-        self.csr[addr] = val;
     }
 
     pub fn dump_registers(&self) {

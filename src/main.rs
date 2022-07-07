@@ -1,5 +1,6 @@
 mod bus;
 mod cpu;
+mod csr;
 mod dram;
 use crate::cpu::*;
 use clap::Parser; // command-line option parser

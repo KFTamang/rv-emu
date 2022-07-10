@@ -19,13 +19,20 @@ struct Cli {
     dump: usize,
     #[clap(short, long)]
     count: Option<u32>,
+    #[clap(long)]
+    elf: Option<()>,
 }
 
 fn main() -> io::Result<()> {
     let cli = Cli::parse();
     let mut file = File::open(&cli.bin)?;
     let mut code = Vec::new();
-    file.read_to_end(&mut code)?;
+
+    if cli.elf == None {
+        file.read_to_end(&mut code)?;
+    } else {
+        load_elf(&mut code, &file);
+    }
 
     let reg_dump = cli.dump > 0;
     let mut counter = 0;
@@ -67,3 +74,5 @@ fn main() -> io::Result<()> {
 
     Ok(())
 }
+
+fn load_elf(code: &mut Vec<u8>, file: &File) {}

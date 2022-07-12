@@ -19,8 +19,8 @@ struct Cli {
     dump: usize,
     #[clap(short, long)]
     count: Option<u32>,
-    #[clap(long)]
-    elf: Option<()>,
+    #[clap(short, long, parse(from_flag))]
+    elf: bool,
 }
 
 fn main() -> io::Result<()> {
@@ -28,10 +28,10 @@ fn main() -> io::Result<()> {
     let mut file = File::open(&cli.bin)?;
     let mut code = Vec::new();
 
-    if cli.elf == None {
+    if cli.elf != false {
         file.read_to_end(&mut code)?;
     } else {
-        load_elf(&mut code, &file);
+        load_elf(&mut code, &mut file);
     }
 
     let reg_dump = cli.dump > 0;
@@ -75,4 +75,21 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn load_elf(code: &mut Vec<u8>, file: &File) {}
+pub const ph_pos: usize = 0x20; // 64bit
+pub const ph_entries_pos: usize = 0x38; // 64bit
+pub const ph_entry_size_pos: usize = 0x36; // 64bit
+
+fn load_elf(code: &mut Vec<u8>, file: &mut File) {
+    let mut elf = Vec::new();
+    file.read_to_end(&mut elf);
+    let ph_offset = elf[ph_pos] as usize;
+    let ph_entries = elf[ph_entries_pos] as usize;
+    let ph_entry_size = elf[ph_entry_size_pos] as usize;
+
+    println!("Prog Header Entries:{}", ph_entries);
+
+    for entry in 0..(ph_entries - 1) {
+        let va = elf[ph_offset + entry * ph_entry_size];
+        println!("Entry:{}, va:{}", entry, va);
+    }
+}

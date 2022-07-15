@@ -14,6 +14,6 @@ fib:apps/fib.s ${src}
 run:apps/test.bin apps/fib.bin ${src}
 	cargo run apps/test.bin -c 1000 -d > log/output_test.log
 	cargo run apps/fib.bin -c 1000 -d > log/output_fib.log
-	cargo run apps/csr.bin -c 1000 -d > log/output_csr.log
+	cargo run apps/csr --elf -c 1000 -d > log/output_csr.log
 
 all:fib test

@@ -8,6 +8,8 @@ use clap::Parser; // command-line option parser
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
+use std::convert::TryInto;
+
 
 /// Search for a pattern in a file and display the lines that contain it.
 /// c.f. https://rust-cli.github.io/book/tutorial/cli-args.html
@@ -29,9 +31,9 @@ fn main() -> io::Result<()> {
     let mut code = Vec::new();
 
     if cli.elf != false {
-        file.read_to_end(&mut code)?;
-    } else {
         load_elf(&mut code, &mut file);
+    } else {
+        file.read_to_end(&mut code)?;
     }
 
     let reg_dump = cli.dump > 0;
@@ -78,18 +80,23 @@ fn main() -> io::Result<()> {
 pub const ph_pos: usize = 0x20; // 64bit
 pub const ph_entries_pos: usize = 0x38; // 64bit
 pub const ph_entry_size_pos: usize = 0x36; // 64bit
+pub const va_offset: usize = 0x10; // 64bit
+
+fn u8_slice_to_u32(barry: &[u8]) -> u32 {
+    u32::from_le_bytes(barry.try_into().expect("slice with incorrect length"))
+}
 
 fn load_elf(code: &mut Vec<u8>, file: &mut File) {
     let mut elf = Vec::new();
     file.read_to_end(&mut elf);
-    let ph_offset = elf[ph_pos] as usize;
-    let ph_entries = elf[ph_entries_pos] as usize;
-    let ph_entry_size = elf[ph_entry_size_pos] as usize;
+    let ph_offset = u8_slice_to_u32(&elf[ph_pos .. ph_pos+4]) as usize;
+    let ph_entries = u8_slice_to_u32(&elf[ph_entries_pos..ph_entries_pos+4]) as usize;
+    let ph_entry_size = u8_slice_to_u32(&elf[ph_entry_size_pos..ph_entry_size_pos+4]) as usize;
 
-    println!("Prog Header Entries:{}", ph_entries);
+    println!("Prog Header Entries:{}, Offset:{}, size:{}", ph_entries, ph_offset, ph_entry_size);
 
-    for entry in 0..(ph_entries - 1) {
-        let va = elf[ph_offset + entry * ph_entry_size];
+    for entry in 0..ph_entries {
+        let va = elf[ph_offset + entry * ph_entry_size + va_offset];
         println!("Entry:{}, va:{}", entry, va);
     }
 }

@@ -1,5 +1,5 @@
-Prog Header Entries:1, Offset:64, size:56
-Offset:80, Entry:0, va:0
+Prog Header Entries:1, Offset:0x40, size:0x38
+Offset:0x40, Entry:0, segment offset: 0x1000, va:0x0, filesize:0x2c, memsize:0x2c
 not implemented yet!
 pc=0x100000
 inst:0

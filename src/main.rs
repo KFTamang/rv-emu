@@ -80,7 +80,6 @@ fn main() -> io::Result<()> {
 pub const ph_pos: usize = 0x20; // 64bit
 pub const ph_entries_pos: usize = 0x38; // 64bit
 pub const ph_entry_size_pos: usize = 0x36; // 64bit
-pub const va_offset: usize = 0x10; // 64bit
 
 fn u8_slice_to_u16(barry: &[u8]) -> u16 {
     u16::from_le_bytes(barry.try_into().expect("slice with incorrect length"))
@@ -101,11 +100,19 @@ fn load_elf(code: &mut Vec<u8>, file: &mut File) {
     let ph_entries = u8_slice_to_u16(&elf[ph_entries_pos..ph_entries_pos+2]) as usize;
     let ph_entry_size = u8_slice_to_u16(&elf[ph_entry_size_pos..ph_entry_size_pos+2]) as usize;
 
-    println!("Prog Header Entries:{}, Offset:{}, size:{}", ph_entries, ph_offset, ph_entry_size);
+    println!("Prog Header Entries:{}, Offset:{:>#x}, size:{:>#x}", ph_entries, ph_offset, ph_entry_size);
 
     for entry in 0..ph_entries {
-        let offset = ph_offset + entry * ph_entry_size + va_offset;
-        let va = u8_slice_to_u64(&elf[offset..offset+8]);
-        println!("Offset:{}, Entry:{}, va:{}", offset, entry, va);
+        let entry_offset = ph_offset + entry * ph_entry_size;
+        let va_offset = entry_offset + 0x10;
+        let segment_offset = entry_offset + 0x8;
+        let filesize_offset = entry_offset + 0x20;
+        let memsize_offset = entry_offset + 0x28;
+        let segment = u8_slice_to_u64(&elf[segment_offset..segment_offset+8]);
+        let va = u8_slice_to_u64(&elf[va_offset..va_offset+8]);
+        let filesize = u8_slice_to_u64(&elf[filesize_offset..filesize_offset+8]);
+        let memsize = u8_slice_to_u64(&elf[memsize_offset..memsize_offset+8]);
+        println!("Offset:{:>#x}, Entry:{}, segment offset: {:>#x}, va:{:>#x}, filesize:{:>#x}, memsize:{:>#x}",
+                 entry_offset, entry, segment, va, filesize, memsize);
     }
 }

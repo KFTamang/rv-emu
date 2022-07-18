@@ -31,7 +31,7 @@ fn main() -> io::Result<()> {
     let mut code = Vec::new();
 
     if cli.elf != false {
-        load_elf(&mut code, &mut file);
+        load_elf(&mut code, &mut file)?;
     } else {
         file.read_to_end(&mut code)?;
     }
@@ -85,17 +85,13 @@ fn u8_slice_to_u16(barry: &[u8]) -> u16 {
     u16::from_le_bytes(barry.try_into().expect("slice with incorrect length"))
 }
 
-fn u8_slice_to_u32(barry: &[u8]) -> u32 {
-    u32::from_le_bytes(barry.try_into().expect("slice with incorrect length"))
-}
-
 fn u8_slice_to_u64(barry: &[u8]) -> u64 {
     u64::from_le_bytes(barry.try_into().expect("slice with incorrect length"))
 }
 
-fn load_elf(code: &mut Vec<u8>, file: &mut File) {
+fn load_elf(code: &mut Vec<u8>, file: &mut File) -> io::Result<()>{
     let mut elf = Vec::new();
-    file.read_to_end(&mut elf);
+    file.read_to_end(&mut elf)?;
     let ph_offset = u8_slice_to_u64(&elf[ph_pos .. ph_pos+8]) as usize;
     let ph_entries = u8_slice_to_u16(&elf[ph_entries_pos..ph_entries_pos+2]) as usize;
     let ph_entry_size = u8_slice_to_u16(&elf[ph_entry_size_pos..ph_entry_size_pos+2]) as usize;
@@ -121,8 +117,8 @@ fn load_elf(code: &mut Vec<u8>, file: &mut File) {
         } else if code.len() > va + filesize {
             code[va..va+filesize].copy_from_slice(&elf[segment..segment+filesize]);
         } else {
-            println!("Error!");
-            return;
+            panic!("Code must have been loaded wrong!");
         }
     }
+    Ok(())
 }

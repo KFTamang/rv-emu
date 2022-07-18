@@ -77,9 +77,9 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-pub const ph_pos: usize = 0x20; // 64bit
-pub const ph_entries_pos: usize = 0x38; // 64bit
-pub const ph_entry_size_pos: usize = 0x36; // 64bit
+pub const PH_POS: usize = 0x20; // 64bit
+pub const PH_ENTRIES_POS: usize = 0x38; // 64bit
+pub const PH_ENTRY_SIZE_POS: usize = 0x36; // 64bit
 
 fn u8_slice_to_u16(barry: &[u8]) -> u16 {
     u16::from_le_bytes(barry.try_into().expect("slice with incorrect length"))
@@ -92,9 +92,9 @@ fn u8_slice_to_u64(barry: &[u8]) -> u64 {
 fn load_elf(code: &mut Vec<u8>, file: &mut File) -> io::Result<()>{
     let mut elf = Vec::new();
     file.read_to_end(&mut elf)?;
-    let ph_offset = u8_slice_to_u64(&elf[ph_pos .. ph_pos+8]) as usize;
-    let ph_entries = u8_slice_to_u16(&elf[ph_entries_pos..ph_entries_pos+2]) as usize;
-    let ph_entry_size = u8_slice_to_u16(&elf[ph_entry_size_pos..ph_entry_size_pos+2]) as usize;
+    let ph_offset = u8_slice_to_u64(&elf[PH_POS .. PH_POS+8]) as usize;
+    let ph_entries = u8_slice_to_u16(&elf[PH_ENTRIES_POS..PH_ENTRIES_POS+2]) as usize;
+    let ph_entry_size = u8_slice_to_u16(&elf[PH_ENTRY_SIZE_POS..PH_ENTRY_SIZE_POS+2]) as usize;
 
     println!("Prog Header Entries:{}, Offset:{:>#x}, size:{:>#x}", ph_entries, ph_offset, ph_entry_size);
 

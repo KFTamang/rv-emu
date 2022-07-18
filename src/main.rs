@@ -108,11 +108,21 @@ fn load_elf(code: &mut Vec<u8>, file: &mut File) {
         let segment_offset = entry_offset + 0x8;
         let filesize_offset = entry_offset + 0x20;
         let memsize_offset = entry_offset + 0x28;
-        let segment = u8_slice_to_u64(&elf[segment_offset..segment_offset+8]);
-        let va = u8_slice_to_u64(&elf[va_offset..va_offset+8]);
-        let filesize = u8_slice_to_u64(&elf[filesize_offset..filesize_offset+8]);
-        let memsize = u8_slice_to_u64(&elf[memsize_offset..memsize_offset+8]);
+        let segment = u8_slice_to_u64(&elf[segment_offset..segment_offset+8])as usize;
+        let va = u8_slice_to_u64(&elf[va_offset..va_offset+8]) as usize;
+        let filesize = u8_slice_to_u64(&elf[filesize_offset..filesize_offset+8]) as usize;
+        let memsize = u8_slice_to_u64(&elf[memsize_offset..memsize_offset+8]) as usize;
         println!("Offset:{:>#x}, Entry:{}, segment offset: {:>#x}, va:{:>#x}, filesize:{:>#x}, memsize:{:>#x}",
                  entry_offset, entry, segment, va, filesize, memsize);
+        println!("Code length: {}", code.len());
+        if code.len() <= va {
+            code.extend(vec![0; va - code.len()].iter());
+            code.extend(&elf[segment..segment+filesize]);
+        } else if code.len() > va + filesize {
+            code[va..va+filesize].copy_from_slice(&elf[segment..segment+filesize]);
+        } else {
+            println!("Error!");
+            return;
+        }
     }
 }

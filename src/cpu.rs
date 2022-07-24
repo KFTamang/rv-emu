@@ -493,14 +493,14 @@ impl Cpu {
                         if rd != 0 {
                             self.regs[rd] = self.csr.load_csrs(csr) as u64;
                         }
-                        self.csr.store_csrs(csr, self.regs[rs1] as u32);
+                        self.csr.store_csrs(csr, self.regs[rs1]);
                     }
                     0x2 => {
                         self.print_inst_csr("csrrs", rd, rs1, csr as u64);
                         let old_val = self.csr.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
                         if rs1 != 0 {
-                            self.csr.store_csrs(csr, (self.regs[rs1] | old_val) as u32);
+                            self.csr.store_csrs(csr, self.regs[rs1] | old_val);
                         }
                     }
                     0x3 => {
@@ -508,22 +508,22 @@ impl Cpu {
                         let old_val = self.csr.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
                         if rs1 != 0 {
-                            self.csr.store_csrs(csr, (self.regs[rs1] & !old_val) as u32);
+                            self.csr.store_csrs(csr, self.regs[rs1] & !old_val);
                         }
                     }
                     0x5 => {
                         self.print_inst_csri("csrrwi", rd, csr as u64, uimm as u64);
                         if rd != 0 {
-                            self.regs[rd] = self.csr.load_csrs(csr) as u64;
+                            self.regs[rd] = self.csr.load_csrs(csr);
                         }
-                        self.csr.store_csrs(csr, uimm);
+                        self.csr.store_csrs(csr, uimm as u64);
                     }
                     0x6 => {
                         self.print_inst_csri("csrrsi", rd, csr as u64, uimm as u64);
                         let old_val = self.csr.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
                         if rs1 != 0 {
-                            self.csr.store_csrs(csr, uimm | old_val as u32);
+                            self.csr.store_csrs(csr, uimm as u64 | old_val);
                         }
                     }
                     0x7 => {
@@ -531,7 +531,7 @@ impl Cpu {
                         let old_val = self.csr.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
                         if rs1 != 0 {
-                            self.csr.store_csrs(csr, uimm & !old_val as u32);
+                            self.csr.store_csrs(csr, uimm as u64 & !old_val);
                         }
                     }
                     _ => {

@@ -1,6 +1,7 @@
 use crate::bus::*;
 use crate::csr::*;
 use crate::dram::*;
+use crate::interrupt::*;
 
 const REG_NUM: usize = 32;
 
@@ -12,6 +13,7 @@ pub struct Cpu {
     dest: usize,
     src1: usize,
     src2: usize,
+    interrupt: Interrupt,
 }
 
 impl Cpu {
@@ -26,6 +28,7 @@ impl Cpu {
             dest: REG_NUM,
             src1: REG_NUM,
             src2: REG_NUM,
+            interrupt: Interrupt::new(),
         }
     }
 
@@ -102,6 +105,12 @@ impl Cpu {
         self.dest = REG_NUM;
         self.src1 = REG_NUM;
         self.src2 = REG_NUM;
+    }
+
+    pub fn process_interrupt(&self) {
+        if self.interrupt.is_pending {
+            // do nothing
+        }
     }
 
     pub fn execute(&mut self, inst: u32) -> Result<(), ()> {

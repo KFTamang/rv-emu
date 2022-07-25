@@ -2,6 +2,7 @@ mod bus;
 mod cpu;
 mod csr;
 mod dram;
+mod interrupt;
 use crate::cpu::*;
 use clap::Parser; // command-line option parser
 
@@ -42,6 +43,8 @@ fn main() -> io::Result<()> {
     let mut cpu = Cpu::new(code);
 
     loop {
+        cpu.process_interrupt();
+
         let inst = match cpu.fetch() {
             Ok(inst) => inst,
             Err(_) => break,

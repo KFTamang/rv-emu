@@ -4,6 +4,7 @@ use crate::dram::*;
 use crate::interrupt::*;
 
 const REG_NUM: usize = 32;
+const PRIV_M: u32 = 3;
 
 pub struct Cpu {
     pub regs: [u64; 32],
@@ -13,6 +14,7 @@ pub struct Cpu {
     dest: usize,
     src1: usize,
     src2: usize,
+    priv_level: u32,
     interrupt: Interrupt,
 }
 
@@ -28,6 +30,7 @@ impl Cpu {
             dest: REG_NUM,
             src1: REG_NUM,
             src2: REG_NUM,
+            priv_level: PRIV_M,
             interrupt: Interrupt::new(),
         }
     }
@@ -109,8 +112,14 @@ impl Cpu {
 
     pub fn process_interrupt(&self) {
         if self.interrupt.is_pending {
-            // do nothing
+            if ((self.priv_level == PRIV_M) && self.csr.mie()) || (self.priv_level < PRIV_M) {
+                self.trap();   
+            }
         }
+    }
+
+    fn trap(&self) {
+        // trap process here
     }
 
     pub fn execute(&mut self, inst: u32) -> Result<(), ()> {

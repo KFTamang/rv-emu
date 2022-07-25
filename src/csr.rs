@@ -34,4 +34,8 @@ impl Csr {
             self.csr[addr] = val;
         }
     }
+
+    pub fn mie(&self) -> bool {
+        (self.csr[MSTATUS] & MIE) != 0
+    }
 }

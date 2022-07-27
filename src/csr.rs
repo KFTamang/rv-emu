@@ -4,15 +4,17 @@ pub struct Csr {
 
 pub const MSTATUS: usize = 0x300;
 pub const SSTATUS: usize = 0x100;
-const SXL: u64 = 0b11 << 34;
-const TSR: u64 = 0b1 << 22;
-const TW: u64 = 0b1 << 21;
-const TVM: u64 = 0b1 << 20;
-const MPRV: u64 = 0b1 << 17;
-const MPP: u64 = 0b11 << 11;
-const MPIE: u64 = 0b1 << 7;
-const MIE: u64 = 0b1 << 3;
-const SSTATUS_MASK: u64 = !(SXL | TSR | TSR | TW | TVM | MPRV | MPP | MPIE | MIE);
+pub const MIE: usize = 0x304;
+pub const MIP: usize = 0x344;
+const BIT_SXL: u64 = 0b11 << 34;
+const BIT_TSR: u64 = 0b1 << 22;
+const BIT_TW: u64 = 0b1 << 21;
+const BIT_TVM: u64 = 0b1 << 20;
+const BIT_MPRV: u64 = 0b1 << 17;
+const BIT_MPP: u64 = 0b11 << 11;
+const BIT_MPIE: u64 = 0b1 << 7;
+const BIT_MIE: u64 = 0b1 << 3;
+const SSTATUS_MASK: u64 = !(BIT_SXL | BIT_TSR | BIT_TSR | BIT_TW | BIT_TVM | BIT_MPRV | BIT_MPP | BIT_MPIE | BIT_MIE);
 
 impl Csr {
     pub fn new() -> Self {
@@ -35,7 +37,15 @@ impl Csr {
         }
     }
 
-    pub fn mie(&self) -> bool {
-        (self.csr[MSTATUS] & MIE) != 0
+    pub fn mstatus_mie(&self) -> bool {
+        (self.csr[MSTATUS] & BIT_MIE) != 0
+    }
+
+    pub fn mie(&self) -> u64 {
+        self.csr[MIE]
+    }
+
+    pub fn mip(&self) -> u64 {
+        self.csr[MIP]
     }
 }

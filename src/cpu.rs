@@ -111,8 +111,10 @@ impl Cpu {
     }
 
     pub fn process_interrupt(&self) {
-        if self.interrupt.is_pending {
-            if ((self.priv_level == PRIV_M) && self.csr.mie()) || (self.priv_level < PRIV_M) {
+        if let Some(i) = self.interrupt.get_pending_interrupt() {
+            if (((self.priv_level == PRIV_M) && self.csr.mstatus_mie()) || (self.priv_level < PRIV_M)) && 
+               ((self.csr.mie() & (1u64 << i)) != 0) && 
+               ((self.csr.mip() & (1u64 << i)) != 0) {
                 self.trap();   
             }
         }

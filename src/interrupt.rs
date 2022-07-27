@@ -1,13 +1,13 @@
 pub struct Interrupt {
-    pub is_pending: bool,
+    pending_interrupt: Option<u32>,
 }
 
 impl Interrupt{
     pub fn new() -> Self {
-        Self {is_pending: false}
+        Self {pending_interrupt: None}
     }
 
     pub fn get_pending_interrupt(&self) -> Option<u32> {
-        Some(0)
+        self.pending_interrupt
     }
 }

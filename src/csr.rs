@@ -14,7 +14,8 @@ const BIT_MPRV: u64 = 0b1 << 17;
 const BIT_MPP: u64 = 0b11 << 11;
 const BIT_MPIE: u64 = 0b1 << 7;
 const BIT_MIE: u64 = 0b1 << 3;
-const SSTATUS_MASK: u64 = !(BIT_SXL | BIT_TSR | BIT_TSR | BIT_TW | BIT_TVM | BIT_MPRV | BIT_MPP | BIT_MPIE | BIT_MIE);
+const SSTATUS_MASK: u64 =
+    !(BIT_SXL | BIT_TSR | BIT_TSR | BIT_TW | BIT_TVM | BIT_MPRV | BIT_MPP | BIT_MPIE | BIT_MIE);
 
 impl Csr {
     pub fn new() -> Self {

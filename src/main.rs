@@ -6,11 +6,10 @@ mod interrupt;
 use crate::cpu::*;
 use clap::Parser; // command-line option parser
 
+use std::convert::TryInto;
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
-use std::convert::TryInto;
-
 
 /// Search for a pattern in a file and display the lines that contain it.
 /// c.f. https://rust-cli.github.io/book/tutorial/cli-args.html
@@ -92,14 +91,17 @@ fn u8_slice_to_u64(barry: &[u8]) -> u64 {
     u64::from_le_bytes(barry.try_into().expect("slice with incorrect length"))
 }
 
-fn load_elf(code: &mut Vec<u8>, file: &mut File) -> io::Result<()>{
+fn load_elf(code: &mut Vec<u8>, file: &mut File) -> io::Result<()> {
     let mut elf = Vec::new();
     file.read_to_end(&mut elf)?;
-    let ph_offset = u8_slice_to_u64(&elf[PH_POS .. PH_POS+8]) as usize;
-    let ph_entries = u8_slice_to_u16(&elf[PH_ENTRIES_POS..PH_ENTRIES_POS+2]) as usize;
-    let ph_entry_size = u8_slice_to_u16(&elf[PH_ENTRY_SIZE_POS..PH_ENTRY_SIZE_POS+2]) as usize;
+    let ph_offset = u8_slice_to_u64(&elf[PH_POS..PH_POS + 8]) as usize;
+    let ph_entries = u8_slice_to_u16(&elf[PH_ENTRIES_POS..PH_ENTRIES_POS + 2]) as usize;
+    let ph_entry_size = u8_slice_to_u16(&elf[PH_ENTRY_SIZE_POS..PH_ENTRY_SIZE_POS + 2]) as usize;
 
-    println!("Prog Header Entries:{}, Offset:{:>#x}, size:{:>#x}", ph_entries, ph_offset, ph_entry_size);
+    println!(
+        "Prog Header Entries:{}, Offset:{:>#x}, size:{:>#x}",
+        ph_entries, ph_offset, ph_entry_size
+    );
 
     for entry in 0..ph_entries {
         let entry_offset = ph_offset + entry * ph_entry_size;
@@ -107,18 +109,18 @@ fn load_elf(code: &mut Vec<u8>, file: &mut File) -> io::Result<()>{
         let segment_offset = entry_offset + 0x8;
         let filesize_offset = entry_offset + 0x20;
         let memsize_offset = entry_offset + 0x28;
-        let segment = u8_slice_to_u64(&elf[segment_offset..segment_offset+8])as usize;
-        let va = u8_slice_to_u64(&elf[va_offset..va_offset+8]) as usize;
-        let filesize = u8_slice_to_u64(&elf[filesize_offset..filesize_offset+8]) as usize;
-        let memsize = u8_slice_to_u64(&elf[memsize_offset..memsize_offset+8]) as usize;
+        let segment = u8_slice_to_u64(&elf[segment_offset..segment_offset + 8]) as usize;
+        let va = u8_slice_to_u64(&elf[va_offset..va_offset + 8]) as usize;
+        let filesize = u8_slice_to_u64(&elf[filesize_offset..filesize_offset + 8]) as usize;
+        let memsize = u8_slice_to_u64(&elf[memsize_offset..memsize_offset + 8]) as usize;
         println!("Offset:{:>#x}, Entry:{}, segment offset: {:>#x}, va:{:>#x}, filesize:{:>#x}, memsize:{:>#x}",
                  entry_offset, entry, segment, va, filesize, memsize);
         println!("Code length: {}", code.len());
         if code.len() <= va {
             code.extend(vec![0; va - code.len()].iter());
-            code.extend(&elf[segment..segment+filesize]);
+            code.extend(&elf[segment..segment + filesize]);
         } else if code.len() > va + filesize {
-            code[va..va+filesize].copy_from_slice(&elf[segment..segment+filesize]);
+            code[va..va + filesize].copy_from_slice(&elf[segment..segment + filesize]);
         } else {
             panic!("Code must have been loaded wrong!");
         }

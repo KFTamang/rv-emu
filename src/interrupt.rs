@@ -15,7 +15,9 @@ impl Interrupt {
         self.pending_interrupt
     }
 
-    pub fn set_pending_interrupt(&mut self, csr: &mut Csr, i: u32) {
+    pub fn cause_interrupt(&mut self, csr: &mut Csr, i: u32) {
         self.pending_interrupt = Some(i);
+        let val = csr.load_csrs(MSTATUS) | (1u64 << i);
+        csr.store_csrs(MSTATUS, val);
     }
 }

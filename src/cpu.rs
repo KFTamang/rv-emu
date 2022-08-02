@@ -4,7 +4,7 @@ use crate::dram::*;
 use crate::interrupt::*;
 
 const REG_NUM: usize = 32;
-const PRIV_M: u32 = 3;
+const PRIV_M: u32 = 0b11;
 
 pub struct Cpu {
     pub regs: [u64; 32],
@@ -110,7 +110,7 @@ impl Cpu {
         self.src2 = REG_NUM;
     }
 
-    pub fn process_interrupt(&self) {
+    pub fn process_interrupt(&mut self) {
         if let Some(i) = self.interrupt.get_pending_interrupt() {
             if (((self.priv_level == PRIV_M) && self.csr.mstatus_mie())
                 || (self.priv_level < PRIV_M))
@@ -122,8 +122,29 @@ impl Cpu {
         }
     }
 
-    fn trap(&self) {
+    fn trap(&mut self) {
         // trap process here
+
+        // store program counter
+        self.csr.store_csrs(MEPC, self.pc);
+
+        // prepare mstatus
+        let prev_mstatus = self.csr.load_csrs(MSTATUS);
+        let mut new_mstatus = prev_mstatus;
+        new_mstatus &= !BIT_MIE; // clear mstatus.MIE
+        new_mstatus &= !BIT_MPP; // clear mstatus.MPP for writing new value
+        new_mstatus |= (self.priv_level as u64) << 11; // write current mode to mstatus.MPP
+        if (prev_mstatus & BIT_MIE) != 0 { // set previous MIE to MPIE
+            new_mstatus |= BIT_MPIE;
+        } else {
+            new_mstatus &= !BIT_MPIE;
+        }
+        self.csr.store_csrs(MSTATUS, new_mstatus);
+
+        // transition to M_MODE
+        self.priv_level = PRIV_M;
+
+        self.pc = self.csr.load_csrs(MTVEC) & !(0b11);
     }
 
     pub fn execute(&mut self, inst: u32) -> Result<(), ()> {

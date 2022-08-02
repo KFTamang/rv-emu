@@ -5,15 +5,17 @@ pub struct Csr {
 pub const MSTATUS: usize = 0x300;
 pub const SSTATUS: usize = 0x100;
 pub const MIE: usize = 0x304;
+pub const MTVEC: usize = 0x305;
+pub const MEPC: usize = 0x341;
 pub const MIP: usize = 0x344;
-const BIT_SXL: u64 = 0b11 << 34;
-const BIT_TSR: u64 = 0b1 << 22;
-const BIT_TW: u64 = 0b1 << 21;
-const BIT_TVM: u64 = 0b1 << 20;
-const BIT_MPRV: u64 = 0b1 << 17;
-const BIT_MPP: u64 = 0b11 << 11;
-const BIT_MPIE: u64 = 0b1 << 7;
-const BIT_MIE: u64 = 0b1 << 3;
+pub const BIT_SXL: u64 = 0b11 << 34;
+pub const BIT_TSR: u64 = 0b1 << 22;
+pub const BIT_TW: u64 = 0b1 << 21;
+pub const BIT_TVM: u64 = 0b1 << 20;
+pub const BIT_MPRV: u64 = 0b1 << 17;
+pub const BIT_MPP: u64 = 0b11 << 11;
+pub const BIT_MPIE: u64 = 0b1 << 7;
+pub const BIT_MIE: u64 = 0b1 << 3;
 const SSTATUS_MASK: u64 =
     !(BIT_SXL | BIT_TSR | BIT_TSR | BIT_TW | BIT_TVM | BIT_MPRV | BIT_MPP | BIT_MPIE | BIT_MIE);
 
@@ -48,5 +50,9 @@ impl Csr {
 
     pub fn mip(&self) -> u64 {
         self.csr[MIP]
+    }
+
+    pub fn set_bit_in_mip(&mut self, val: u32){
+        self.csr[MIP] |= 1u64 << val;
     }
 }

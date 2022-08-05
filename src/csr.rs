@@ -7,6 +7,7 @@ pub const SSTATUS: usize = 0x100;
 pub const MIE: usize = 0x304;
 pub const MTVEC: usize = 0x305;
 pub const MEPC: usize = 0x341;
+pub const MCAUSE: usize = 0x342;
 pub const MIP: usize = 0x344;
 pub const BIT_SXL: u64 = 0b11 << 34;
 pub const BIT_TSR: u64 = 0b1 << 22;

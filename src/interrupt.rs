@@ -19,5 +19,7 @@ impl Interrupt {
         self.pending_interrupt = Some(i);
         let val = csr.load_csrs(MSTATUS) | (1u64 << i);
         csr.store_csrs(MSTATUS, val);
+        let cause = (1u64 << 63) | i as u64;
+        csr.store_csrs(MCAUSE, cause);
     }
 }

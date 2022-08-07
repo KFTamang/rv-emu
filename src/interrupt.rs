@@ -23,3 +23,41 @@ impl Interrupt {
         csr.store_csrs(MCAUSE, cause);
     }
 }
+
+pub enum Exception {
+    InstructionAddressMissaligned,
+    InstructionAccessFault,
+    IllegalInstruction,
+    BreakPoint,
+    LoadAddressMissaligned,
+    LoadAccessFault,
+    StoreAMOAddressMisaligned,
+    StoreAMOAccessFault,
+    EnvironmentalCallFromUMode,
+    EnvironmentalCallFromSMode,
+    EnvironmentalCallFromMMode,
+    InstructionPageFault,
+    LoadPageFault,
+    StoreAMOPageFault,
+}
+
+impl Exception {
+    fn exception_code(&self) -> u64 {
+        match self {
+            Exception::InstructionAddressMissaligned => 0,
+            Exception::InstructionAccessFault => 1,
+            Exception::IllegalInstruction => 2,
+            Exception::BreakPoint => 3,
+            Exception::LoadAddressMissaligned => 4,
+            Exception::LoadAccessFault => 5,
+            Exception::StoreAMOAddressMisaligned => 6,
+            Exception::StoreAMOAccessFault => 7,
+            Exception::EnvironmentalCallFromUMode => 8,
+            Exception::EnvironmentalCallFromSMode => 9,
+            Exception::EnvironmentalCallFromMMode => 11,
+            Exception::InstructionPageFault => 12,
+            Exception::LoadPageFault => 13,
+            Exception::StoreAMOPageFault => 15,
+        }
+    }
+}

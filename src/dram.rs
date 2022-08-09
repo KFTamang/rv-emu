@@ -1,3 +1,5 @@
+use crate::interrupt::*;
+
 // dram memory size, 128MB
 pub const DRAM_SIZE: u64 = 1024 * 1024 * 128;
 pub const DRAM_BASE: u64 = 1024 * 1024;
@@ -13,23 +15,23 @@ impl Dram {
         Self { dram }
     }
 
-    pub fn load(&self, addr: u64, size: u64) -> Result<u64, ()> {
+    pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
         match size {
             8 => Ok(self.load8(addr)),
             16 => Ok(self.load16(addr)),
             32 => Ok(self.load32(addr)),
             64 => Ok(self.load64(addr)),
-            _ => Err(()),
+            _ => Err(Exception::LoadAccessFault),
         }
     }
 
-    pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), ()> {
+    pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
         match size {
             8 => Ok(self.store8(addr, value)),
             16 => Ok(self.store16(addr, value)),
             32 => Ok(self.store32(addr, value)),
             64 => Ok(self.store64(addr, value)),
-            _ => Err(()),
+            _ => Err(Exception::StoreAMOAccessFault),
         }
     }
 

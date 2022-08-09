@@ -27,7 +27,7 @@ impl Interrupt {
 pub enum Exception {
     InstructionAddressMissaligned,
     InstructionAccessFault,
-    IllegalInstruction,
+    IllegalInstruction(u32),
     BreakPoint,
     LoadAddressMissaligned,
     LoadAccessFault,
@@ -36,9 +36,9 @@ pub enum Exception {
     EnvironmentalCallFromUMode,
     EnvironmentalCallFromSMode,
     EnvironmentalCallFromMMode,
-    InstructionPageFault,
-    LoadPageFault,
-    StoreAMOPageFault,
+    InstructionPageFault(u32),
+    LoadPageFault(u32),
+    StoreAMOPageFault(u32),
 }
 
 impl Exception {
@@ -46,7 +46,7 @@ impl Exception {
         match self {
             Exception::InstructionAddressMissaligned => 0,
             Exception::InstructionAccessFault => 1,
-            Exception::IllegalInstruction => 2,
+            Exception::IllegalInstruction(_) => 2,
             Exception::BreakPoint => 3,
             Exception::LoadAddressMissaligned => 4,
             Exception::LoadAccessFault => 5,
@@ -55,9 +55,9 @@ impl Exception {
             Exception::EnvironmentalCallFromUMode => 8,
             Exception::EnvironmentalCallFromSMode => 9,
             Exception::EnvironmentalCallFromMMode => 11,
-            Exception::InstructionPageFault => 12,
-            Exception::LoadPageFault => 13,
-            Exception::StoreAMOPageFault => 15,
+            Exception::InstructionPageFault(_) => 12,
+            Exception::LoadPageFault(_) => 13,
+            Exception::StoreAMOPageFault(_) => 15,
         }
     }
 }

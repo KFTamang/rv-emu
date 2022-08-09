@@ -1,4 +1,5 @@
 use crate::dram::*;
+use crate::interrupt::*;
 
 pub struct Bus {
     dram: Dram,
@@ -11,17 +12,17 @@ impl Bus {
         }
     }
 
-    pub fn load(&self, addr: u64, size: u64) -> Result<u64, ()> {
+    pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
         if DRAM_BASE <= addr {
             return self.dram.load(addr, size);
         }
-        Err(())
+        Err(Exception::LoadAccessFault)
     }
 
-    pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), ()> {
+    pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
         if DRAM_BASE <= addr {
             return self.dram.store(addr, size, value);
         }
-        Err(())
+        Err(Exception::StoreAMOAccessFault)
     }
 }

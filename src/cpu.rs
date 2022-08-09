@@ -147,7 +147,7 @@ impl Cpu {
         self.pc = self.csr.load_csrs(MTVEC) & !(0b11);
     }
 
-    pub fn execute(&mut self, inst: u32) -> Result<(), ()> {
+    pub fn execute(&mut self, inst: u32) -> Result<(), Exception> {
         let opcode = inst & 0x7f;
         let rd = ((inst >> 7) & 0x1f) as usize;
         let rs1 = ((inst >> 15) & 0x1f) as usize;
@@ -206,7 +206,7 @@ impl Cpu {
                     (_, _) => {
                         println!("This should not be reached!");
                         println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
-                        return Err(());
+                        return Err(Exception::IllegalInstruction(inst));
                     }
                 }
                 self.mark_as_dest(rd);
@@ -272,7 +272,7 @@ impl Cpu {
                     _ => {
                         println!("This should not be reached!");
                         println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
-                        return Err(());
+                        return Err(Exception::IllegalInstruction(inst));
                     }
                 }
                 self.mark_as_dest(rd);
@@ -323,7 +323,7 @@ impl Cpu {
                     _ => {
                         println!("This should not be reached!");
                         println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
-                        return Err(());
+                        return Err(Exception::IllegalInstruction(inst));
                     }
                 }
                 self.mark_as_dest(rd);
@@ -344,7 +344,7 @@ impl Cpu {
                     _ => {
                         println!("This should not be reached!");
                         println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
-                        return Err(());
+                        return Err(Exception::IllegalInstruction(inst));
                     }
                 }
                 self.mark_as_src1(rs1);
@@ -375,7 +375,7 @@ impl Cpu {
                     _ => {
                         println!("This should not be reached!");
                         println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
-                        return Err(());
+                        return Err(Exception::IllegalInstruction(inst));
                     }
                 }
                 self.mark_as_dest(rd);
@@ -396,7 +396,7 @@ impl Cpu {
                     _ => {
                         println!("This should not be reached!");
                         println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
-                        return Err(());
+                        return Err(Exception::IllegalInstruction(inst));
                     }
                 }
                 self.mark_as_dest(rd);
@@ -449,7 +449,7 @@ impl Cpu {
                     _ => {
                         println!("This should not be reached!");
                         println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
-                        return Err(());
+                        return Err(Exception::IllegalInstruction(inst));
                     }
                 }
                 self.mark_as_src1(rs1);
@@ -505,7 +505,7 @@ impl Cpu {
                     }
                     _ => {
                         println!("This should not be reached!");
-                        return Err(());
+                        return Err(Exception::IllegalInstruction(inst));
                     }
                 }
                 self.mark_as_dest(rd);
@@ -580,7 +580,7 @@ impl Cpu {
                     _ => {
                         println!("Unsupported CSR instruction!");
                         println!("funct3:{}, funct7:{}", funct3, funct7);
-                        return Err(());
+                        return Err(Exception::IllegalInstruction(inst));
                     }
                 }
                 Ok(())
@@ -594,7 +594,7 @@ impl Cpu {
                 println!("not implemented yet!");
                 println!("pc=0x{:x}", self.pc);
                 println!("inst:{inst:b}");
-                Err(())
+                return Err(Exception::IllegalInstruction(inst));
             }
         }
     }

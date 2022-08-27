@@ -1,4 +1,5 @@
 use crate::csr::*;
+use crate::cpu::*;
 
 pub struct Interrupt {
     pending_interrupt: Option<u32>,
@@ -58,6 +59,15 @@ impl Exception {
             Exception::InstructionPageFault(_) => 12,
             Exception::LoadPageFault(_) => 13,
             Exception::StoreAMOPageFault(_) => 15,
+        }
+    }
+
+    pub fn take_trap(&self, cpu: &mut Cpu){
+        let exception_code = self.exception_code();
+        
+        match cpu.priv_level {
+            PRIV_M => { cpu.csr.store_csrs(MCAUSE, exception_code); }
+            _ => {}
         }
     }
 }

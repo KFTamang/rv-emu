@@ -4,17 +4,17 @@ use crate::dram::*;
 use crate::interrupt::*;
 
 const REG_NUM: usize = 32;
-const PRIV_M: u32 = 0b11;
+pub const PRIV_M: u32 = 0b11;
 
 pub struct Cpu {
     pub regs: [u64; 32],
     pub pc: u64,
     pub bus: Bus,
-    csr: Csr,
+    pub csr: Csr,
     dest: usize,
     src1: usize,
     src2: usize,
-    priv_level: u32,
+    pub priv_level: u32,
     interrupt: Interrupt,
 }
 

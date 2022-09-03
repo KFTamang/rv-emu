@@ -1,5 +1,6 @@
-use crate::csr::*;
 use crate::cpu::*;
+use crate::csr::*;
+use std::process::exit;
 
 pub struct Interrupt {
     pending_interrupt: Option<u32>,
@@ -62,12 +63,15 @@ impl Exception {
         }
     }
 
-    pub fn take_trap(&self, cpu: &mut Cpu){
+    pub fn take_trap(&self, cpu: &mut Cpu) {
         let exception_code = self.exception_code();
-        
         match cpu.priv_level {
-            PRIV_M => { cpu.csr.store_csrs(MCAUSE, exception_code); }
+            PRIV_M => {
+                cpu.csr.store_csrs(MCAUSE, exception_code);
+            }
             _ => {}
         }
+        println!("Exception occurred!");
+        exit(1);
     }
 }

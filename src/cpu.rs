@@ -4,7 +4,7 @@ use crate::dram::*;
 use crate::interrupt::*;
 
 const REG_NUM: usize = 32;
-pub const PRIV_M: u32 = 0b11;
+pub const M_MODE: u32 = 0b11;
 
 pub struct Cpu {
     pub regs: [u64; 32],
@@ -14,7 +14,7 @@ pub struct Cpu {
     dest: usize,
     src1: usize,
     src2: usize,
-    pub priv_level: u32,
+    pub mode: u32,
     interrupt: Interrupt,
 }
 
@@ -30,7 +30,7 @@ impl Cpu {
             dest: REG_NUM,
             src1: REG_NUM,
             src2: REG_NUM,
-            priv_level: PRIV_M,
+            mode: M_MODE,
             interrupt: Interrupt::new(),
         }
     }
@@ -112,8 +112,7 @@ impl Cpu {
 
     pub fn process_interrupt(&mut self) {
         if let Some(i) = self.interrupt.get_pending_interrupt() {
-            if (((self.priv_level == PRIV_M) && self.csr.mstatus_mie())
-                || (self.priv_level < PRIV_M))
+            if (((self.mode == M_MODE) && self.csr.mstatus_mie()) || (self.mode < M_MODE))
                 && ((self.csr.mie() & (1u64 << i)) != 0)
                 && ((self.csr.mip() & (1u64 << i)) != 0)
             {
@@ -133,8 +132,9 @@ impl Cpu {
         let mut new_mstatus = prev_mstatus;
         new_mstatus &= !BIT_MIE; // clear mstatus.MIE
         new_mstatus &= !BIT_MPP; // clear mstatus.MPP for writing new value
-        new_mstatus |= (self.priv_level as u64) << 11; // write current mode to mstatus.MPP
-        if (prev_mstatus & BIT_MIE) != 0 { // set previous MIE to MPIE
+        new_mstatus |= (self.mode as u64) << 11; // write current mode to mstatus.MPP
+        if (prev_mstatus & BIT_MIE) != 0 {
+            // set previous MIE to MPIE
             new_mstatus |= BIT_MPIE;
         } else {
             new_mstatus &= !BIT_MPIE;
@@ -142,7 +142,7 @@ impl Cpu {
         self.csr.store_csrs(MSTATUS, new_mstatus);
 
         // transition to M_MODE
-        self.priv_level = PRIV_M;
+        self.mode = M_MODE;
 
         self.pc = self.csr.load_csrs(MTVEC) & !(0b11);
     }

@@ -65,8 +65,8 @@ impl Exception {
 
     pub fn take_trap(&self, cpu: &mut Cpu) {
         let exception_code = self.exception_code();
-        match cpu.priv_level {
-            PRIV_M => {
+        match cpu.mode {
+            M_MODE => {
                 cpu.csr.store_csrs(MCAUSE, exception_code);
             }
             _ => {}

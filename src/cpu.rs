@@ -530,7 +530,18 @@ impl Cpu {
             0x73 => {
                 let csr = ((inst as u32) >> 20) as usize;
                 let uimm = ((inst & 0xf8000) as u32) >> 15;
+                let imm = (inst as i32 as i64 >> 20) as u64;
                 match funct3 {
+                    0x0 => {
+                        if imm == 0x0 {
+                            self.print_inst_i("ecall", rd, rs1, imm);
+                            Exception::EnvironmentalCallFromMMode.take_trap(self);
+                        } else if imm == 0x1 {
+                            self.print_inst_i("ebreak", rd, rs1, imm);
+                        } else {
+                            return Err(Exception::IllegalInstruction(inst));
+                        }
+                    }
                     0x1 => {
                         self.print_inst_csr("csrrw", rd, rs1, csr as u64);
                         if rd != 0 {

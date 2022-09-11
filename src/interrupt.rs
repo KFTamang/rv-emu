@@ -65,13 +65,20 @@ impl Exception {
 
     pub fn take_trap(&self, cpu: &mut Cpu) {
         let exception_code = self.exception_code();
-        match cpu.mode {
+        let target_mode = self.get_target_mode(cpu);
+        match target_mode {
             M_MODE => {
+                cpu.csr.store_csrs(MEPC, cpu.pc);
                 cpu.csr.store_csrs(MCAUSE, exception_code);
+                cpu.csr.store_csrs(MPP, cpu.mode);
             }
             _ => {}
         }
         println!("Exception occurred!");
         exit(1);
+    }
+
+    fn get_target_mode(&self, cpu: &mut Cpu) -> u32{
+        return M_MODE;
     }
 }

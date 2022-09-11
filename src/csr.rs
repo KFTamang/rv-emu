@@ -45,6 +45,12 @@ impl Csr {
         (self.csr[MSTATUS] & BIT_MIE) != 0
     }
 
+    pub fn set_mstatus_mpp(&self, val: u64){
+        let mut current = self.csr[MSTATUS];
+        //TODO
+        current &= ((val & 0x3) << 11);
+    }
+
     pub fn mie(&self) -> u64 {
         self.csr[MIE]
     }

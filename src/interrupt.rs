@@ -70,7 +70,10 @@ impl Exception {
             M_MODE => {
                 cpu.csr.store_csrs(MEPC, cpu.pc);
                 cpu.csr.store_csrs(MCAUSE, exception_code);
-                cpu.csr.store_csrs(MPP, cpu.mode);
+                cpu.csr.set_mstatus_mpp(cpu.mode);
+                let mie = MASK_MIE & cpu.csr.load_csrs(MSTATUS);
+                cpu.csr.set_mstatus_mpie(if mie > 0 {1} else {0});
+                cpu.csr.set_mstatus_mie(0);
             }
             _ => {}
         }

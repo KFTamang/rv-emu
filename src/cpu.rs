@@ -130,14 +130,14 @@ impl Cpu {
         // prepare mstatus
         let prev_mstatus = self.csr.load_csrs(MSTATUS);
         let mut new_mstatus = prev_mstatus;
-        new_mstatus &= !BIT_MIE; // clear mstatus.MIE
-        new_mstatus &= !BIT_MPP; // clear mstatus.MPP for writing new value
+        new_mstatus &= !MASK_MIE; // clear mstatus.MIE
+        new_mstatus &= !MASK_MPP; // clear mstatus.MPP for writing new value
         new_mstatus |= (self.mode as u64) << 11; // write current mode to mstatus.MPP
-        if (prev_mstatus & BIT_MIE) != 0 {
+        if (prev_mstatus & MASK_MIE) != 0 {
             // set previous MIE to MPIE
-            new_mstatus |= BIT_MPIE;
+            new_mstatus |= MASK_MPIE;
         } else {
-            new_mstatus &= !BIT_MPIE;
+            new_mstatus &= !MASK_MPIE;
         }
         self.csr.store_csrs(MSTATUS, new_mstatus);
 

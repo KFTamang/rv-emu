@@ -5,11 +5,11 @@
 	.attribute stack_align, 16
 	.text
 	.align	2
-	.globl	main
-	.type	main, @function
-main:
+	.globl	_start
+	.type	_start, @function
+_start:
   addi t0, zero, 1
-  addi t1, zero, 2
+  lw t1, handler
   addi t2, zero, 3
   csrrw zero, mstatus, t0
   csrrs zero, mtvec, t1
@@ -20,4 +20,4 @@ main:
   csrrwi zero, sepc, 6
   csrrci zero, sepc, 0
 handler:
-	mret 0
+	mret

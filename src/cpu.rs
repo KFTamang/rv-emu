@@ -520,9 +520,9 @@ impl Cpu {
                 self.mark_as_dest(rd);
                 Ok(())
             }
-            0x27 => {
+            0x17 => {
                 let imm = inst & 0xfffff000;
-                self.print_inst_j("lui", rd, imm as u64);
+                self.print_inst_j("auipc", rd, imm as u64);
                 self.regs[rd] = imm.wrapping_add(self.pc as u32) as u64;
                 self.mark_as_dest(rd);
                 Ok(())

@@ -7,16 +7,16 @@ Disassembly of section .text:
 00000000000100b0 <_start>:
    100b0:	00100293          	li	t0,1
    100b4:	00000317          	auipc	t1,0x0
-   100b8:	02c32303          	lw	t1,44(t1) # 100e0 <handler>
-   100bc:	00300393          	li	t2,3
-   100c0:	30029073          	csrw	mstatus,t0
-   100c4:	30532073          	csrs	mtvec,t1
-   100c8:	34139073          	csrw	mepc,t2
-   100cc:	341033f3          	csrrc	t2,mepc,zero
-   100d0:	10025073          	csrwi	sstatus,4
-   100d4:	1052e073          	csrsi	stvec,5
-   100d8:	14135073          	csrwi	sepc,6
-   100dc:	14107073          	csrci	sepc,0
+   100b8:	02c30313          	addi	t1,t1,44 # 100e0 <handler>
+   100bc:	30029073          	csrw	mstatus,t0
+   100c0:	30532073          	csrs	mtvec,t1
+   100c4:	34139073          	csrw	mepc,t2
+   100c8:	341033f3          	csrrc	t2,mepc,zero
+   100cc:	10025073          	csrwi	sstatus,4
+   100d0:	1052e073          	csrsi	stvec,5
+   100d4:	14135073          	csrwi	sepc,6
+   100d8:	14107073          	csrci	sepc,0
+   100dc:	00000073          	ecall
 
 00000000000100e0 <handler>:
    100e0:	30200073          	mret

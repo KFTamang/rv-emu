@@ -9,8 +9,7 @@
 	.type	_start, @function
 _start:
   addi t0, zero, 1
-  lw t1, handler
-  addi t2, zero, 3
+  la t1, handler
   csrrw zero, mstatus, t0
   csrrs zero, mtvec, t1
   csrrw zero, mepc, t2
@@ -19,5 +18,6 @@ _start:
   csrrsi zero, stvec, 5
   csrrwi zero, sepc, 6
   csrrci zero, sepc, 0
+  ecall
 handler:
 	mret

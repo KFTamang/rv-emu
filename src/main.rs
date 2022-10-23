@@ -4,6 +4,7 @@ mod csr;
 mod dram;
 mod interrupt;
 use crate::cpu::*;
+use crate::dram::*;
 use clap::Parser; // command-line option parser
 
 use std::convert::TryInto;
@@ -29,9 +30,11 @@ fn main() -> io::Result<()> {
     let cli = Cli::parse();
     let mut file = File::open(&cli.bin)?;
     let mut code = Vec::new();
+    let mut entry_address = 0 as u64;
 
     if cli.elf != false {
-        load_elf(&mut code, &mut file)?;
+        entry_address = load_elf(&mut code, &mut file).unwrap();
+        entry_address += DRAM_BASE; // Need offset to avoid memory mapped I/O region
     } else {
         file.read_to_end(&mut code)?;
     }
@@ -40,7 +43,7 @@ fn main() -> io::Result<()> {
     let mut counter = 0;
 
     let mut cpu = Cpu::new(code);
-
+    cpu.pc = entry_address;
     loop {
         cpu.process_interrupt();
 
@@ -50,7 +53,6 @@ fn main() -> io::Result<()> {
         };
 
         cpu.execute(inst as u32).map_err(|e| e.take_trap(&mut cpu));
-        
         cpu.regs[0] = 0;
 
         cpu.pc = cpu.pc.wrapping_add(4);
@@ -77,6 +79,7 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
+pub const E_ENTRY_POS: usize = 0x18; // 64bit
 pub const PH_POS: usize = 0x20; // 64bit
 pub const PH_ENTRIES_POS: usize = 0x38; // 64bit
 pub const PH_ENTRY_SIZE_POS: usize = 0x36; // 64bit
@@ -89,16 +92,16 @@ fn u8_slice_to_u64(barry: &[u8]) -> u64 {
     u64::from_le_bytes(barry.try_into().expect("slice with incorrect length"))
 }
 
-fn load_elf(code: &mut Vec<u8>, file: &mut File) -> io::Result<()> {
+fn load_elf(code: &mut Vec<u8>, file: &mut File) -> io::Result<u64> {
     let mut elf = Vec::new();
     file.read_to_end(&mut elf)?;
+    let entry = u8_slice_to_u64(&elf[E_ENTRY_POS..E_ENTRY_POS + 8]) as u64;
     let ph_offset = u8_slice_to_u64(&elf[PH_POS..PH_POS + 8]) as usize;
     let ph_entries = u8_slice_to_u16(&elf[PH_ENTRIES_POS..PH_ENTRIES_POS + 2]) as usize;
     let ph_entry_size = u8_slice_to_u16(&elf[PH_ENTRY_SIZE_POS..PH_ENTRY_SIZE_POS + 2]) as usize;
-
     println!(
-        "Prog Header Entries:{}, Offset:{:>#x}, size:{:>#x}",
-        ph_entries, ph_offset, ph_entry_size
+        "Prog Header Entries:{}, Offset:{:>#x}, size:{:>#x}, entry:{:>#x}",
+        ph_entries, ph_offset, ph_entry_size, entry
     );
 
     for entry in 0..ph_entries {
@@ -123,5 +126,5 @@ fn load_elf(code: &mut Vec<u8>, file: &mut File) -> io::Result<()> {
             panic!("Code must have been loaded wrong!");
         }
     }
-    Ok(())
+    Ok(entry)
 }

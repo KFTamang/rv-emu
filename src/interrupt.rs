@@ -72,7 +72,7 @@ impl Exception {
                 cpu.csr.store_csrs(MCAUSE, exception_code);
                 cpu.csr.set_mstatus_mpp(cpu.mode);
                 let mie = MASK_MIE & cpu.csr.load_csrs(MSTATUS);
-                cpu.csr.set_mstatus_mpie(if mie > 0 {1} else {0});
+                cpu.csr.set_mstatus_mpie(if mie > 0 { 1 } else { 0 });
                 cpu.csr.set_mstatus_mie(0);
 
                 let mtvec = cpu.csr.load_csrs(MTVEC);
@@ -84,18 +84,16 @@ impl Exception {
                     0x1 => {}
                     _ => {
                         println!("Exception Error, this should not be reached!");
-                        exit(1);            
+                        exit(1);
                     }
                 }
-
             }
-        _ => {
-        }
+            _ => {}
         }
         println!("Exception occurred!");
     }
 
-    fn get_target_mode(&self, cpu: &mut Cpu) -> u32{
+    fn get_target_mode(&self, cpu: &mut Cpu) -> u32 {
         return M_MODE;
     }
 }

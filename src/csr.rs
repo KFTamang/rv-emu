@@ -27,8 +27,15 @@ pub const MASK_MPRV: u64 = 0b1 << BIT_MPRV;
 pub const MASK_MPP: u64 = 0b11 << BIT_MPP;
 pub const MASK_MPIE: u64 = 0b1 << BIT_MPIE;
 pub const MASK_MIE: u64 = 0b1 << BIT_MIE;
-const SSTATUS_MASK: u64 =
-    !(MASK_SXL | MASK_TSR | MASK_TSR | MASK_TW | MASK_TVM | MASK_MPRV | MASK_MPP | MASK_MPIE | MASK_MIE);
+const SSTATUS_MASK: u64 = !(MASK_SXL
+    | MASK_TSR
+    | MASK_TSR
+    | MASK_TW
+    | MASK_TVM
+    | MASK_MPRV
+    | MASK_MPP
+    | MASK_MPIE
+    | MASK_MIE);
 
 impl Csr {
     pub fn new() -> Self {
@@ -55,22 +62,22 @@ impl Csr {
         (self.csr[MSTATUS] & MASK_MIE) != 0
     }
 
-    fn set_mstatus_bit(&mut self, val: u32, mask: u64, bit: u64){
+    fn set_mstatus_bit(&mut self, val: u32, mask: u64, bit: u64) {
         let mut current = self.csr[MSTATUS];
         current &= !mask;
         current |= ((val as u64) << bit) & mask;
         self.csr[MSTATUS] = current;
     }
 
-    pub fn set_mstatus_mpp(&mut self, val: u32){
+    pub fn set_mstatus_mpp(&mut self, val: u32) {
         self.set_mstatus_bit(val, MASK_MPP, BIT_MPP);
     }
 
-    pub fn set_mstatus_mpie(&mut self, val: u32){
+    pub fn set_mstatus_mpie(&mut self, val: u32) {
         self.set_mstatus_bit(val, MASK_MPIE, BIT_MPIE);
     }
 
-    pub fn set_mstatus_mie(&mut self, val: u32){
+    pub fn set_mstatus_mie(&mut self, val: u32) {
         self.set_mstatus_bit(val, MASK_MIE, BIT_MIE);
     }
 
@@ -82,7 +89,7 @@ impl Csr {
         self.csr[MIP]
     }
 
-    pub fn set_bit_in_mip(&mut self, val: u32){
+    pub fn set_bit_in_mip(&mut self, val: u32) {
         self.csr[MIP] |= 1u64 << val;
     }
 }

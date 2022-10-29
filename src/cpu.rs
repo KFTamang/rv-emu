@@ -147,6 +147,11 @@ impl Cpu {
         self.pc = self.csr.load_csrs(MTVEC) & !(0b11);
     }
 
+    fn return_from_trap(&mut self) {
+        let previous_pc = self.csr.load_csrs(MEPC);
+        self.pc = previous_pc;
+    }
+
     pub fn execute(&mut self, inst: u32) -> Result<(), Exception> {
         let opcode = inst & 0x7f;
         let rd = ((inst >> 7) & 0x1f) as usize;
@@ -531,25 +536,30 @@ impl Cpu {
                 let csr = ((inst as u32) >> 20) as usize;
                 let uimm = ((inst & 0xf8000) as u32) >> 15;
                 let imm = (inst as i32 as i64 >> 20) as u64;
-                match funct3 {
-                    0x0 => {
-                        if imm == 0x0 {
-                            self.print_inst_i("ecall", rd, rs1, imm);
-                            Exception::EnvironmentalCallFromMMode.take_trap(self);
-                        } else if imm == 0x1 {
-                            self.print_inst_i("ebreak", rd, rs1, imm);
-                        } else {
-                            return Err(Exception::IllegalInstruction(inst));
-                        }
+                match (funct3, funct7, rs2) {
+                    (0x0, 0x0, 0x0) => {
+                        self.print_inst_i("ecall", rd, rs1, imm);
+                        Exception::EnvironmentalCallFromMMode.take_trap(self);
                     }
-                    0x1 => {
+                    (0x0, 0x0, 0x1) => {
+                        self.print_inst_i("ebreak", rd, rs1, imm);
+                    }
+                    (0x0, 0x8, 0x2) => {
+                        self.print_inst_i("sret", rd, rs1, imm);
+                        self.return_from_trap();
+                    }
+                    (0x0, 0x18, 0x2) => {
+                        self.print_inst_i("mret", rd, rs1, imm);
+                        self.return_from_trap();
+                    }
+                    (0x1, _, _) => {
                         self.print_inst_csr("csrrw", rd, rs1, csr as u64);
                         if rd != 0 {
                             self.regs[rd] = self.csr.load_csrs(csr) as u64;
                         }
                         self.csr.store_csrs(csr, self.regs[rs1]);
                     }
-                    0x2 => {
+                    (0x2, _, _) => {
                         self.print_inst_csr("csrrs", rd, rs1, csr as u64);
                         let old_val = self.csr.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
@@ -557,7 +567,7 @@ impl Cpu {
                             self.csr.store_csrs(csr, self.regs[rs1] | old_val);
                         }
                     }
-                    0x3 => {
+                    (0x3, _, _) => {
                         self.print_inst_csr("csrrc", rd, rs1, csr as u64);
                         let old_val = self.csr.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
@@ -565,14 +575,14 @@ impl Cpu {
                             self.csr.store_csrs(csr, self.regs[rs1] & !old_val);
                         }
                     }
-                    0x5 => {
+                    (0x5, _, _) => {
                         self.print_inst_csri("csrrwi", rd, csr as u64, uimm as u64);
                         if rd != 0 {
                             self.regs[rd] = self.csr.load_csrs(csr);
                         }
                         self.csr.store_csrs(csr, uimm as u64);
                     }
-                    0x6 => {
+                    (0x6, _, _) => {
                         self.print_inst_csri("csrrsi", rd, csr as u64, uimm as u64);
                         let old_val = self.csr.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
@@ -580,7 +590,7 @@ impl Cpu {
                             self.csr.store_csrs(csr, uimm as u64 | old_val);
                         }
                     }
-                    0x7 => {
+                    (0x7, _, _) => {
                         self.print_inst_csri("csrrci", rd, csr as u64, uimm as u64);
                         let old_val = self.csr.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
@@ -588,7 +598,7 @@ impl Cpu {
                             self.csr.store_csrs(csr, uimm as u64 & !old_val);
                         }
                     }
-                    _ => {
+                    (_, _, _) => {
                         println!("Unsupported CSR instruction!");
                         println!("funct3:{}, funct7:{}", funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));

@@ -19,5 +19,9 @@ _start:
   csrrwi zero, sepc, 6
   csrrci zero, sepc, 0
   ecall
+  ret
 handler:
-	mret
+  csrrs t2, mepc, zero
+  addi t2, t2, 4
+  csrrw zero, mepc, t2
+  mret

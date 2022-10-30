@@ -7,7 +7,7 @@ Disassembly of section .text:
 00000000000100b0 <_start>:
    100b0:	00100293          	li	t0,1
    100b4:	00000317          	auipc	t1,0x0
-   100b8:	02c30313          	addi	t1,t1,44 # 100e0 <handler>
+   100b8:	03030313          	addi	t1,t1,48 # 100e4 <handler>
    100bc:	30029073          	csrw	mstatus,t0
    100c0:	30532073          	csrs	mtvec,t1
    100c4:	34139073          	csrw	mepc,t2
@@ -17,9 +17,13 @@ Disassembly of section .text:
    100d4:	14135073          	csrwi	sepc,6
    100d8:	14107073          	csrci	sepc,0
    100dc:	00000073          	ecall
+   100e0:	00008067          	ret
 
-00000000000100e0 <handler>:
-   100e0:	30200073          	mret
+00000000000100e4 <handler>:
+   100e4:	341023f3          	csrr	t2,mepc
+   100e8:	00438393          	addi	t2,t2,4
+   100ec:	34139073          	csrw	mepc,t2
+   100f0:	30200073          	mret
 
 Disassembly of section .riscv.attributes:
 

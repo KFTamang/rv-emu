@@ -149,7 +149,7 @@ impl Cpu {
 
     fn return_from_trap(&mut self) {
         let previous_pc = self.csr.load_csrs(MEPC);
-        self.pc = previous_pc;
+        self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
     }
 
     pub fn execute(&mut self, inst: u32) -> Result<(), Exception> {

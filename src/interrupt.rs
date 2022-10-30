@@ -90,7 +90,7 @@ impl Exception {
             }
             _ => {}
         }
-        println!("Exception occurred!");
+        println!("Exception:{} occurred!", self.exception_code());
     }
 
     fn get_target_mode(&self, cpu: &mut Cpu) -> u32 {

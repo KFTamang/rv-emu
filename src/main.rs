@@ -52,7 +52,9 @@ fn main() -> io::Result<()> {
             Err(_) => break,
         };
 
-        cpu.execute(inst as u32).map_err(|e| e.take_trap(&mut cpu));
+        cpu.execute(inst as u32)
+            .map_err(|e| e.take_trap(&mut cpu))
+            .expect("Execution failed!\n");
         cpu.regs[0] = 0;
 
         cpu.pc = cpu.pc.wrapping_add(4);

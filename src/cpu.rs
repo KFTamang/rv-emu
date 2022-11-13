@@ -148,6 +148,13 @@ impl Cpu {
     }
 
     fn return_from_trap(&mut self) {
+        // mcauseにtrapの発生原因が入る。例えばecallの場合、bit31(Interrupt)=0, Exception code(bit3-0)=4b1000=8となる
+        // mepcに1で発生した箇所のprogram counterが入る22
+        // mtvalにexception-specific valueが入る(例えば、page-fault exceptionだったら、page faultが発生したvirtual addressが格納される)
+        // mstatus.MPP(M-mode Privious Privilege) <~ U-mode(00)に設定
+        // mstatus.MPIE <~ mstatus.MIE(M-mode Interrupt Enable) [MIEをsave]
+        // mstatus.MIE <~ 0 [always]
+        let previous_mie = self.csr.load_csrs(MPIE);
         let previous_pc = self.csr.load_csrs(MEPC);
         self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
     }

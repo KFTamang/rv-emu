@@ -93,7 +93,7 @@ impl Exception {
         println!("Exception:{} occurred!", self.exception_code());
     }
 
-    fn get_target_mode(&self, cpu: &mut Cpu) -> u32 {
+    fn get_target_mode(&self, cpu: &mut Cpu) -> u64 {
         return M_MODE;
     }
 }

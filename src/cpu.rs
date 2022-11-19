@@ -4,7 +4,8 @@ use crate::dram::*;
 use crate::interrupt::*;
 
 const REG_NUM: usize = 32;
-pub const M_MODE: u32 = 0b11;
+pub const M_MODE: u64 = 0b11;
+pub const U_MODE: u64 = 0b00;
 
 pub struct Cpu {
     pub regs: [u64; 32],
@@ -14,7 +15,7 @@ pub struct Cpu {
     dest: usize,
     src1: usize,
     src2: usize,
-    pub mode: u32,
+    pub mode: u64,
     interrupt: Interrupt,
 }
 
@@ -148,14 +149,17 @@ impl Cpu {
     }
 
     fn return_from_trap(&mut self) {
-        // mcauseにtrapの発生原因が入る。例えばecallの場合、bit31(Interrupt)=0, Exception code(bit3-0)=4b1000=8となる
-        // mepcに1で発生した箇所のprogram counterが入る22
-        // mtvalにexception-specific valueが入る(例えば、page-fault exceptionだったら、page faultが発生したvirtual addressが格納される)
-        // mstatus.MPP(M-mode Privious Privilege) <~ U-mode(00)に設定
-        // mstatus.MPIE <~ mstatus.MIE(M-mode Interrupt Enable) [MIEをsave]
-        // mstatus.MIE <~ 0 [always]
-        let previous_mie = self.csr.load_csrs(MPIE);
+        // mstatus.MIE <- mstatus.MPIE(=1)
+        // U-modeに遷移する
+        // mstatus.MPIE <~ 1 [always]
+        // mstatus.MPP <~ 00(U-mode) [always]
+        // pc(program counter) <~ mepc CSR
+        let priv_mode = self.mode;
+        let mpie = self.csr.get_mstatus_bit(MASK_MPIE, BIT_MPIE);
         let previous_pc = self.csr.load_csrs(MEPC);
+        self.csr.set_mstatus_bit(mpie, MASK_MIE, BIT_MIE);
+        self.csr.set_mstatus_bit(0b1, MASK_MPIE, BIT_MPIE);
+        self.csr.set_mstatus_bit(priv_mode, MASK_MPP, BIT_MPP);
         self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
     }
 

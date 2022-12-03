@@ -17,6 +17,9 @@ exception:apps/exception.s ${src}
 	riscv64-unknown-elf-objdump -D -m riscv:rv64 apps/exception.elf > apps/exception.dump
 	cargo run apps/exception.elf --elf -c 100 -d > log/output_exception.log
 
+xv6:apps/xv6/kernel ${src}
+	cargo run apps/xv6/kernel --elf -c 1000 -d > log/output_kernel.log
+
 run:apps/test.bin apps/fib.bin ${src}
 	cargo run apps/test.bin -c 1000 -d > log/output_test.log
 	cargo run apps/fib.bin -c 1000 -d > log/output_fib.log

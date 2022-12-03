@@ -1,0 +1,5 @@
+Prog Header Entries:2, Offset:0x40, size:0x38, entry:0x80000000
+Offset:0x40, Entry:0, segment offset: 0xb854, va:0x0, filesize:0x34, memsize:0x0
+Code length: 0
+Offset:0x78, Entry:1, segment offset: 0x1000, va:0x80000000, filesize:0xa854, memsize:0x28000
+Code length: 52

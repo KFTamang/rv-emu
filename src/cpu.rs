@@ -219,6 +219,41 @@ impl Cpu {
                         self.print_inst_r("and", rd, rs1, rs2);
                         self.regs[rd] = self.regs[rs1] & self.regs[rs2];
                     }
+                    (0x0, 0x1) => {
+                        self.print_inst_r("mul", rd, rs1, rs2);
+                        self.regs[rd] = self.regs[rs1].wrapping_mul(self.regs[rs2]);
+                    }
+                    (0x1, 0x1) => {
+                        self.print_inst_r("mulh", rd, rs1, rs2);
+                        let mul = (self.regs[rs1] as i64 as i128).wrapping_mul(self.regs[rs2] as i64 as i128);
+                        self.regs[rd] = (mul >> 64) as u64;
+                    }
+                    (0x2, 0x1) => {
+                        self.print_inst_r("mulhsu", rd, rs1, rs2);
+                        let mul = (self.regs[rs1] as i64 as i128).wrapping_mul(self.regs[rs2] as u128 as i128);
+                        self.regs[rd] = (mul >> 64) as u64;
+                    }
+                    (0x3, 0x1) => {
+                        self.print_inst_r("mulhu", rd, rs1, rs2);
+                        let mul = (self.regs[rs1] as u128).wrapping_mul(self.regs[rs2] as u128);
+                        self.regs[rd] = (mul >> 64) as u64;
+                    }
+                    (0x4, 0x1) => {
+                        self.print_inst_r("div", rd, rs1, rs2);
+                        self.regs[rd] = self.regs[rs1] / self.regs[rs2];
+                    }
+                    (0x5, 0x1) => {
+                        self.print_inst_r("divu", rd, rs1, rs2);
+                        self.regs[rd] = ((self.regs[rs1] as i64) / (self.regs[rs2] as i64)) as u64;
+                    }
+                    (0x6, 0x1) => {
+                        self.print_inst_r("rem", rd, rs1, rs2);
+                        self.regs[rd] = self.regs[rs1] % self.regs[rs2];
+                    }
+                    (0x7, 0x1) => {
+                        self.print_inst_r("remu", rd, rs1, rs2);
+                        self.regs[rd] = ((self.regs[rs1] as i64) % (self.regs[rs2] as i64)) as u64;
+                    }
                     (_, _) => {
                         println!("This should not be reached!");
                         println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
@@ -498,6 +533,11 @@ impl Cpu {
                         self.print_inst_r("sraw", rd, rs1, rs2);
                         let shamt = (self.regs[rs2] as u64) & 0x1f;
                         self.regs[rd] = ((self.regs[rs1] as i32) >> shamt) as i64 as u64;
+                    }
+                    (0x0, 0x1) => {
+                        self.print_inst_r("mulw", rd, rs1, rs2);
+                        let mul = (self.regs[rs2] as u32) * (self.regs[rs2] as u32);
+                        self.regs[rd] = mul as i32 as i64 as u64;
                     }
                     (0x4, 0x1) => {
                         self.print_inst_r("divw", rd, rs1, rs2);

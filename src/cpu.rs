@@ -307,14 +307,14 @@ impl Cpu {
                     }
                     0x1 => {
                         self.print_inst_i("slli", rd, rs1, imm);
-                        let shamt = self.regs[rs2] as u64;
+                        let shamt = (imm & 0x1f) as u64;
                         self.regs[rd] = (self.regs[rs1] as u64) << shamt;
                     }
                     0x5 => {
                         self.print_inst_i("srli", rd, rs1, imm);
-                        let shamt = self.regs[rs2] as u64;
-                        let logical_shift = (imm >> 10) & 0x1;
-                        if logical_shift != 0 {
+                        let shamt = (imm & 0x1f) as u64;
+                        let logical_shift = (imm >> 5);
+                        if logical_shift == 0 {
                             self.regs[rd] = (self.regs[rs1] as u64) >> shamt;
                         } else {
                             self.regs[rd] = ((self.regs[rs1] as i64) >> shamt) as u64;

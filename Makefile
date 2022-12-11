@@ -18,7 +18,7 @@ exception:apps/exception.s ${src}
 	cargo run apps/exception.elf --elf -c 100 -d > log/output_exception.log
 
 xv6:apps/xv6/kernel ${src}
-	cargo run apps/xv6/kernel --elf -c 1000 -d > log/output_kernel.log
+	cargo run apps/xv6/kernel --elf --base-addr 2147483648 -c 1000 -d > log/output_kernel.log
 
 run:apps/test.bin apps/fib.bin ${src}
 	cargo run apps/test.bin -c 1000 -d > log/output_test.log

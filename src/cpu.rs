@@ -20,13 +20,13 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    pub fn new(binary: Vec<u8>) -> Self {
+    pub fn new(binary: Vec<u8>, base_addr: u64) -> Self {
         let mut regs = [0; 32];
         regs[2] = DRAM_SIZE;
         Self {
             regs,
-            pc: DRAM_BASE,
-            bus: Bus::new(binary),
+            pc: base_addr,
+            bus: Bus::new(binary, base_addr),
             csr: Csr::new(),
             dest: REG_NUM,
             src1: REG_NUM,

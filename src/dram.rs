@@ -2,17 +2,17 @@ use crate::interrupt::*;
 
 // dram memory size, 128MB
 pub const DRAM_SIZE: u64 = 1024 * 1024 * 128;
-pub const DRAM_BASE: u64 = 1024 * 1024;
 
 pub struct Dram {
     pub dram: Vec<u8>,
+    pub dram_base: u64,
 }
 
 impl Dram {
-    pub fn new(code: Vec<u8>) -> Dram {
+    pub fn new(code: Vec<u8>, base: u64) -> Dram {
         let mut dram = vec![0; DRAM_SIZE as usize];
         dram.splice(..code.len(), code.iter().cloned());
-        Self { dram }
+        Self { dram:dram, dram_base:base }
     }
 
     pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
@@ -36,17 +36,17 @@ impl Dram {
     }
 
     fn load8(&self, addr: u64) -> u64 {
-        let index = (addr - DRAM_BASE) as usize;
+        let index = (addr - self.dram_base) as usize;
         return (self.dram[index + 0] as u64) << 0;
     }
 
     fn load16(&self, addr: u64) -> u64 {
-        let index = (addr - DRAM_BASE) as usize;
+        let index = (addr - self.dram_base) as usize;
         return ((self.dram[index + 0] as u64) << 0) | ((self.dram[index + 1] as u64) << 8);
     }
 
     fn load32(&self, addr: u64) -> u64 {
-        let index = (addr - DRAM_BASE) as usize;
+        let index = (addr - self.dram_base) as usize;
         return ((self.dram[index + 0] as u64) << 0)
             | ((self.dram[index + 1] as u64) << 8)
             | ((self.dram[index + 2] as u64) << 16)
@@ -54,7 +54,7 @@ impl Dram {
     }
 
     fn load64(&self, addr: u64) -> u64 {
-        let index = (addr - DRAM_BASE) as usize;
+        let index = (addr - self.dram_base) as usize;
         return ((self.dram[index + 0] as u64) << 0)
             | ((self.dram[index + 1] as u64) << 8)
             | ((self.dram[index + 2] as u64) << 16)
@@ -66,18 +66,18 @@ impl Dram {
     }
 
     fn store8(&mut self, addr: u64, value: u64) {
-        let index = (addr - DRAM_BASE) as usize;
+        let index = (addr - self.dram_base) as usize;
         self.dram[index + 0] = ((value >> 0) & 0xff) as u8;
     }
 
     fn store16(&mut self, addr: u64, value: u64) {
-        let index = (addr - DRAM_BASE) as usize;
+        let index = (addr - self.dram_base) as usize;
         self.dram[index + 0] = ((value >> 0) & 0xff) as u8;
         self.dram[index + 1] = ((value >> 8) & 0xff) as u8;
     }
 
     fn store32(&mut self, addr: u64, value: u64) {
-        let index = (addr - DRAM_BASE) as usize;
+        let index = (addr - self.dram_base) as usize;
         self.dram[index + 0] = ((value >> 0) & 0xff) as u8;
         self.dram[index + 1] = ((value >> 8) & 0xff) as u8;
         self.dram[index + 2] = ((value >> 16) & 0xff) as u8;
@@ -85,7 +85,7 @@ impl Dram {
     }
 
     fn store64(&mut self, addr: u64, value: u64) {
-        let index = (addr - DRAM_BASE) as usize;
+        let index = (addr - self.dram_base) as usize;
         self.dram[index + 0] = ((value >> 0) & 0xff) as u8;
         self.dram[index + 1] = ((value >> 8) & 0xff) as u8;
         self.dram[index + 2] = ((value >> 16) & 0xff) as u8;

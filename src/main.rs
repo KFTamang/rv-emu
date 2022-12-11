@@ -24,6 +24,8 @@ struct Cli {
     count: Option<u32>,
     #[clap(short, long, parse(from_flag))]
     elf: bool,
+    #[clap(long)]
+    base_addr: Option<usize>,
 }
 
 fn main() -> io::Result<()> {
@@ -31,10 +33,10 @@ fn main() -> io::Result<()> {
     let mut file = File::open(&cli.bin)?;
     let mut code = Vec::new();
     let mut entry_address = 0 as u64;
+    let base_addr = cli.base_addr.unwrap_or(0) as u64;
 
     if cli.elf != false {
-        entry_address = load_elf(&mut code, &mut file).unwrap();
-        entry_address += DRAM_BASE; // Need offset to avoid memory mapped I/O region
+        entry_address = load_elf(&mut code, &mut file, base_addr as usize).unwrap();
     } else {
         file.read_to_end(&mut code)?;
     }
@@ -42,7 +44,7 @@ fn main() -> io::Result<()> {
     let reg_dump = cli.dump > 0;
     let mut counter = 0;
 
-    let mut cpu = Cpu::new(code);
+    let mut cpu = Cpu::new(code, base_addr);
     cpu.pc = entry_address;
     loop {
         cpu.process_interrupt();
@@ -90,11 +92,15 @@ fn u8_slice_to_u16(barry: &[u8]) -> u16 {
     u16::from_le_bytes(barry.try_into().expect("slice with incorrect length"))
 }
 
+fn u8_slice_to_u32(barry: &[u8]) -> u32 {
+    u32::from_le_bytes(barry.try_into().expect("slice with incorrect length"))
+}
+
 fn u8_slice_to_u64(barry: &[u8]) -> u64 {
     u64::from_le_bytes(barry.try_into().expect("slice with incorrect length"))
 }
 
-fn load_elf(code: &mut Vec<u8>, file: &mut File) -> io::Result<u64> {
+fn load_elf(code: &mut Vec<u8>, file: &mut File, base_addr: usize) -> io::Result<u64> {
     let mut elf = Vec::new();
     file.read_to_end(&mut elf)?;
     let entry = u8_slice_to_u64(&elf[E_ENTRY_POS..E_ENTRY_POS + 8]) as u64;
@@ -108,10 +114,12 @@ fn load_elf(code: &mut Vec<u8>, file: &mut File) -> io::Result<u64> {
 
     for entry in 0..ph_entries {
         let entry_offset = ph_offset + entry * ph_entry_size;
+        let p_type_offset = entry_offset + 0x0;
         let va_offset = entry_offset + 0x10;
         let segment_offset = entry_offset + 0x8;
         let filesize_offset = entry_offset + 0x20;
         let memsize_offset = entry_offset + 0x28;
+        let p_type = u8_slice_to_u32(&elf[p_type_offset..p_type_offset + 4]) as usize;
         let segment = u8_slice_to_u64(&elf[segment_offset..segment_offset + 8]) as usize;
         let va = u8_slice_to_u64(&elf[va_offset..va_offset + 8]) as usize;
         let filesize = u8_slice_to_u64(&elf[filesize_offset..filesize_offset + 8]) as usize;
@@ -119,11 +127,17 @@ fn load_elf(code: &mut Vec<u8>, file: &mut File) -> io::Result<u64> {
         println!("Offset:{:>#x}, Entry:{}, segment offset: {:>#x}, va:{:>#x}, filesize:{:>#x}, memsize:{:>#x}",
                  entry_offset, entry, segment, va, filesize, memsize);
         println!("Code length: {}", code.len());
-        if code.len() <= va {
-            code.extend(vec![0; va - code.len()].iter());
-            code.extend(&elf[segment..segment + filesize]);
-        } else if code.len() > va + filesize {
-            code[va..va + filesize].copy_from_slice(&elf[segment..segment + filesize]);
+        if p_type != 0x1 {
+            continue;
+        }
+        if base_addr > va {
+            panic!("Base address {:>#x} is larger than virtual address {:>#x}\n", base_addr, va);
+        }
+        if code.len() <= (va - base_addr) {
+            code.extend(vec![0; va - base_addr - code.len()].iter());
+            code.extend(&elf[segment..segment + memsize]);
+        } else if code.len() > va - base_addr + memsize {
+            code[va..va + memsize].copy_from_slice(&elf[segment..segment + memsize]);
         } else {
             panic!("Code must have been loaded wrong!");
         }

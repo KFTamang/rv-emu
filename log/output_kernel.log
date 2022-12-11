@@ -2,4 +2,63 @@ Prog Header Entries:2, Offset:0x40, size:0x38, entry:0x80000000
 Offset:0x40, Entry:0, segment offset: 0xb854, va:0x0, filesize:0x34, memsize:0x0
 Code length: 0
 Offset:0x78, Entry:1, segment offset: 0x1000, va:0x80000000, filesize:0xa854, memsize:0x28000
-Code length: 52
+Code length: 0
+0x80000000 : auipc, dest:2, offset:45056(0xb000)
+pc=        0x80000004
+x00(zero)=               0x0, x01( ra )=               0x0, [91mx02( sp )=        0x8000b000[0m, x03( gp )=               0x0
+x04( tp )=               0x0, x05( t0 )=               0x0, x06( t1 )=               0x0, x07( t2 )=               0x0
+x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
+x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
+x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
+x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
+x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
+x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
+----
+0x80000004 : addi, rd:2, rs1:2, imm:384(0x180)
+pc=        0x80000008
+x00(zero)=               0x0, x01( ra )=               0x0, [91mx02( sp )=        0x8000b180[0m, x03( gp )=               0x0
+x04( tp )=               0x0, x05( t0 )=               0x0, x06( t1 )=               0x0, x07( t2 )=               0x0
+x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
+x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
+x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
+x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
+x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
+x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
+----
+0x80000008 : lui, dest:10, offset:4096(0x1000)
+pc=        0x8000000c
+x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=        0x8000b180, x03( gp )=               0x0
+x04( tp )=               0x0, x05( t0 )=               0x0, x06( t1 )=               0x0, x07( t2 )=               0x0
+x08( s0 )=               0x0, x09( s1 )=               0x0, [91mx10( a0 )=            0x1000[0m, x11( a1 )=               0x0
+x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
+x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
+x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
+x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
+x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
+----
+0x8000000c : csrrs, dest:11, rs1:0, csr:3860(0xf14)
+pc=        0x80000010
+x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=        0x8000b180, x03( gp )=               0x0
+x04( tp )=               0x0, x05( t0 )=               0x0, x06( t1 )=               0x0, x07( t2 )=               0x0
+x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=            0x1000, x11( a1 )=               0x0
+x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
+x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
+x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
+x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
+x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
+----
+0x80000010 : addi, rd:11, rs1:11, imm:1(0x1)
+pc=        0x80000014
+x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=        0x8000b180, x03( gp )=               0x0
+x04( tp )=               0x0, x05( t0 )=               0x0, x06( t1 )=               0x0, x07( t2 )=               0x0
+x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=            0x1000, [91mx11( a1 )=               0x1[0m
+x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
+x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
+x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
+x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
+x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
+----
+This should not be reached!
+funct3 = 0x0, funct7 = 0x1
+mtvec is 0
+Exception:2 occurred!

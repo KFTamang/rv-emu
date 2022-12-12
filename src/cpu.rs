@@ -434,14 +434,41 @@ impl Cpu {
                 Ok(())
             }
             0x1b => {
-                match funct3 {
-                    0x0 => {
+                match (funct3, funct7) {
+                    (0x0, _) => {
                         // addiw
                         // I-type format
                         let imm = (inst as i32) >> 20;
                         self.print_inst_i("addiw", rd, rs1, imm as u32 as u64);
                         let src = self.regs[rs1] as i32;
                         let val = src.wrapping_add(imm);
+                        self.regs[rd] = val as i64 as u64;
+                    }
+                    (0x1, 0x0) => {
+                        // slliw
+                        // I-type format
+                        let shamt = ((inst as u32) >> 20) & 0x1f;
+                        self.print_inst_i("slliw", rd, rs1, shamt as u64);
+                        let src = self.regs[rs1] as u32;
+                        let val = src << shamt;
+                        self.regs[rd] = val as i32 as i64 as u64;
+                    }
+                    (0x5, 0x0) => {
+                        // srliw
+                        // I-type format
+                        let shamt = ((inst as u32) >> 20) & 0x1f;
+                        self.print_inst_i("srliw", rd, rs1, shamt as u64);
+                        let src = self.regs[rs1] as u32;
+                        let val = src >> shamt;
+                        self.regs[rd] = val as i32 as i64 as u64;
+                    }
+                    (0x5, 0x20) => {
+                        // sraiw
+                        // I-type format
+                        let shamt = ((inst as u32) >> 20) & 0x1f;
+                        self.print_inst_i("sraiw", rd, rs1, shamt as u64);
+                        let src = self.regs[rs1] as i32;
+                        let val = src >> shamt;
                         self.regs[rd] = val as i64 as u64;
                     }
                     _ => {

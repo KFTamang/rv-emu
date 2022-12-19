@@ -2,6 +2,7 @@ mod bus;
 mod cpu;
 mod csr;
 mod dram;
+mod clint;
 mod interrupt;
 use crate::cpu::*;
 use crate::dram::*;

@@ -1,6 +1,7 @@
 Prog Header Entries:1, Offset:0x40, size:0x38, entry:0x0
 Offset:0x40, Entry:0, segment offset: 0x1000, va:0x0, filesize:0x2c, memsize:0x2c
 Code length: 0
+load addr: 0, size: 32
 0x0 : addi, rd:5, rs1:0, imm:1(0x1)
 pc=               0x4
 [92mx00(zero)=               0x0[0m, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
@@ -12,6 +13,7 @@ x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=          
 x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
 x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
 ----
+load addr: 4, size: 32
 0x4 : addi, rd:6, rs1:0, imm:2(0x2)
 pc=               0x8
 [92mx00(zero)=               0x0[0m, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
@@ -23,6 +25,7 @@ x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=          
 x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
 x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
 ----
+load addr: 8, size: 32
 0x8 : addi, rd:7, rs1:0, imm:3(0x3)
 pc=               0xc
 [92mx00(zero)=               0x0[0m, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
@@ -34,6 +37,7 @@ x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=          
 x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
 x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
 ----
+load addr: c, size: 32
 0xc : csrrw, dest:0, rs1:5, csr:768(0x300)
 pc=              0x10
 x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
@@ -45,6 +49,7 @@ x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=          
 x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
 x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
 ----
+load addr: 10, size: 32
 0x10 : csrrs, dest:0, rs1:6, csr:773(0x305)
 pc=              0x14
 x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
@@ -56,6 +61,7 @@ x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=          
 x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
 x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
 ----
+load addr: 14, size: 32
 0x14 : csrrw, dest:0, rs1:7, csr:833(0x341)
 pc=              0x18
 x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
@@ -67,6 +73,7 @@ x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=          
 x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
 x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
 ----
+load addr: 18, size: 32
 0x18 : csrrc, dest:7, rs1:0, csr:833(0x341)
 pc=              0x1c
 x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
@@ -78,6 +85,7 @@ x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=          
 x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
 x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
 ----
+load addr: 1c, size: 32
 0x1c : csrrwi, dest:0, csr:256(0x100), uimm:4(0x4)
 pc=              0x20
 x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
@@ -89,6 +97,7 @@ x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=          
 x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
 x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
 ----
+load addr: 20, size: 32
 0x20 : csrrsi, dest:0, csr:261(0x105), uimm:5(0x5)
 pc=              0x24
 x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
@@ -100,6 +109,7 @@ x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=          
 x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
 x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
 ----
+load addr: 24, size: 32
 0x24 : csrrwi, dest:0, csr:321(0x141), uimm:6(0x6)
 pc=              0x28
 x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
@@ -111,6 +121,7 @@ x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=          
 x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
 x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
 ----
+load addr: 28, size: 32
 0x28 : csrrci, dest:0, csr:321(0x141), uimm:0(0x0)
 pc=              0x2c
 x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
@@ -122,6 +133,7 @@ x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=          
 x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
 x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
 ----
+load addr: 2c, size: 32
 not implemented yet!
 pc=0x2c
 inst:0

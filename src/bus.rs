@@ -19,6 +19,7 @@ impl Bus {
     }
 
     pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
+        println!("load addr: {:x}, size: {}", addr, size);
         if self.dram.dram_base <= addr {
             return self.dram.load(addr, size);
         }
@@ -32,6 +33,7 @@ impl Bus {
     }
 
     pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
+        println!("store addr: {:x}, size: {}, value: {}({:x})", addr, size, value, value);
         if self.dram.dram_base <= addr {
             return self.dram.store(addr, size, value);
         }

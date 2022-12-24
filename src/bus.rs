@@ -1,10 +1,12 @@
 use crate::dram::*;
 use crate::clint::*;
+use crate::uart::*;
 use crate::interrupt::*;
 
 pub struct Bus {
     dram: Dram,
     clint: Clint,
+    uart: Uart,
 }
 
 impl Bus {
@@ -12,6 +14,7 @@ impl Bus {
         Self {
             dram: Dram::new(code, base_addr),
             clint: Clint::new(0x2000000, 0x10000),
+            uart: Uart::new(0x10000000, 0x100),
         }
     }
 
@@ -22,6 +25,9 @@ impl Bus {
         if self.clint.is_accessible(addr) {
             return self.clint.load(addr, size);
         }
+        if self.uart.is_accessible(addr) {
+            return self.clint.load(addr, size);
+        }
         Err(Exception::LoadAccessFault)
     }
 
@@ -30,6 +36,9 @@ impl Bus {
             return self.dram.store(addr, size, value);
         }
         if self.clint.is_accessible(addr) {
+            return self.clint.store(addr, size, value);
+        }
+        if self.uart.is_accessible(addr) {
             return self.clint.store(addr, size, value);
         }
         Err(Exception::StoreAMOAccessFault)

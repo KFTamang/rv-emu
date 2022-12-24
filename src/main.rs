@@ -3,6 +3,7 @@ mod cpu;
 mod csr;
 mod dram;
 mod clint;
+mod uart;
 mod interrupt;
 use crate::cpu::*;
 use crate::dram::*;

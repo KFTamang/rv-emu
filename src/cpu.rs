@@ -3,6 +3,8 @@ use crate::csr::*;
 use crate::dram::*;
 use crate::interrupt::*;
 
+use std::cmp;
+
 const REG_NUM: usize = 32;
 pub const M_MODE: u64 = 0b11;
 pub const U_MODE: u64 = 0b00;
@@ -689,6 +691,236 @@ impl Cpu {
             0x0f => {
                 println!("pc=0x{:x}", self.pc);
                 println!("fence(do nothing)");
+                Ok(())
+            }
+            0x2f => { // Atomic Operation instructions
+                let funct5 = funct7 >> 2;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                match (funct3, funct5) {
+                    (0x2, 0x1) => {
+                        self.print_inst_r("amoswap.w", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: swap
+                        self.regs[rs2] = loaded_value;
+                        let result = src_value;
+                        // store operation result
+                        self.bus.store(addr, 32, result)?;
+                    }
+                    (0x0, 0x1) => {
+                        self.print_inst_r("amoadd.w", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: add
+                        let result = loaded_value.wrapping_add(src_value);
+                        // store operation result
+                        self.bus.store(addr, 32, result)?;
+                    }
+                    (0x4, 0x1) => {
+                        self.print_inst_r("amoxor.w", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: xor
+                        let result = loaded_value ^ src_value;
+                        // store operation result
+                        self.bus.store(addr, 32, result)?;
+                    }
+                    (0xc, 0x1) => {
+                        self.print_inst_r("amoand.w", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: and
+                        let result = loaded_value & src_value;
+                        // store operation result
+                        self.bus.store(addr, 32, result)?;
+                    }
+                    (0x8, 0x1) => {
+                        self.print_inst_r("amoor.w", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: or
+                        let result = loaded_value | src_value;
+                        // store operation result
+                        self.bus.store(addr, 32, result)?;
+                    }
+                    (0x10, 0x1) => {
+                        self.print_inst_r("amomin.w", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: singed min
+                        let result = cmp::min(loaded_value as i64, src_value as i64) as u64;
+                        // store operation result
+                        self.bus.store(addr, 32, result)?;
+                    }
+                    (0x14, 0x1) => {
+                        self.print_inst_r("amomax.w", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: signed max
+                        let result = cmp::max(loaded_value as i64, src_value as i64) as u64;
+                        // store operation result
+                        self.bus.store(addr, 32, result)?;
+                    }
+                    (0x18, 0x1) => {
+                        self.print_inst_r("amominu.w", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: unsigned min
+                        let result = cmp::min(loaded_value, src_value);
+                        // store operation result
+                        self.bus.store(addr, 32, result)?;
+                    }
+                    (0x1c, 0x1) => {
+                        self.print_inst_r("amomaxu.w", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: unsigned max
+                        let result = cmp::max(loaded_value, src_value);
+                        // store operation result
+                        self.bus.store(addr, 32, result)?;
+                    }
+                    (0x2, 0x3) => {
+                        self.print_inst_r("amoswap.d", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 64)?;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: swap
+                        self.regs[rs2] = loaded_value;
+                        let result = src_value;
+                        // store operation result
+                        self.bus.store(addr, 64, result)?;
+                    }
+                    (0x0, 0x3) => {
+                        self.print_inst_r("amoadd.d", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 64)?;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: add
+                        let result = loaded_value.wrapping_add(src_value);
+                        // store operation result
+                        self.bus.store(addr, 64, result)?;
+                    }
+                    (0x4, 0x3) => {
+                        self.print_inst_r("amoxor.d", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 64)?;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: xor
+                        let result = loaded_value ^ src_value;
+                        // store operation result
+                        self.bus.store(addr, 64, result)?;
+                    }
+                    (0xc, 0x3) => {
+                        self.print_inst_r("amoand.d", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 64)?;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: and
+                        let result = loaded_value & src_value;
+                        // store operation result
+                        self.bus.store(addr, 64, result)?;
+                    }
+                    (0x8, 0x3) => {
+                        self.print_inst_r("amoor.d", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 64)?;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: or
+                        let result = loaded_value | src_value;
+                        // store operation result
+                        self.bus.store(addr, 64, result)?;
+                    }
+                    (0x10, 0x3) => {
+                        self.print_inst_r("amomin.d", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 64)?;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: signed min
+                        let result = cmp::min(loaded_value as i64, src_value as i64) as u64;
+                        // store operation result
+                        self.bus.store(addr, 64, result)?;
+                    }
+                    (0x14, 0x3) => {
+                        self.print_inst_r("amomax.d", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 64)?;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: signed max
+                        let result = cmp::max(loaded_value as i64, src_value as i64) as u64;
+                        // store operation result
+                        self.bus.store(addr, 64, result)?;
+                    }
+                    (0x18, 0x3) => {
+                        self.print_inst_r("amominu.d", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 64)?;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: unsigned min
+                        let result = cmp::min(loaded_value, src_value);
+                        // store operation result
+                        self.bus.store(addr, 64, result)?;
+                    }
+                    (0x1c, 0x3) => {
+                        self.print_inst_r("amomaxu.d", rd, rs1, rs2);
+                        let addr = self.regs[rs1];
+                        let loaded_value = self.bus.load(addr, 64)?;
+                        let src_value = self.regs[rs2];
+                        // store loaded value to dest register
+                        self.regs[rd] = loaded_value;
+                        // binary operation: unsigned max
+                        let result = cmp::max(loaded_value, src_value);
+                        // store operation result
+                        self.bus.store(addr, 64, result)?;
+                    }
+                   _ => {
+                    return Err(Exception::IllegalInstruction(inst));
+                   }
+                }
                 Ok(())
             }
             _ => {

@@ -137,7 +137,10 @@ fn load_elf(code: &mut Vec<u8>, file: &mut File, base_addr: usize) -> io::Result
         }
         if code.len() <= (va - base_addr) {
             code.extend(vec![0; va - base_addr - code.len()].iter());
-            code.extend(&elf[segment..segment + memsize]);
+            // extend for .text and .data sections
+            code.extend(&elf[segment..segment + filesize]);
+            // extend for .bss section, filling with zeros
+            code.extend(std::iter::repeat(0).take(memsize - filesize).collect::<Vec<u8>>());
         } else if code.len() > va - base_addr + memsize {
             code[va..va + memsize].copy_from_slice(&elf[segment..segment + memsize]);
         } else {

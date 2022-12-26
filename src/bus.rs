@@ -27,7 +27,7 @@ impl Bus {
             return self.clint.load(addr, size);
         }
         if self.uart.is_accessible(addr) {
-            return self.clint.load(addr, size);
+            return self.uart.load(addr, size);
         }
         Err(Exception::LoadAccessFault)
     }
@@ -41,7 +41,7 @@ impl Bus {
             return self.clint.store(addr, size, value);
         }
         if self.uart.is_accessible(addr) {
-            return self.clint.store(addr, size, value);
+            return self.uart.store(addr, size, value);
         }
         Err(Exception::StoreAMOAccessFault)
     }

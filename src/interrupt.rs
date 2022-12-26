@@ -63,7 +63,7 @@ impl Exception {
         }
     }
 
-    pub fn take_trap(&self, cpu: &mut Cpu) {
+    pub fn take_trap(&mut self, cpu: &mut Cpu) {
         let exception_code = self.exception_code();
         let target_mode = self.get_target_mode(cpu);
         match target_mode {
@@ -76,21 +76,21 @@ impl Exception {
                 cpu.csr.set_mstatus_mie(0);
 
                 let mtvec = cpu.csr.load_csrs(MTVEC);
-                println!("mtvec is {}", mtvec);
+                cpu.log(format!("mtvec is {}", mtvec));
                 match mtvec & 0x3 {
                     0x0 => {
                         cpu.pc = (mtvec & 0xfffffffc).wrapping_sub(4);
                     }
                     0x1 => {}
                     _ => {
-                        println!("Exception Error, this should not be reached!");
+                        cpu.log(format!("Exception Error, this should not be reached!"));
                         exit(1);
                     }
                 }
             }
             _ => {}
         }
-        println!("Exception:{} occurred!", self.exception_code());
+        cpu.log(format!("Exception:{} occurred!", self.exception_code()));
     }
 
     fn get_target_mode(&self, cpu: &mut Cpu) -> u64 {

@@ -28,6 +28,8 @@ struct Cli {
     elf: bool,
     #[clap(long)]
     base_addr: Option<usize>,
+    #[clap(short, long)]
+    output: Option<std::path::PathBuf>,
 }
 
 fn main() -> io::Result<()> {
@@ -36,6 +38,8 @@ fn main() -> io::Result<()> {
     let mut code = Vec::new();
     let mut entry_address = 0 as u64;
     let base_addr = cli.base_addr.unwrap_or(0) as u64;
+    let output_file = File::create(cli.output.unwrap())?;
+    let logger = io::BufWriter::new(output_file);
 
     if cli.elf != false {
         entry_address = load_elf(&mut code, &mut file, base_addr as usize).unwrap();
@@ -46,7 +50,7 @@ fn main() -> io::Result<()> {
     let reg_dump = cli.dump > 0;
     let mut counter = 0;
 
-    let mut cpu = Cpu::new(code, base_addr);
+    let mut cpu = Cpu::new(code, base_addr, logger);
     cpu.pc = entry_address;
     loop {
         cpu.process_interrupt();
@@ -57,7 +61,7 @@ fn main() -> io::Result<()> {
         };
 
         cpu.execute(inst as u32)
-            .map_err(|e| e.take_trap(&mut cpu))
+            .map_err(|mut e| e.take_trap(&mut cpu))
             .expect("Execution failed!\n");
         cpu.regs[0] = 0;
 
@@ -65,7 +69,7 @@ fn main() -> io::Result<()> {
 
         if cpu.pc == 0 {
             cpu.dump_registers();
-            println!("Program finished!");
+            cpu.log(format!("Program finished!\n"));
             break;
         }
 
@@ -76,7 +80,7 @@ fn main() -> io::Result<()> {
         if let Some(count_max) = cli.count {
             counter = counter + 1;
             if counter == count_max {
-                println!("Program readched execution limit.");
+                cpu.log(format!("Program readched execution limit.\n"));
                 break;
             }
         }

@@ -3,6 +3,9 @@ use crate::csr::*;
 use crate::dram::*;
 use crate::interrupt::*;
 
+use std::io::{BufWriter, Write};
+use std::fs::File;
+
 use std::cmp;
 
 const REG_NUM: usize = 32;
@@ -19,10 +22,11 @@ pub struct Cpu {
     src2: usize,
     pub mode: u64,
     interrupt: Interrupt,
+    logger: BufWriter<File>
 }
 
 impl Cpu {
-    pub fn new(binary: Vec<u8>, base_addr: u64) -> Self {
+    pub fn new(binary: Vec<u8>, base_addr: u64, _logger: BufWriter<File>) -> Self {
         let mut regs = [0; 32];
         regs[2] = DRAM_SIZE;
         Self {
@@ -35,64 +39,69 @@ impl Cpu {
             src2: REG_NUM,
             mode: M_MODE,
             interrupt: Interrupt::new(),
+            logger: _logger,
         }
     }
 
-    pub fn fetch(&self) -> Result<u64, ()> {
+    pub fn log(&mut self, string: String){
+        self.logger.write_all(string.as_bytes()).expect("Failed to write file");
+    }
+
+    pub fn fetch(&mut self) -> Result<u64, ()> {
         let index = self.pc as usize;
-        match self.bus.load(index as u64, 32) {
+        match self.load(index as u64, 32) {
             Ok(inst) => Ok(inst),
             Err(_) => Err(()),
         }
     }
 
-    fn print_inst_r(&self, name: &str, rd: usize, rs1: usize, rs2: usize) {
-        println!(
-            "{:>#x} : {}, dest:{}, rs1:{}, rs2:{}",
+    fn print_inst_r(&mut self, name: &str, rd: usize, rs1: usize, rs2: usize) {
+        self.log(format!(
+            "{:>#x} : {}, dest:{}, rs1:{}, rs2:{}\n",
             self.pc, name, rd, rs1, rs2
-        );
+        ));
     }
 
-    fn print_inst_i(&self, name: &str, rd: usize, rs1: usize, imm: u64) {
-        println!(
-            "{:>#x} : {}, rd:{}, rs1:{}, imm:{}({:>#x})",
+    fn print_inst_i(&mut self, name: &str, rd: usize, rs1: usize, imm: u64) {
+        self.log(format!(
+            "{:>#x} : {}, rd:{}, rs1:{}, imm:{}({:>#x})\n",
             self.pc, name, rd, rs1, imm as i32, imm as i32
-        );
+        ));
     }
 
-    fn print_inst_s(&self, name: &str, rs1: usize, rs2: usize, imm: u64) {
-        println!(
-            "{:>#x} : {}, offset:{}, base:{}, src:{}",
+    fn print_inst_s(&mut self, name: &str, rs1: usize, rs2: usize, imm: u64) {
+        self.log(format!(
+            "{:>#x} : {}, offset:{}, base:{}, src:{}\n",
             self.pc, name, imm as i64, rs1, rs2
-        );
+        ));
     }
 
-    fn print_inst_b(&self, name: &str, rs1: usize, rs2: usize, imm: u64) {
-        println!(
-            "{:>#x} : {}, rs1:{}, rs2:{}, offset:{}",
+    fn print_inst_b(&mut self, name: &str, rs1: usize, rs2: usize, imm: u64) {
+        self.log(format!(
+            "{:>#x} : {}, rs1:{}, rs2:{}, offset:{}\n",
             self.pc, name, rs1, rs2, imm as i64
-        );
+        ));
     }
 
-    fn print_inst_j(&self, name: &str, rd: usize, imm: u64) {
-        println!(
-            "{:>#x} : {}, dest:{}, offset:{}({:>#x})",
+    fn print_inst_j(&mut self, name: &str, rd: usize, imm: u64) {
+        self.log(format!(
+            "{:>#x} : {}, dest:{}, offset:{}({:>#x})\n",
             self.pc, name, rd, imm as i64, imm as i64
-        );
+        ));
     }
 
-    fn print_inst_csr(&self, name: &str, rd: usize, rs1: usize, csr: u64) {
-        println!(
-            "{:>#x} : {}, dest:{}, rs1:{}, csr:{}({:>#x})",
+    fn print_inst_csr(&mut self, name: &str, rd: usize, rs1: usize, csr: u64) {
+        self.log(format!(
+            "{:>#x} : {}, dest:{}, rs1:{}, csr:{}({:>#x})\n",
             self.pc, name, rd, rs1, csr, csr
-        );
+        ));
     }
 
-    fn print_inst_csri(&self, name: &str, rd: usize, csr: u64, uimm: u64) {
-        println!(
-            "{:>#x} : {}, dest:{}, csr:{}({:>#x}), uimm:{}({:>#x})",
+    fn print_inst_csri(&mut self, name: &str, rd: usize, csr: u64, uimm: u64) {
+        self.log(format!(
+            "{:>#x} : {}, dest:{}, csr:{}({:>#x}), uimm:{}({:>#x})\n",
             self.pc, name, rd, csr, csr, uimm, uimm
-        );
+        ));
     }
 
     fn mark_as_dest(&mut self, reg: usize) {
@@ -111,6 +120,16 @@ impl Cpu {
         self.dest = REG_NUM;
         self.src1 = REG_NUM;
         self.src2 = REG_NUM;
+    }
+
+    fn load(&mut self, addr: u64, size: u64) -> Result<u64, Exception> {
+        self.log(format!("load addr: {:x}, size: {}\n", addr, size));
+        self.bus.load(addr, size)
+    }
+
+    fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
+        self.log(format!("store addr: {:x}, size: {}, value: {}({:x})\n", addr, size, value, value));
+        self.bus.store(addr, size, value)
     }
 
     pub fn process_interrupt(&mut self) {
@@ -257,8 +276,8 @@ impl Cpu {
                         self.regs[rd] = ((self.regs[rs1] as i64) % (self.regs[rs2] as i64)) as u64;
                     }
                     (_, _) => {
-                        println!("This should not be reached!");
-                        println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        self.log(format!("This should not be reached!"));
+                        self.log(format!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7));
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -323,8 +342,8 @@ impl Cpu {
                         }
                     }
                     _ => {
-                        println!("This should not be reached!");
-                        println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        self.log(format!("This should not be reached!"));
+                        self.log(format!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7));
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -340,42 +359,42 @@ impl Cpu {
                 match funct3 {
                     0x0 => {
                         self.print_inst_i("lb", rd, rs1, imm);
-                        let val = self.bus.load(addr, 8)?;
+                        let val = self.load(addr, 8)?;
                         self.regs[rd] = val as i8 as i64 as u64;
                     }
                     0x1 => {
                         self.print_inst_i("lh", rd, rs1, imm);
-                        let val = self.bus.load(addr, 16)?;
+                        let val = self.load(addr, 16)?;
                         self.regs[rd] = val as i16 as i64 as u64;
                     }
                     0x2 => {
                         self.print_inst_i("lw", rd, rs1, imm);
-                        let val = self.bus.load(addr, 32)?;
+                        let val = self.load(addr, 32)?;
                         self.regs[rd] = val as i32 as i64 as u64;
                     }
                     0x3 => {
                         self.print_inst_i("ld", rd, rs1, imm);
-                        let val = self.bus.load(addr, 64)?;
+                        let val = self.load(addr, 64)?;
                         self.regs[rd] = val;
                     }
                     0x4 => {
                         self.print_inst_i("lbu", rd, rs1, imm);
-                        let val = self.bus.load(addr, 8)?;
+                        let val = self.load(addr, 8)?;
                         self.regs[rd] = val;
                     }
                     0x5 => {
                         self.print_inst_i("lhu", rd, rs1, imm);
-                        let val = self.bus.load(addr, 16)?;
+                        let val = self.load(addr, 16)?;
                         self.regs[rd] = val;
                     }
                     0x6 => {
                         self.print_inst_i("lwu", rd, rs1, imm);
-                        let val = self.bus.load(addr, 32)?;
+                        let val = self.load(addr, 32)?;
                         self.regs[rd] = val;
                     }
                     _ => {
-                        println!("This should not be reached!");
-                        println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        self.log(format!("This should not be reached!"));
+                        self.log(format!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7));
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -390,13 +409,13 @@ impl Cpu {
                 let addr = self.regs[rs1].wrapping_add(imm);
                 self.print_inst_s("s?", rs1, rs2, imm);
                 match funct3 {
-                    0x0 => self.bus.store(addr, 8, self.regs[rs2])?,
-                    0x1 => self.bus.store(addr, 16, self.regs[rs2])?,
-                    0x2 => self.bus.store(addr, 32, self.regs[rs2])?,
-                    0x3 => self.bus.store(addr, 64, self.regs[rs2])?,
+                    0x0 => self.store(addr, 8, self.regs[rs2])?,
+                    0x1 => self.store(addr, 16, self.regs[rs2])?,
+                    0x2 => self.store(addr, 32, self.regs[rs2])?,
+                    0x3 => self.store(addr, 64, self.regs[rs2])?,
                     _ => {
-                        println!("This should not be reached!");
-                        println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        self.log(format!("This should not be reached!"));
+                        self.log(format!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7));
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -428,8 +447,8 @@ impl Cpu {
                         self.pc = next_pc;
                     }
                     _ => {
-                        println!("This should not be reached!");
-                        println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        self.log(format!("This should not be reached!"));
+                        self.log(format!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7));
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -476,8 +495,8 @@ impl Cpu {
                         self.regs[rd] = val as i64 as u64;
                     }
                     _ => {
-                        println!("This should not be reached!");
-                        println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        self.log(format!("This should not be reached!"));
+                        self.log(format!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7));
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -529,8 +548,8 @@ impl Cpu {
                         }
                     }
                     _ => {
-                        println!("This should not be reached!");
-                        println!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        self.log(format!("This should not be reached!"));
+                        self.log(format!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7));
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -591,7 +610,7 @@ impl Cpu {
                         self.regs[rd] = rem as u64;
                     }
                     _ => {
-                        println!("This should not be reached!");
+                        self.log(format!("This should not be reached!"));
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -681,16 +700,16 @@ impl Cpu {
                         }
                     }
                     (_, _, _) => {
-                        println!("Unsupported CSR instruction!");
-                        println!("funct3:{}, funct7:{}", funct3, funct7);
+                        self.log(format!("Unsupported CSR instruction!"));
+                        self.log(format!("funct3:{}, funct7:{}", funct3, funct7));
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
                 Ok(())
             }
             0x0f => {
-                println!("pc=0x{:x}", self.pc);
-                println!("fence(do nothing)");
+                self.log(format!("pc=0x{:x}\n", self.pc));
+                self.log(format!("fence(do nothing)\n"));
                 Ok(())
             }
             0x2f => { // Atomic Operation instructions
@@ -702,7 +721,7 @@ impl Cpu {
                     (0x2, 0x1) => {
                         self.print_inst_r("amoswap.w", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
@@ -710,108 +729,108 @@ impl Cpu {
                         self.regs[rs2] = loaded_value;
                         let result = src_value;
                         // store operation result
-                        self.bus.store(addr, 32, result)?;
+                        self.store(addr, 32, result)?;
                     }
                     (0x0, 0x1) => {
                         self.print_inst_r("amoadd.w", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
                         // binary operation: add
                         let result = loaded_value.wrapping_add(src_value);
                         // store operation result
-                        self.bus.store(addr, 32, result)?;
+                        self.store(addr, 32, result)?;
                     }
                     (0x4, 0x1) => {
                         self.print_inst_r("amoxor.w", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
                         // binary operation: xor
                         let result = loaded_value ^ src_value;
                         // store operation result
-                        self.bus.store(addr, 32, result)?;
+                        self.store(addr, 32, result)?;
                     }
                     (0xc, 0x1) => {
                         self.print_inst_r("amoand.w", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
                         // binary operation: and
                         let result = loaded_value & src_value;
                         // store operation result
-                        self.bus.store(addr, 32, result)?;
+                        self.store(addr, 32, result)?;
                     }
                     (0x8, 0x1) => {
                         self.print_inst_r("amoor.w", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
                         // binary operation: or
                         let result = loaded_value | src_value;
                         // store operation result
-                        self.bus.store(addr, 32, result)?;
+                        self.store(addr, 32, result)?;
                     }
                     (0x10, 0x1) => {
                         self.print_inst_r("amomin.w", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
                         // binary operation: singed min
                         let result = cmp::min(loaded_value as i64, src_value as i64) as u64;
                         // store operation result
-                        self.bus.store(addr, 32, result)?;
+                        self.store(addr, 32, result)?;
                     }
                     (0x14, 0x1) => {
                         self.print_inst_r("amomax.w", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
                         // binary operation: signed max
                         let result = cmp::max(loaded_value as i64, src_value as i64) as u64;
                         // store operation result
-                        self.bus.store(addr, 32, result)?;
+                        self.store(addr, 32, result)?;
                     }
                     (0x18, 0x1) => {
                         self.print_inst_r("amominu.w", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
                         // binary operation: unsigned min
                         let result = cmp::min(loaded_value, src_value);
                         // store operation result
-                        self.bus.store(addr, 32, result)?;
+                        self.store(addr, 32, result)?;
                     }
                     (0x1c, 0x1) => {
                         self.print_inst_r("amomaxu.w", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 32)? as i32 as i64 as u64;
+                        let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
                         // binary operation: unsigned max
                         let result = cmp::max(loaded_value, src_value);
                         // store operation result
-                        self.bus.store(addr, 32, result)?;
+                        self.store(addr, 32, result)?;
                     }
                     (0x2, 0x3) => {
                         self.print_inst_r("amoswap.d", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 64)?;
+                        let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
@@ -819,103 +838,103 @@ impl Cpu {
                         self.regs[rs2] = loaded_value;
                         let result = src_value;
                         // store operation result
-                        self.bus.store(addr, 64, result)?;
+                        self.store(addr, 64, result)?;
                     }
                     (0x0, 0x3) => {
                         self.print_inst_r("amoadd.d", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 64)?;
+                        let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
                         // binary operation: add
                         let result = loaded_value.wrapping_add(src_value);
                         // store operation result
-                        self.bus.store(addr, 64, result)?;
+                        self.store(addr, 64, result)?;
                     }
                     (0x4, 0x3) => {
                         self.print_inst_r("amoxor.d", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 64)?;
+                        let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
                         // binary operation: xor
                         let result = loaded_value ^ src_value;
                         // store operation result
-                        self.bus.store(addr, 64, result)?;
+                        self.store(addr, 64, result)?;
                     }
                     (0xc, 0x3) => {
                         self.print_inst_r("amoand.d", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 64)?;
+                        let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
                         // binary operation: and
                         let result = loaded_value & src_value;
                         // store operation result
-                        self.bus.store(addr, 64, result)?;
+                        self.store(addr, 64, result)?;
                     }
                     (0x8, 0x3) => {
                         self.print_inst_r("amoor.d", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 64)?;
+                        let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
                         // binary operation: or
                         let result = loaded_value | src_value;
                         // store operation result
-                        self.bus.store(addr, 64, result)?;
+                        self.store(addr, 64, result)?;
                     }
                     (0x10, 0x3) => {
                         self.print_inst_r("amomin.d", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 64)?;
+                        let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
                         // binary operation: signed min
                         let result = cmp::min(loaded_value as i64, src_value as i64) as u64;
                         // store operation result
-                        self.bus.store(addr, 64, result)?;
+                        self.store(addr, 64, result)?;
                     }
                     (0x14, 0x3) => {
                         self.print_inst_r("amomax.d", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 64)?;
+                        let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
                         // binary operation: signed max
                         let result = cmp::max(loaded_value as i64, src_value as i64) as u64;
                         // store operation result
-                        self.bus.store(addr, 64, result)?;
+                        self.store(addr, 64, result)?;
                     }
                     (0x18, 0x3) => {
                         self.print_inst_r("amominu.d", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 64)?;
+                        let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
                         // binary operation: unsigned min
                         let result = cmp::min(loaded_value, src_value);
                         // store operation result
-                        self.bus.store(addr, 64, result)?;
+                        self.store(addr, 64, result)?;
                     }
                     (0x1c, 0x3) => {
                         self.print_inst_r("amomaxu.d", rd, rs1, rs2);
                         let addr = self.regs[rs1];
-                        let loaded_value = self.bus.load(addr, 64)?;
+                        let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
                         // store loaded value to dest register
                         self.regs[rd] = loaded_value;
                         // binary operation: unsigned max
                         let result = cmp::max(loaded_value, src_value);
                         // store operation result
-                        self.bus.store(addr, 64, result)?;
+                        self.store(addr, 64, result)?;
                     }
                    _ => {
                     return Err(Exception::IllegalInstruction(inst));
@@ -924,15 +943,15 @@ impl Cpu {
                 Ok(())
             }
             _ => {
-                println!("not implemented yet!");
-                println!("pc=0x{:x}", self.pc);
-                println!("inst:{inst:b}");
+                self.log(format!("not implemented yet!"));
+                self.log(format!("pc=0x{:x}", self.pc));
+                self.log(format!("inst:{inst:b}"));
                 return Err(Exception::IllegalInstruction(inst));
             }
         }
     }
 
-    pub fn dump_registers(&self) {
+    pub fn dump_registers(&mut self) {
         let abi = [
             "zero", " ra ", " sp ", " gp ", " tp ", " t0 ", " t1 ", " t2 ", " s0 ", " s1 ", " a0 ",
             " a1 ", " a2 ", " a3 ", " a4 ", " a5 ", " a6 ", " a7 ", " s2 ", " s3 ", " s4 ", " s5 ",
@@ -967,7 +986,7 @@ impl Cpu {
                 )
             )
         }
-        print!("{}", output);
-        println!("----");
+        self.log(format!("{}", output));
+        self.log(format!("----\n"));
     }
 }

@@ -50,6 +50,16 @@ impl Uart{
     }
 
     pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
-        Ok(())
+        if size != 8 {
+            return Err(Exception::LoadAccessFault);
+        }
+        let actual_addr = addr - self.start_addr;
+        match actual_addr {
+            REG_RHR_THR => {
+                print!("{}", value as u8 as char);
+                Ok(())
+            }
+            _ => Ok(())
+        }
     }
 }

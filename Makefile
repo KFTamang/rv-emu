@@ -17,8 +17,11 @@ exception:apps/exception.s ${src}
 	riscv64-unknown-elf-objdump -D -m riscv:rv64 apps/exception.elf > apps/exception.dump
 	cargo run apps/exception.elf --elf -c 100 -d -o log/output_exception.log
 
-xv6:apps/xv6/kernel ${src}
+xv6_log:apps/xv6/kernel ${src}
 	cargo run apps/xv6/kernel --elf --base-addr 2147483648 -c 1000 -d -o log/output_kernel.log
+
+xv6:apps/xv6/kernel ${src}
+	cargo run apps/xv6/kernel --elf --base-addr 2147483648 -c 10000 -o log/output_kernel_simple.log
 
 run:apps/test.bin apps/fib.bin ${src}
 	cargo run apps/test.bin -c 1000 -d -o log/output_test.log

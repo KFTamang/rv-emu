@@ -22,11 +22,11 @@ pub struct Cpu {
     src2: usize,
     pub mode: u64,
     interrupt: Interrupt,
-    logger: BufWriter<File>
+    logger: BufWriter<Box<dyn Write>>,
 }
 
 impl Cpu {
-    pub fn new(binary: Vec<u8>, base_addr: u64, _logger: BufWriter<File>) -> Self {
+    pub fn new(binary: Vec<u8>, base_addr: u64, _logger: BufWriter<Box<dyn Write>>) -> Self {
         let mut regs = [0; 32];
         regs[2] = DRAM_SIZE;
         Self {

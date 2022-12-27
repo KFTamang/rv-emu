@@ -38,8 +38,12 @@ fn main() -> io::Result<()> {
     let mut code = Vec::new();
     let mut entry_address = 0 as u64;
     let base_addr = cli.base_addr.unwrap_or(0) as u64;
-    let output_file = File::create(cli.output.unwrap())?;
-    let logger = io::BufWriter::new(output_file);
+    let logger = io::BufWriter::new(match cli.output {
+        Some(path) => {
+            Box::new(File::create(&path).unwrap()) as Box<dyn Write>
+        }
+        None => Box::new(io::stdout()) as Box<dyn Write>,
+    });
 
     if cli.elf != false {
         entry_address = load_elf(&mut code, &mut file, base_addr as usize).unwrap();

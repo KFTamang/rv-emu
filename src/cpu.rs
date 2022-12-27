@@ -620,9 +620,9 @@ impl Cpu {
                 Ok(())
             }
             0x37 => {
-                let imm = inst & 0xfffff000;
-                self.print_inst_j("lui", rd, imm as u64);
-                self.regs[rd] = imm as u64;
+                let imm = (inst & 0xfffff000) as i32 as i64 as u64;
+                self.print_inst_j("lui", rd, imm);
+                self.regs[rd] = imm;
                 self.mark_as_dest(rd);
                 Ok(())
             }

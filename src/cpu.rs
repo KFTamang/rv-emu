@@ -23,6 +23,7 @@ pub struct Cpu {
     pub mode: u64,
     interrupt: Interrupt,
     logger: BufWriter<Box<dyn Write>>,
+    inst_string: String,
 }
 
 impl Cpu {
@@ -40,6 +41,7 @@ impl Cpu {
             mode: M_MODE,
             interrupt: Interrupt::new(),
             logger: _logger,
+            inst_string: String::from(""),
         }
     }
 
@@ -56,49 +58,49 @@ impl Cpu {
     }
 
     fn print_inst_r(&mut self, name: &str, rd: usize, rs1: usize, rs2: usize) {
-        self.log(format!(
+        self.inst_string = (format!(
             "{:>#x} : {}, dest:{}, rs1:{}, rs2:{}\n",
             self.pc, name, rd, rs1, rs2
         ));
     }
 
     fn print_inst_i(&mut self, name: &str, rd: usize, rs1: usize, imm: u64) {
-        self.log(format!(
+        self.inst_string = (format!(
             "{:>#x} : {}, rd:{}, rs1:{}, imm:{}({:>#x})\n",
             self.pc, name, rd, rs1, imm as i32, imm as i32
         ));
     }
 
     fn print_inst_s(&mut self, name: &str, rs1: usize, rs2: usize, imm: u64) {
-        self.log(format!(
+        self.inst_string = (format!(
             "{:>#x} : {}, offset:{}, base:{}, src:{}\n",
             self.pc, name, imm as i64, rs1, rs2
         ));
     }
 
     fn print_inst_b(&mut self, name: &str, rs1: usize, rs2: usize, imm: u64) {
-        self.log(format!(
+        self.inst_string = (format!(
             "{:>#x} : {}, rs1:{}, rs2:{}, offset:{}\n",
             self.pc, name, rs1, rs2, imm as i64
         ));
     }
 
     fn print_inst_j(&mut self, name: &str, rd: usize, imm: u64) {
-        self.log(format!(
+        self.inst_string = (format!(
             "{:>#x} : {}, dest:{}, offset:{}({:>#x})\n",
             self.pc, name, rd, imm as i64, imm as i64
         ));
     }
 
     fn print_inst_csr(&mut self, name: &str, rd: usize, rs1: usize, csr: u64) {
-        self.log(format!(
+        self.inst_string = (format!(
             "{:>#x} : {}, dest:{}, rs1:{}, csr:{}({:>#x})\n",
             self.pc, name, rd, rs1, csr, csr
         ));
     }
 
     fn print_inst_csri(&mut self, name: &str, rd: usize, csr: u64, uimm: u64) {
-        self.log(format!(
+        self.inst_string = (format!(
             "{:>#x} : {}, dest:{}, csr:{}({:>#x}), uimm:{}({:>#x})\n",
             self.pc, name, rd, csr, csr, uimm, uimm
         ));
@@ -123,12 +125,10 @@ impl Cpu {
     }
 
     fn load(&mut self, addr: u64, size: u64) -> Result<u64, Exception> {
-        self.log(format!("load addr: {:x}, size: {}\n", addr, size));
         self.bus.load(addr, size)
     }
 
     fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
-        self.log(format!("store addr: {:x}, size: {}, value: {}({:x})\n", addr, size, value, value));
         self.bus.store(addr, size, value)
     }
 
@@ -957,7 +957,7 @@ impl Cpu {
             " a1 ", " a2 ", " a3 ", " a4 ", " a5 ", " a6 ", " a7 ", " s2 ", " s3 ", " s4 ", " s5 ",
             " s6 ", " s7 ", " s8 ", " s9 ", " s10", " s11", " t3 ", " t4 ", " t5 ", " t6 ",
         ];
-        let mut output = format!("pc={:>#18x}\n", self.pc);
+        let mut output = format!("pc={:>#18x}\n{}", self.pc, self.inst_string);
         const SEQ_RED: &str = "\x1b[91m";
         const SEQ_GREEN: &str = "\x1b[92m";
         const SEQ_CLEAR: &str = "\x1b[0m";

@@ -20,10 +20,10 @@ use std::io::prelude::*;
 struct Cli {
     /// The path to the file to read
     bin: std::path::PathBuf,
-    #[clap(short, long, parse(from_occurrences))]
-    dump: usize,
     #[clap(short, long)]
-    count: Option<u32>,
+    dump: Option<i64>,
+    #[clap(short, long)]
+    count: Option<i64>,
     #[clap(short, long, parse(from_flag))]
     elf: bool,
     #[clap(long)]
@@ -51,8 +51,8 @@ fn main() -> io::Result<()> {
         file.read_to_end(&mut code)?;
     }
 
-    let reg_dump = cli.dump > 0;
-    let mut counter = 0;
+    let reg_dump_count = cli.dump.unwrap_or(0);
+    let mut counter = cli.count.unwrap_or(-1);
 
     let mut cpu = Cpu::new(code, base_addr, logger);
     cpu.pc = entry_address;
@@ -77,16 +77,15 @@ fn main() -> io::Result<()> {
             break;
         }
 
-        if reg_dump {
+        if (counter >= 0) & (counter < reg_dump_count) {
             cpu.dump_registers();
         }
 
-        if let Some(count_max) = cli.count {
-            counter = counter + 1;
-            if counter == count_max {
-                cpu.log(format!("Program readched execution limit.\n"));
-                break;
-            }
+        if counter == 0 {
+            cpu.log(format!("Program readched execution limit.\n"));
+            break;
+        } else {
+            counter = counter - 1;
         }
     }
 

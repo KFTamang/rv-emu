@@ -6,7 +6,6 @@ mod clint;
 mod uart;
 mod interrupt;
 use crate::cpu::*;
-use crate::dram::*;
 use clap::Parser; // command-line option parser
 
 use std::convert::TryInto;

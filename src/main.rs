@@ -30,6 +30,8 @@ struct Cli {
     base_addr: Option<usize>,
     #[clap(short, long)]
     output: Option<std::path::PathBuf>,
+    #[clap(long)]
+    loop_on: bool,
 }
 
 fn main() -> io::Result<()> {
@@ -77,13 +79,18 @@ fn main() -> io::Result<()> {
             break;
         }
 
-        if (counter >= 0) & (counter < reg_dump_count) {
+        if !(cli.loop_on) & (counter >= 0) & (counter < reg_dump_count) {
             cpu.dump_registers();
         }
 
         if counter == 0 {
-            cpu.log(format!("Program readched execution limit.\n"));
-            break;
+            if cli.loop_on {
+                println!("0x{:x}", cpu.pc);
+                counter = cli.count.unwrap();
+            } else {
+                cpu.log(format!("Program readched execution limit.\n"));
+                break;        
+            }
         } else {
             counter = counter - 1;
         }

@@ -700,16 +700,15 @@ impl Cpu {
                         }
                     }
                     (_, _, _) => {
-                        self.log(format!("Unsupported CSR instruction!"));
-                        self.log(format!("funct3:{}, funct7:{}", funct3, funct7));
+                        self.log(format!("Unsupported CSR instruction!\n"));
+                        self.log(format!("pc = 0x{:x}, funct3:{}, funct7:{}\n", self.pc, funct3, funct7));
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
                 Ok(())
             }
             0x0f => {
-                self.log(format!("pc=0x{:x}\n", self.pc));
-                self.log(format!("fence(do nothing)\n"));
+                self.inst_string = format!("pc=0x{:x}\nfence(do nothing)\n", self.pc);
                 Ok(())
             }
             0x2f => { // Atomic Operation instructions

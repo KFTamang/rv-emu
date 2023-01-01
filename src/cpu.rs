@@ -174,13 +174,14 @@ impl Cpu {
         // mstatus.MPIE <~ 1 [always]
         // mstatus.MPP <~ 00(U-mode) [always]
         // pc(program counter) <~ mepc CSR
-        let priv_mode = self.mode;
+        let mpp = self.csr.get_mstatus_bit(MASK_MPP, BIT_MPP);
         let mpie = self.csr.get_mstatus_bit(MASK_MPIE, BIT_MPIE);
         let previous_pc = self.csr.load_csrs(MEPC);
         self.csr.set_mstatus_bit(mpie, MASK_MIE, BIT_MIE);
         self.csr.set_mstatus_bit(0b1, MASK_MPIE, BIT_MPIE);
-        self.csr.set_mstatus_bit(priv_mode, MASK_MPP, BIT_MPP);
+        self.csr.set_mstatus_bit(U_MODE, MASK_MPP, BIT_MPP);
         self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
+        self.mode = mpp;
     }
 
     pub fn execute(&mut self, inst: u32) -> Result<(), Exception> {

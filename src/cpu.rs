@@ -9,6 +9,7 @@ use std::cmp;
 
 const REG_NUM: usize = 32;
 pub const M_MODE: u64 = 0b11;
+pub const S_MODE: u64 = 0b10;
 pub const U_MODE: u64 = 0b00;
 
 pub struct Cpu {
@@ -174,14 +175,31 @@ impl Cpu {
         // mstatus.MPIE <~ 1 [always]
         // mstatus.MPP <~ 00(U-mode) [always]
         // pc(program counter) <~ mepc CSR
-        let mpp = self.csr.get_mstatus_bit(MASK_MPP, BIT_MPP);
-        let mpie = self.csr.get_mstatus_bit(MASK_MPIE, BIT_MPIE);
-        let previous_pc = self.csr.load_csrs(MEPC);
-        self.csr.set_mstatus_bit(mpie, MASK_MIE, BIT_MIE);
-        self.csr.set_mstatus_bit(0b1, MASK_MPIE, BIT_MPIE);
-        self.csr.set_mstatus_bit(U_MODE, MASK_MPP, BIT_MPP);
-        self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
-        self.mode = mpp;
+        match self.mode {
+            M_MODE => {
+                let pp = self.csr.get_mstatus_bit(MASK_MPP, BIT_MPP);
+                let pie = self.csr.get_mstatus_bit(MASK_MPIE, BIT_MPIE);
+                let previous_pc = self.csr.load_csrs(MEPC);
+                self.csr.set_mstatus_bit(pie, MASK_MIE, BIT_MIE);
+                self.csr.set_mstatus_bit(0b1, MASK_MPIE, BIT_MPIE);
+                self.csr.set_mstatus_bit(U_MODE, MASK_MPP, BIT_MPP);        
+                self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
+                self.mode = pp;
+                eprintln!("back to privilege {}", pp);
+            },
+            S_MODE => {
+                let pp = self.csr.get_sstatus_bit(MASK_SPP, BIT_SPP);
+                let pie = self.csr.get_sstatus_bit(MASK_SPIE, BIT_SPIE);
+                let previous_pc = self.csr.load_csrs(SEPC);
+                self.csr.set_sstatus_bit(pie, MASK_SIE, BIT_SIE);
+                self.csr.set_sstatus_bit(0b1, MASK_SPIE, BIT_SPIE);
+                self.csr.set_sstatus_bit(U_MODE, MASK_SPP, BIT_SPP);        
+                self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
+                self.mode = pp;
+                eprintln!("back to privilege {}", pp);
+            },
+            _ => { panic!("m/sret from U_MODE\n");}
+        }
     }
 
     pub fn execute(&mut self, inst: u32) -> Result<(), Exception> {

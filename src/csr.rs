@@ -2,8 +2,14 @@ pub struct Csr {
     csr: [u64; 4096],
 }
 
-pub const MSTATUS: usize = 0x300;
 pub const SSTATUS: usize = 0x100;
+pub const SIE: usize = 0x104;
+pub const STVEC: usize = 0x105;
+pub const SEPC: usize = 0x141;
+pub const SCAUSE: usize = 0x142;
+pub const SIP: usize = 0x144;
+
+pub const MSTATUS: usize = 0x300;
 pub const MIE: usize = 0x304;
 pub const MTVEC: usize = 0x305;
 pub const MEPC: usize = 0x341;
@@ -18,11 +24,17 @@ pub const BIT_MPRV: u64 = 17;
 pub const BIT_MPP: u64 = 11;
 pub const BIT_MPIE: u64 = 7;
 pub const BIT_MIE: u64 = 3;
+pub const BIT_SPP: u64 = 8;
+pub const BIT_SPIE: u64 = 5;
+pub const BIT_SIE: u64 = 1;
 
 pub const MASK_SXL: u64 = 0b11 << BIT_SXL;
 pub const MASK_TSR: u64 = 0b1 << BIT_TSR;
 pub const MASK_TW: u64 = 0b1 << BIT_TW;
 pub const MASK_TVM: u64 = 0b1 << BIT_TVM;
+pub const MASK_SPP: u64 = 0b11 << BIT_SPP;
+pub const MASK_SPIE: u64 = 0b1 << BIT_SPIE;
+pub const MASK_SIE: u64 = 0b1 << BIT_SIE;
 pub const MASK_MPRV: u64 = 0b1 << BIT_MPRV;
 pub const MASK_MPP: u64 = 0b11 << BIT_MPP;
 pub const MASK_MPIE: u64 = 0b1 << BIT_MPIE;
@@ -63,27 +75,27 @@ impl Csr {
     }
 
     pub fn set_mstatus_bit(&mut self, val: u64, mask: u64, bit: u64) {
-        let mut current = self.csr[MSTATUS];
+        let mut current = self.load_csrs(MSTATUS);
         current &= !mask;
         current |= ((val as u64) << bit) & mask;
-        self.csr[MSTATUS] = current;
+        self.store_csrs(MSTATUS, current);
     }
 
     pub fn get_mstatus_bit(&self, mask: u64, bit: u64) -> u64 {
-        let mstatus = self.csr[MSTATUS];
-        (mstatus & mask) >> bit
+        let status = self.load_csrs(MSTATUS);
+        (status & mask) >> bit
     }
 
-    pub fn set_mstatus_mpp(&mut self, val: u64) {
-        self.set_mstatus_bit(val, MASK_MPP, BIT_MPP);
+    pub fn set_sstatus_bit(&mut self, val: u64, mask: u64, bit: u64) {
+        let mut current = self.load_csrs(SSTATUS);
+        current &= !mask;
+        current |= ((val as u64) << bit) & mask;
+        self.store_csrs(SSTATUS, current);
     }
 
-    pub fn set_mstatus_mpie(&mut self, val: u64) {
-        self.set_mstatus_bit(val, MASK_MPIE, BIT_MPIE);
-    }
-
-    pub fn set_mstatus_mie(&mut self, val: u64) {
-        self.set_mstatus_bit(val, MASK_MIE, BIT_MIE);
+    pub fn get_sstatus_bit(&self, mask: u64, bit: u64) -> u64 {
+        let status = self.load_csrs(SSTATUS);
+        (status & mask) >> bit
     }
 
     pub fn mie(&self) -> u64 {

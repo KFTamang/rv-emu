@@ -70,16 +70,39 @@ impl Exception {
             M_MODE => {
                 cpu.csr.store_csrs(MEPC, cpu.pc);
                 cpu.csr.store_csrs(MCAUSE, exception_code);
-                cpu.csr.set_mstatus_mpp(cpu.mode);
+                cpu.csr.set_mstatus_bit(cpu.mode, MASK_MPP, BIT_MPP);
                 let mie = MASK_MIE & cpu.csr.load_csrs(MSTATUS);
-                cpu.csr.set_mstatus_mpie(if mie > 0 { 1 } else { 0 });
-                cpu.csr.set_mstatus_mie(0);
+                cpu.csr.set_mstatus_bit(if mie > 0 { 1 } else { 0 }, MASK_MPIE, BIT_MPIE);
+                cpu.csr.set_mstatus_bit(0, MASK_MIE, MASK_MIE);
 
                 let mtvec = cpu.csr.load_csrs(MTVEC);
-                cpu.log(format!("mtvec is {}", mtvec));
+                cpu.log(format!("mtvec is {}\n", mtvec));
+                eprintln!("enter M mode\n");
                 match mtvec & 0x3 {
                     0x0 => {
                         cpu.pc = (mtvec & 0xfffffffc).wrapping_sub(4);
+                    }
+                    0x1 => {}
+                    _ => {
+                        cpu.log(format!("Exception Error, this should not be reached!"));
+                        exit(1);
+                    }
+                }
+            },
+            S_MODE => {
+                cpu.csr.store_csrs(SEPC, cpu.pc);
+                cpu.csr.store_csrs(SCAUSE, exception_code);
+                cpu.csr.set_sstatus_bit(cpu.mode, MASK_SPP, BIT_SPP);
+                let sie = MASK_SIE & cpu.csr.load_csrs(SSTATUS);
+                cpu.csr.set_sstatus_bit(if sie > 0 { 1 } else { 0 }, MASK_SPIE, BIT_SPIE);
+                cpu.csr.set_sstatus_bit(0, MASK_SIE, BIT_SIE);
+
+                let stvec = cpu.csr.load_csrs(STVEC);
+                cpu.log(format!("stvec is {}", stvec));
+                eprintln!("enter S mode");
+                match stvec & 0x3 {
+                    0x0 => {
+                        cpu.pc = (stvec & 0xfffffffc).wrapping_sub(4);
                     }
                     0x1 => {}
                     _ => {

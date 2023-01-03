@@ -1,3 +1,4 @@
 Unsupported CSR instruction!
 pc = 0x8000150c, funct3:0, funct7:9
-mtvec is 2147515984Exception:2 occurred!
+mtvec is 2147515984
+Exception:2 occurred!

@@ -4,6 +4,7 @@ mod csr;
 mod dram;
 mod clint;
 mod uart;
+mod plic;
 mod interrupt;
 use crate::cpu::*;
 use clap::Parser; // command-line option parser

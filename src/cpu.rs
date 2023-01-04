@@ -717,6 +717,9 @@ impl Cpu {
                             self.csr.store_csrs(csr, uimm as u64 & !old_val);
                         }
                     }
+                    (0x0, 0x9, _) => {
+                        self.print_inst_r("sfence.vma", rd, rs1, rs2);
+                    } 
                     (_, _, _) => {
                         self.log(format!("Unsupported CSR instruction!\n"));
                         self.log(format!("pc = 0x{:x}, funct3:{}, funct7:{}\n", self.pc, funct3, funct7));

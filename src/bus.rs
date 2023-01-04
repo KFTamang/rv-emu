@@ -28,6 +28,7 @@ impl Bus {
         if self.uart.is_accessible(addr) {
             return self.uart.load(addr, size);
         }
+        eprintln!("Error while load operation: accessing 0x{:x}, size:{}", addr, size);
         Err(Exception::LoadAccessFault)
     }
 
@@ -41,6 +42,7 @@ impl Bus {
         if self.uart.is_accessible(addr) {
             return self.uart.store(addr, size, value);
         }
+        eprintln!("Error while store operation: accessing 0x{:x}, size:{}, value:{}(0x{:x})", addr, size, value, value);
         Err(Exception::StoreAMOAccessFault)
     }
 }

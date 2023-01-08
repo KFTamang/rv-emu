@@ -117,6 +117,13 @@ impl Exception {
     }
 
     fn get_target_mode(&self, cpu: &mut Cpu) -> u64 {
-        return M_MODE;
+        let bit_shift = self.exception_code();
+        let exception_bit = 0b1 << bit_shift;
+        let medeleg = cpu.csr.load_csrs(MEDELEG);
+        if (cpu.mode < M_MODE) && ((exception_bit & medeleg) != 0) {
+            S_MODE
+        } else {
+            M_MODE
+        }
     }
 }

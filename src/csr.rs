@@ -10,6 +10,7 @@ pub const SCAUSE: usize = 0x142;
 pub const SIP: usize = 0x144;
 
 pub const MSTATUS: usize = 0x300;
+pub const MEDELEG: usize = 0x302;
 pub const MIE: usize = 0x304;
 pub const MTVEC: usize = 0x305;
 pub const MEPC: usize = 0x341;

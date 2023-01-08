@@ -3,12 +3,14 @@ use crate::clint::*;
 use crate::uart::*;
 use crate::interrupt::*;
 use crate::plic::*;
+use crate::virtio::*;
 
 pub struct Bus {
     dram: Dram,
     clint: Clint,
     uart: Uart,
     plic: Plic,
+    virtio: Virtio,
 }
 
 impl Bus {
@@ -18,6 +20,7 @@ impl Bus {
             clint: Clint::new(0x2000000, 0x10000),
             uart: Uart::new(0x10000000, 0x100),
             plic: Plic::new(0xc000000, 0x4000000),
+            virtio: Virtio::new(0x10001000, 0x1000),
         }
     }
 
@@ -33,6 +36,9 @@ impl Bus {
         }
         if self.plic.is_accessible(addr) {
             return self.plic.load(addr, size);
+        }
+        if self.virtio.is_accessible(addr) {
+            return self.virtio.load(addr, size);
         }
         eprintln!("Error while load operation: accessing 0x{:x}, size:{}", addr, size);
         Err(Exception::LoadAccessFault)
@@ -50,6 +56,9 @@ impl Bus {
         }
         if self.plic.is_accessible(addr) {
             return self.plic.store(addr, size, value);
+        }
+        if self.virtio.is_accessible(addr) {
+            return self.virtio.store(addr, size, value);
         }
         eprintln!("Error while store operation: accessing 0x{:x}, size:{}, value:{}(0x{:x})", addr, size, value, value);
         Err(Exception::StoreAMOAccessFault)

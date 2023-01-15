@@ -12,6 +12,10 @@ pub const M_MODE: u64 = 0b11;
 pub const S_MODE: u64 = 0b10;
 pub const U_MODE: u64 = 0b00;
 
+fn bit(integer: u64, bit: u64) -> u64 {
+    (integer >> bit) & 0x1
+}
+
 pub struct Cpu {
     pub regs: [u64; 32],
     pub pc: u64,
@@ -138,7 +142,54 @@ impl Cpu {
         }
     }
 
+
+
     fn translate(&self, va: u64) -> Result<u64, Exception> {
+        const PAGESIZE :u64 = 4096;
+        const LEVEL :u64 = 3;
+        let satp = self.csr.load_csrs(SATP);
+        let mode = satp >> 63;
+        let asid = (satp >> 22) & 0x1ff;
+        let ppn = satp & 0x3fffff;
+        if mode == 0 {
+            return Ok(va);
+        }
+        let mut pte_addr = ppn * PAGESIZE;
+        let mut i = (LEVEL - 1) as i64;
+        let mut pte = 0;
+        while i >= 0 {
+            if let Ok(pte) = self.bus.load(pte_addr, 64) {
+                let v = bit(pte, 0);
+                let r = bit(pte, 1);
+                let w = bit(pte, 2);
+                let x = bit(pte, 3);
+                let u = bit(pte, 4);
+                let g = bit(pte, 5);
+                let a = bit(pte, 6);
+                let d = bit(pte, 7);
+                if (v == 0) || ((r == 0) && (w == 1)) {
+                    return Err(Exception::LoadPageFault(va as u32));
+                }
+                if (r == 1) || (x == 1) {
+                    break;
+                }
+                pte_addr = match i {
+                    0 => (pte >> 10) & 0x1ff,
+                    1 => (pte >> 19) & 0x1ff,
+                    2 => (pte >> 28) & 0x3ffffff,
+                    _ => 0, // never executed
+                } * PAGESIZE;
+                i = i - 1;
+            } else {
+                return Err(Exception::LoadPageFault(va as u32));
+            }
+        }
+        if i == 0 {
+            Ok((pte & 0x3ffffffffffc00) | (va & 0x3ff))
+        } else {
+            
+        }
+
         Ok(va)
     }
 

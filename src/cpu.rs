@@ -124,12 +124,22 @@ impl Cpu {
         self.src2 = REG_NUM;
     }
 
-    fn load(&mut self, addr: u64, size: u64) -> Result<u64, Exception> {
-        self.bus.load(addr, size)
+    fn load(&mut self, va: u64, size: u64) -> Result<u64, Exception> {
+        match  self.translate(va) {
+            Ok(pa) => self.bus.load(pa, size),
+            Err(e)=> Err(e),
+        }
     }
 
-    fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
-        self.bus.store(addr, size, value)
+    fn store(&mut self, va: u64, size: u64, value: u64) -> Result<(), Exception> {
+        match  self.translate(va) {
+            Ok(pa) => self.bus.store(pa, size, value),
+            Err(e)=> Err(e),
+        }
+    }
+
+    fn translate(&self, va: u64) -> Result<u64, Exception> {
+        Ok(va)
     }
 
     pub fn process_interrupt(&mut self) {

@@ -142,8 +142,6 @@ impl Cpu {
         }
     }
 
-
-
     fn translate(&self, va: u64) -> Result<u64, Exception> {
         const PAGESIZE :u64 = 4096;
         const LEVEL :u64 = 3;
@@ -156,7 +154,7 @@ impl Cpu {
         }
         let mut pte_addr = ppn * PAGESIZE;
         let mut i = (LEVEL - 1) as i64;
-        let mut pte = 0;
+        let pte = 0;
         while i >= 0 {
             if let Ok(pte) = self.bus.load(pte_addr, 64) {
                 let v = bit(pte, 0);
@@ -184,13 +182,12 @@ impl Cpu {
                 return Err(Exception::LoadPageFault(va as u32));
             }
         }
-        if i == 0 {
-            Ok((pte & 0x3ffffffffffc00) | (va & 0x3ff))
-        } else {
-            
+        match i {
+            -1 => Ok((pte & 0x3ffffffffffc00) | (va & 0x00003ff)),
+            0  => Ok((pte & 0x3ffffffff80000) | (va & 0x007ffff)),
+            1  => Ok((pte & 0x3ffffff0000000) | (va & 0xfffffff)),
+            _ => panic!("something goes wrong at MMU!"),
         }
-
-        Ok(va)
     }
 
     pub fn process_interrupt(&mut self) {

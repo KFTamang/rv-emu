@@ -175,7 +175,7 @@ impl Cpu {
                     0 => (pte >> 10) & 0x1ff,
                     1 => (pte >> 19) & 0x1ff,
                     2 => (pte >> 28) & 0x3ffffff,
-                    _ => 0, // never executed
+                    _ => panic!("something goes wrong at pagewalk level{}!", i),
                 } * PAGESIZE;
                 i = i - 1;
             } else {

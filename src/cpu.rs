@@ -12,6 +12,12 @@ pub const M_MODE: u64 = 0b11;
 pub const S_MODE: u64 = 0b10;
 pub const U_MODE: u64 = 0b00;
 
+#[derive(PartialEq)]
+enum AccessMode {
+    Load,
+    Store,
+}
+
 fn bit(integer: u64, bit: u64) -> u64 {
     (integer >> bit) & 0x1
 }
@@ -129,20 +135,20 @@ impl Cpu {
     }
 
     fn load(&mut self, va: u64, size: u64) -> Result<u64, Exception> {
-        match  self.translate(va) {
+        match  self.translate(va, AccessMode::Load) {
             Ok(pa) => self.bus.load(pa, size),
             Err(e)=> Err(e),
         }
     }
 
     fn store(&mut self, va: u64, size: u64, value: u64) -> Result<(), Exception> {
-        match  self.translate(va) {
+        match  self.translate(va, AccessMode::Store) {
             Ok(pa) => self.bus.store(pa, size, value),
             Err(e)=> Err(e),
         }
     }
 
-    fn translate(&self, va: u64) -> Result<u64, Exception> {
+    fn translate(&mut self, va: u64, acc_mode: AccessMode) -> Result<u64, Exception> {
         const PAGESIZE :u64 = 4096;
         const LEVEL :u64 = 3;
         let satp = self.csr.load_csrs(SATP);
@@ -163,8 +169,6 @@ impl Cpu {
                 let x = bit(pte, 3);
                 let u = bit(pte, 4);
                 let g = bit(pte, 5);
-                let a = bit(pte, 6);
-                let d = bit(pte, 7);
                 if (v == 0) || ((r == 0) && (w == 1)) {
                     return Err(Exception::LoadPageFault(va as u32));
                 }
@@ -181,6 +185,11 @@ impl Cpu {
             } else {
                 return Err(Exception::LoadPageFault(va as u32));
             }
+        }
+        let a = bit(pte, 6);
+        let d = bit(pte, 7);
+        if (a == 0) || ((d == 0) && (acc_mode == AccessMode::Store)) {
+            self.bus.store(pte_addr, 64, pte | (1 << 6))?;
         }
         match i {
             -1 => Ok((pte & 0x3ffffffffffc00) | (va & 0x00003ff)),

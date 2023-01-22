@@ -32,12 +32,13 @@ pub struct Cpu {
     src2: usize,
     pub mode: u64,
     interrupt: Interrupt,
+    dump_count: u64,
     logger: BufWriter<Box<dyn Write>>,
     inst_string: String,
 }
 
 impl Cpu {
-    pub fn new(binary: Vec<u8>, base_addr: u64, _logger: BufWriter<Box<dyn Write>>) -> Self {
+    pub fn new(binary: Vec<u8>, base_addr: u64, _dump_count: u64, _logger: BufWriter<Box<dyn Write>>) -> Self {
         let mut regs = [0; 32];
         regs[2] = DRAM_SIZE;
         Self {
@@ -50,6 +51,7 @@ impl Cpu {
             src2: REG_NUM,
             mode: M_MODE,
             interrupt: Interrupt::new(),
+            dump_count: _dump_count,
             logger: _logger,
             inst_string: String::from(""),
         }
@@ -68,52 +70,66 @@ impl Cpu {
     }
 
     fn print_inst_r(&mut self, name: &str, rd: usize, rs1: usize, rs2: usize) {
-        self.inst_string = format!(
-            "{:>#x} : {}, dest:{}, rs1:{}, rs2:{}\n",
-            self.pc, name, rd, rs1, rs2
-        );
+        if self.dump_count > 0 {
+            self.inst_string = format!(
+                "{:>#x} : {}, dest:{}, rs1:{}, rs2:{}\n",
+                self.pc, name, rd, rs1, rs2
+            );    
+        }
     }
 
     fn print_inst_i(&mut self, name: &str, rd: usize, rs1: usize, imm: u64) {
-        self.inst_string = format!(
-            "{:>#x} : {}, rd:{}, rs1:{}, imm:{}({:>#x})\n",
-            self.pc, name, rd, rs1, imm as i32, imm as i32
-        );
+        if self.dump_count > 0 {
+            self.inst_string = format!(
+                "{:>#x} : {}, rd:{}, rs1:{}, imm:{}({:>#x})\n",
+                self.pc, name, rd, rs1, imm as i32, imm as i32
+            );
+        }
     }
 
     fn print_inst_s(&mut self, name: &str, rs1: usize, rs2: usize, imm: u64) {
-        self.inst_string = format!(
-            "{:>#x} : {}, offset:{}, base:{}, src:{}\n",
-            self.pc, name, imm as i64, rs1, rs2
-        );
+        if self.dump_count > 0 {
+            self.inst_string = format!(
+                "{:>#x} : {}, offset:{}, base:{}, src:{}\n",
+                self.pc, name, imm as i64, rs1, rs2
+            );
+        }
     }
 
     fn print_inst_b(&mut self, name: &str, rs1: usize, rs2: usize, imm: u64) {
-        self.inst_string = format!(
-            "{:>#x} : {}, rs1:{}, rs2:{}, offset:{}\n",
-            self.pc, name, rs1, rs2, imm as i64
-        );
+        if self.dump_count > 0 {
+            self.inst_string = format!(
+                "{:>#x} : {}, rs1:{}, rs2:{}, offset:{}\n",
+                self.pc, name, rs1, rs2, imm as i64
+            );
+        }
     }
 
     fn print_inst_j(&mut self, name: &str, rd: usize, imm: u64) {
-        self.inst_string = format!(
-            "{:>#x} : {}, dest:{}, offset:{}({:>#x})\n",
-            self.pc, name, rd, imm as i64, imm as i64
-        );
+        if self.dump_count > 0 {
+            self.inst_string = format!(
+                "{:>#x} : {}, dest:{}, offset:{}({:>#x})\n",
+                self.pc, name, rd, imm as i64, imm as i64
+            );
+        }
     }
 
     fn print_inst_csr(&mut self, name: &str, rd: usize, rs1: usize, csr: u64) {
-        self.inst_string = format!(
-            "{:>#x} : {}, dest:{}, rs1:{}, csr:{}({:>#x})\n",
-            self.pc, name, rd, rs1, csr, csr
-        );
+        if self.dump_count > 0 {
+            self.inst_string = format!(
+                "{:>#x} : {}, dest:{}, rs1:{}, csr:{}({:>#x})\n",
+                self.pc, name, rd, rs1, csr, csr
+            );
+        }
     }
 
     fn print_inst_csri(&mut self, name: &str, rd: usize, csr: u64, uimm: u64) {
-        self.inst_string = format!(
-            "{:>#x} : {}, dest:{}, csr:{}({:>#x}), uimm:{}({:>#x})\n",
-            self.pc, name, rd, csr, csr, uimm, uimm
-        );
+        if self.dump_count > 0 {
+            self.inst_string = format!(
+                "{:>#x} : {}, dest:{}, csr:{}({:>#x}), uimm:{}({:>#x})\n",
+                self.pc, name, rd, csr, csr, uimm, uimm
+            );
+        }
     }
 
     fn mark_as_dest(&mut self, reg: usize) {

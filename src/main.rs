@@ -57,7 +57,7 @@ fn main() -> io::Result<()> {
     let reg_dump_count = cli.dump.unwrap_or(0);
     let mut counter = cli.count.unwrap_or(-1);
 
-    let mut cpu = Cpu::new(code, base_addr, logger);
+    let mut cpu = Cpu::new(code, base_addr, reg_dump_count as u64, logger);
     cpu.pc = entry_address;
     loop {
         cpu.process_interrupt();

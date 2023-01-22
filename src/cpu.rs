@@ -160,9 +160,10 @@ impl Cpu {
         }
         let mut pte_addr = ppn * PAGESIZE;
         let mut i = (LEVEL - 1) as i64;
-        let pte = 0;
+        let mut pte = 0;
         while i >= 0 {
-            if let Ok(pte) = self.bus.load(pte_addr, 64) {
+            if let Ok(val) = self.bus.load(pte_addr, 64) {
+                pte = val;
                 let v = bit(pte, 0);
                 let r = bit(pte, 1);
                 let w = bit(pte, 2);
@@ -181,6 +182,7 @@ impl Cpu {
                     2 => (pte >> 28) & 0x3ffffff,
                     _ => panic!("something goes wrong at pagewalk level{}!", i),
                 } * PAGESIZE;
+                self.log(format!("i:{}, pte:{:>#x}, pte_addr:{:>#x}", i, pte, pte_addr));
                 i = i - 1;
             } else {
                 return Err(Exception::LoadPageFault(va as u32));
@@ -252,7 +254,7 @@ impl Cpu {
                 self.csr.set_mstatus_bit(U_MODE, MASK_MPP, BIT_MPP);        
                 self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
                 self.mode = pp;
-                eprintln!("back to privilege {}", pp);
+                self.log(format!("back to privilege {}", pp));
             },
             S_MODE => {
                 let pp = self.csr.get_sstatus_bit(MASK_SPP, BIT_SPP);
@@ -263,7 +265,7 @@ impl Cpu {
                 self.csr.set_sstatus_bit(U_MODE, MASK_SPP, BIT_SPP);        
                 self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
                 self.mode = pp;
-                eprintln!("back to privilege {}", pp);
+                self.log(format!("back to privilege {}", pp));
             },
             _ => { panic!("m/sret from U_MODE\n");}
         }

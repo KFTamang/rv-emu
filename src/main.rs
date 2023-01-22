@@ -86,7 +86,7 @@ fn main() -> io::Result<()> {
 
         if counter == 0 {
             if cli.loop_on {
-                println!("0x{:x}", cpu.pc);
+                cpu.log(format!("0x{:x}\n", cpu.pc));
                 counter = cli.count.unwrap();
             } else {
                 cpu.log(format!("Program readched execution limit.\n"));

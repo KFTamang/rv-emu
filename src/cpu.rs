@@ -166,19 +166,20 @@ impl Cpu {
 
     fn translate(&mut self, va: u64, acc_mode: AccessMode) -> Result<u64, Exception> {
         const PAGESIZE :u64 = 4096;
+        const PTESIZE :u64 = 8; // 64bit
         const LEVEL :u64 = 3;
         let satp = self.csr.load_csrs(SATP);
         let mode = satp >> 63;
         let asid = (satp >> 22) & 0x1ff;
-        let ppn = satp & 0x3fffff;
+        let ppn = satp & 0xfff_ffff_ffff;
         if mode == 0 {
             return Ok(va);
         }
-        let mut pte_addr = ppn * PAGESIZE;
+        let mut pt_addr = ppn * PAGESIZE;
         let mut i = (LEVEL - 1) as i64;
         let mut pte = 0;
         while i >= 0 {
-            if let Ok(val) = self.bus.load(pte_addr, 64) {
+            if let Ok(val) = self.bus.load(pt_addr, 64) {
                 pte = val;
                 let v = bit(pte, 0);
                 let r = bit(pte, 1);
@@ -192,13 +193,9 @@ impl Cpu {
                 if (r == 1) || (x == 1) {
                     break;
                 }
-                pte_addr = match i {
-                    0 => (pte >> 10) & 0x1ff,
-                    1 => (pte >> 19) & 0x1ff,
-                    2 => (pte >> 28) & 0x3ffffff,
-                    _ => panic!("something goes wrong at pagewalk level{}!", i),
-                } * PAGESIZE;
-                self.log(format!("i:{}, pte:{:>#x}, pte_addr:{:>#x}", i, pte, pte_addr));
+                let ppn = (pte >> 10) & 0xfff_ffff_ffff;
+                pt_addr = ppn * PAGESIZE;
+                self.log(format!("i:{}, pte:{:>#x}, pt_addr:{:>#x}", i, pte, pt_addr));
                 i = i - 1;
             } else {
                 return Err(Exception::LoadPageFault(va as u32));
@@ -207,7 +204,7 @@ impl Cpu {
         let a = bit(pte, 6);
         let d = bit(pte, 7);
         if (a == 0) || ((d == 0) && (acc_mode == AccessMode::Store)) {
-            self.bus.store(pte_addr, 64, pte | (1 << 6))?;
+            self.bus.store(pt_addr, 64, pte | (1 << 6))?;
         }
         match i {
             -1 => Ok((pte & 0x3ffffffffffc00) | (va & 0x00003ff)),

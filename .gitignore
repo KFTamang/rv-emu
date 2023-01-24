@@ -2,3 +2,4 @@
 test
 sandbox/*
 .vscode/*
+log/memory.dump

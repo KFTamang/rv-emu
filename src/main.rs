@@ -97,6 +97,8 @@ fn main() -> io::Result<()> {
         }
     }
 
+    cpu.bus.dump("log/memory.dump");
+
     Ok(())
 }
 

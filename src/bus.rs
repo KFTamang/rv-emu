@@ -63,4 +63,8 @@ impl Bus {
         eprintln!("Error while store operation: accessing 0x{:x}, size:{}, value:{}(0x{:x})", addr, size, value, value);
         Err(Exception::StoreAMOAccessFault)
     }
+
+    pub fn dump(&self, path: &str) {
+        self.dram.dump(path);
+    }
 }

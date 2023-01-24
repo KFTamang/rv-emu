@@ -1,4 +1,6 @@
 use crate::interrupt::*;
+use std::fs::File;
+use std::io::Write;
 
 // dram memory size, 128MB
 pub const DRAM_SIZE: u64 = 1024 * 1024 * 128;
@@ -94,5 +96,11 @@ impl Dram {
         self.dram[index + 5] = ((value >> 40) & 0xff) as u8;
         self.dram[index + 6] = ((value >> 48) & 0xff) as u8;
         self.dram[index + 7] = ((value >> 56) & 0xff) as u8;
+    }
+
+    pub fn dump(&self, path: &str) {
+        let mut file = File::create(path).expect("Cannot open file");
+    
+        file.write_all(&self.dram).expect("Cannot dump memory");
     }
 }

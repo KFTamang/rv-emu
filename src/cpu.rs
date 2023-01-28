@@ -171,14 +171,18 @@ impl Cpu {
         let satp = self.csr.load_csrs(SATP);
         let mode = satp >> 63;
         let asid = (satp >> 22) & 0x1ff;
-        let ppn = satp & 0xfff_ffff_ffff;
         if mode == 0 {
             return Ok(va);
         }
-        let mut pt_addr = ppn * PAGESIZE;
+        let vpn = [ (va >> 12) & 0x1ff, 
+                    (va >> 21) & 0x1ff, 
+                    (va >> 30) & 0x1ff, ];
+        let mut pt_addr = 0;
         let mut i = (LEVEL - 1) as i64;
         let mut pte = 0;
+        let mut ppn = satp & 0xfff_ffff_ffff;
         while i >= 0 {
+            pt_addr = ppn * PAGESIZE + vpn[i as usize] * PTESIZE;
             if let Ok(val) = self.bus.load(pt_addr, 64) {
                 pte = val;
                 let v = bit(pte, 0);
@@ -193,9 +197,7 @@ impl Cpu {
                 if (r == 1) || (x == 1) {
                     break;
                 }
-                let ppn = (pte >> 10) & 0xfff_ffff_ffff;
-                pt_addr = ppn * PAGESIZE;
-                self.log(format!("i:{}, pte:{:>#x}, pt_addr:{:>#x}", i, pte, pt_addr));
+                ppn = (pte >> 10) & 0xfff_ffff_ffff;
                 i = i - 1;
             } else {
                 return Err(Exception::LoadPageFault(va as u32));
@@ -207,9 +209,9 @@ impl Cpu {
             self.bus.store(pt_addr, 64, pte | (1 << 6))?;
         }
         match i {
-            -1 => Ok((pte & 0x3ffffffffffc00) | (va & 0x00003ff)),
-            0  => Ok((pte & 0x3ffffffff80000) | (va & 0x007ffff)),
-            1  => Ok((pte & 0x3ffffff0000000) | (va & 0xfffffff)),
+            0 => Ok(((pte << 2) & 0xfffffffffff000) | (va & 0x00000fff)),
+            1 => Ok(((pte << 2) & 0xffffffffe00000) | (va & 0x001fffff)),
+            2 => Ok(((pte << 2) & 0xffffffc0000000) | (va & 0x3fffffff)),
             _ => panic!("something goes wrong at MMU!"),
         }
     }

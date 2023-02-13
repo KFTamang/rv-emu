@@ -60,8 +60,6 @@ fn main() -> io::Result<()> {
     let mut cpu = Cpu::new(code, base_addr, reg_dump_count as u64, logger);
     cpu.pc = entry_address;
     loop {
-        cpu.process_interrupt();
-
         let inst = match cpu.fetch() {
             Ok(inst) => inst,
             Err(_) => break,

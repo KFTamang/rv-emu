@@ -29,7 +29,7 @@ impl Interrupt {
         let exception_code = self.exception_code();
         let target_mode = self.get_trap_mode(cpu);
         match target_mode {
-            M_MODE => {
+            Ok(M_MODE) => {
                 cpu.csr.store_csrs(MEPC, cpu.pc);
                 cpu.csr.store_csrs(MCAUSE, exception_code);
                 cpu.csr.set_mstatus_bit(cpu.mode, MASK_MPP, BIT_MPP);
@@ -51,7 +51,7 @@ impl Interrupt {
                     }
                 }
             },
-            S_MODE => {
+            Ok(S_MODE) => {
                 cpu.csr.store_csrs(SEPC, cpu.pc);
                 cpu.csr.store_csrs(SCAUSE, exception_code);
                 cpu.csr.set_sstatus_bit(cpu.mode, MASK_SPP, BIT_SPP);
@@ -78,33 +78,50 @@ impl Interrupt {
         cpu.log(format!("Exception:{} occurred!", self.exception_code()));
     }
     fn get_trap_mode(&self, cpu: &mut Cpu) -> Result<u64, ()> {
-        // An interrupt i will trap to M-mode (causing the privilege mode to change to M-mode)
-        // if all of the following are true: 
-        // (a) either the current privilege mode is M and the MIE bit in the mstatus register is set,
-        //  or the current privilege mode has less privilege than M-mode; 
-        // (b) bit i is set in both mip and mie; and 
-        // (c) if register mideleg exists, bit i is not set in mideleg.
-
-        // (a)
-        let mstatus = cpu.csr.load_csrs(MSTATUS);
-        if !(((cpu.mode == M_MODE) && (mstatus & MASK_MIE != 0)) || (cpu.mode < M_MODE)) {
-            return Err(());
-        }
-
-        // (b)
+        // An interrupt i will be taken 
+        // (a)if bit i is set in both mip and mie, 
+        // (b)and if interrupts are globally enabled. 
+        // By default, M-mode interrupts are globally enabled 
+        // (b-1)if the hart’s current privilege mode is less than M, 
+        // (b-2)or if the current privilege mode is M and the MIE bit in the mstatus register is set. 
+        // (c)If bit i in mideleg is set, however, interrupts are considered to be globally enabled 
+        // if the hart’s current privilege mode equals the delegated privilege mode and that mode’s interrupt enable bit (xIE in mstatus for mode x) is set, 
+        // or if the current privilege mode is less than the delegated privilege mode.
         let i = self.exception_code();
         let bit_i = 0b1 << i;
-        let mip = cpu.csr.load_csrs(MIP);
-        let mie = cpu.csr.load_csrs(MIE);
-        if !((mie & bit_i != 0) && (mip & bit_i != 0)) {
-            return Err(());
-        }
         let mideleg = cpu.csr.load_csrs(MIDELEG);
-        if (cpu.mode < M_MODE) && ((exception_bit & mideleg) != 0) {
-            S_MODE
-        } else {
+        let destined_mode = if (bit_i & mideleg) == 0 {
             M_MODE
+        } else {
+            S_MODE
+        };
+
+        match destined_mode {
+            M_MODE => {
+                let mstatus = cpu.csr.load_csrs(MSTATUS);
+                if !(((cpu.mode == M_MODE) && (mstatus & MASK_MIE != 0)) || (cpu.mode < M_MODE)) {
+                    return Err(());
+                }        
+                let mip = cpu.csr.load_csrs(MIP);
+                let mie = cpu.csr.load_csrs(MIE);
+                if !((mie & bit_i != 0) && (mip & bit_i != 0)) {
+                    return Err(());
+                }
+            },
+            S_MODE => {
+                let sstatus = cpu.csr.load_csrs(SSTATUS);
+                if !(((cpu.mode == S_MODE) && (sstatus & MASK_SIE != 0)) || (cpu.mode < S_MODE)) {
+                    return Err(());
+                }        
+                let sip = cpu.csr.load_csrs(SIP);
+                let sie = cpu.csr.load_csrs(SIE);
+                if !((sie & bit_i != 0) && (sip & bit_i != 0)) {
+                    return Err(());
+                }
+            }
+            _ => {return Err(());}
         }
+        Ok(destined_mode)
     }
 }
 

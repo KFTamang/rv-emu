@@ -31,7 +31,6 @@ pub struct Cpu {
     src1: usize,
     src2: usize,
     pub mode: u64,
-    interrupt: Interrupt,
     dump_count: u64,
     logger: BufWriter<Box<dyn Write>>,
     inst_string: String,
@@ -50,7 +49,6 @@ impl Cpu {
             src1: REG_NUM,
             src2: REG_NUM,
             mode: M_MODE,
-            interrupt: Interrupt::new(),
             dump_count: _dump_count,
             logger: _logger,
             inst_string: String::from(""),
@@ -213,17 +211,6 @@ impl Cpu {
             1 => Ok(((pte << 2) & 0xffffffffe00000) | (va & 0x001fffff)),
             2 => Ok(((pte << 2) & 0xffffffc0000000) | (va & 0x3fffffff)),
             _ => panic!("something goes wrong at MMU!"),
-        }
-    }
-
-    pub fn process_interrupt(&mut self) {
-        if let Some(i) = self.interrupt.get_pending_interrupt() {
-            if (((self.mode == M_MODE) && self.csr.mstatus_mie()) || (self.mode < M_MODE))
-                && ((self.csr.mie() & (1u64 << i)) != 0)
-                && ((self.csr.mip() & (1u64 << i)) != 0)
-            {
-                self.trap();
-            }
         }
     }
 

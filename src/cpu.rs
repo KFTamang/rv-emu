@@ -214,6 +214,32 @@ impl Cpu {
         }
     }
 
+    pub fn process_interrupt(&mut self) -> Result<(),()> {
+        if let Ok(mut interrupt) = self.get_pending_interrupt() {
+            interrupt.take_trap(self);
+            Ok(())
+        } else {
+            Err(())
+        }
+    }
+
+    fn get_pending_interrupt(&self) -> Result<Interrupt, ()> {
+        let mip = self.csr.load_csrs(MIP);
+        let priority_order: [(u64, Interrupt); 6] = 
+            [ (1 << 11, Interrupt::MachineExternalInterrupt),       //MEI
+              (1 <<  3, Interrupt::MachineSoftwareInterrupt),       //MSI
+              (1 <<  7, Interrupt::MachineTimerInterrupt),          //MTI
+              (1 <<  9, Interrupt::SupervisorExternalInterrupt),    //SEI
+              (1 <<  1, Interrupt::SupervisorSoftwareInterrupt),    //SSI
+              (1 <<  5, Interrupt::SupervisorTimerInterrupt) ];     //STI
+        for i in priority_order.iter().enumerate() {
+            if (mip & i.1.0) != 0 {
+                return Ok(i.1.1);
+            }
+        }
+        Err(())
+    }
+
     fn trap(&mut self) {
         // trap process here
 

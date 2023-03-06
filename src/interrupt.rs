@@ -4,6 +4,7 @@ use std::process::exit;
 
 const INTERRUPT_BIT:u64 = 1 << 63;
 
+#[derive(Clone, Copy)]
 pub enum Interrupt {
     SupervisorSoftwareInterrupt,
     MachineSoftwareInterrupt,

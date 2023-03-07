@@ -224,7 +224,11 @@ impl Cpu {
     }
 
     fn get_pending_interrupt(&self) -> Result<Interrupt, ()> {
-        let mip = self.csr.load_csrs(MIP);
+        let xip = if self.mode == M_MODE {
+            self.csr.load_csrs(MIP)
+        } else {
+            self.csr.load_csrs(SIP)
+        };
         let priority_order: [(u64, Interrupt); 6] = 
             [ (1 << 11, Interrupt::MachineExternalInterrupt),       //MEI
               (1 <<  3, Interrupt::MachineSoftwareInterrupt),       //MSI
@@ -233,7 +237,7 @@ impl Cpu {
               (1 <<  1, Interrupt::SupervisorSoftwareInterrupt),    //SSI
               (1 <<  5, Interrupt::SupervisorTimerInterrupt) ];     //STI
         for i in priority_order.iter().enumerate() {
-            if (mip & i.1.0) != 0 {
+            if (xip & i.1.0) != 0 {
                 return Ok(i.1.1);
             }
         }

@@ -61,9 +61,8 @@ fn main() -> io::Result<()> {
     cpu.pc = entry_address;
     loop {
 
-        if cpu.process_interrupt() == Ok(()) {
-            cpu.pc = cpu.pc.wrapping_add(4);
-            continue;
+        if let Some(mut interrupt) = cpu.get_pending_interrupt() {
+            interrupt.take_trap(&mut cpu);
         }
 
         let inst = match cpu.fetch() {

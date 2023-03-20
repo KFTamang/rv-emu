@@ -214,16 +214,7 @@ impl Cpu {
         }
     }
 
-    pub fn process_interrupt(&mut self) -> Result<(),()> {
-        if let Ok(mut interrupt) = self.get_pending_interrupt() {
-            interrupt.take_trap(self);
-            Ok(())
-        } else {
-            Err(())
-        }
-    }
-
-    fn get_pending_interrupt(&self) -> Result<Interrupt, ()> {
+    pub fn get_pending_interrupt(&self) -> Option<Interrupt> {
         let xip = if self.mode == M_MODE {
             self.csr.load_csrs(MIP)
         } else {
@@ -238,10 +229,10 @@ impl Cpu {
               (1 <<  5, Interrupt::SupervisorTimerInterrupt) ];     //STI
         for i in priority_order.iter().enumerate() {
             if (xip & i.1.0) != 0 {
-                return Ok(i.1.1);
+                return Some(i.1.1);
             }
         }
-        Err(())
+        None
     }
 
     fn trap(&mut self) {

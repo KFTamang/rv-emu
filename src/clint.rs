@@ -1,16 +1,19 @@
 use crate::interrupt::*;
 
-pub struct Clint{
+pub struct Clint {
     start_addr: u64,
     size: u64,
 }
 
-impl Clint{
+impl Clint {
     pub fn new(_start_addr: u64, _size: u64) -> Clint {
-        Self{start_addr: _start_addr, size: _size}
+        Self {
+            start_addr: _start_addr,
+            size: _size,
+        }
     }
 
-    pub fn is_accessible(&self, addr: u64) -> bool{
+    pub fn is_accessible(&self, addr: u64) -> bool {
         (addr >= self.start_addr) & (addr < self.start_addr + self.size)
     }
 

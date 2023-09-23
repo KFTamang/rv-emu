@@ -37,7 +37,12 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    pub fn new(binary: Vec<u8>, base_addr: u64, _dump_count: u64, _logger: BufWriter<Box<dyn Write>>) -> Self {
+    pub fn new(
+        binary: Vec<u8>,
+        base_addr: u64,
+        _dump_count: u64,
+        _logger: BufWriter<Box<dyn Write>>,
+    ) -> Self {
         let mut regs = [0; 32];
         regs[2] = DRAM_SIZE;
         Self {
@@ -55,8 +60,10 @@ impl Cpu {
         }
     }
 
-    pub fn log(&mut self, string: String){
-        self.logger.write_all(string.as_bytes()).expect("Failed to write file");
+    pub fn log(&mut self, string: String) {
+        self.logger
+            .write_all(string.as_bytes())
+            .expect("Failed to write file");
     }
 
     pub fn fetch(&mut self) -> Result<u64, ()> {
@@ -72,7 +79,7 @@ impl Cpu {
             self.inst_string = format!(
                 "{:>#x} : {}, dest:{}, rs1:{}, rs2:{}\n",
                 self.pc, name, rd, rs1, rs2
-            );    
+            );
         }
     }
 
@@ -149,32 +156,30 @@ impl Cpu {
     }
 
     fn load(&mut self, va: u64, size: u64) -> Result<u64, Exception> {
-        match  self.translate(va, AccessMode::Load) {
+        match self.translate(va, AccessMode::Load) {
             Ok(pa) => self.bus.load(pa, size),
-            Err(e)=> Err(e),
+            Err(e) => Err(e),
         }
     }
 
     fn store(&mut self, va: u64, size: u64, value: u64) -> Result<(), Exception> {
-        match  self.translate(va, AccessMode::Store) {
+        match self.translate(va, AccessMode::Store) {
             Ok(pa) => self.bus.store(pa, size, value),
-            Err(e)=> Err(e),
+            Err(e) => Err(e),
         }
     }
 
     fn translate(&mut self, va: u64, acc_mode: AccessMode) -> Result<u64, Exception> {
-        const PAGESIZE :u64 = 4096;
-        const PTESIZE :u64 = 8; // 64bit
-        const LEVEL :u64 = 3;
+        const PAGESIZE: u64 = 4096;
+        const PTESIZE: u64 = 8; // 64bit
+        const LEVEL: u64 = 3;
         let satp = self.csr.load_csrs(SATP);
         let mode = satp >> 63;
         let asid = (satp >> 22) & 0x1ff;
         if mode == 0 {
             return Ok(va);
         }
-        let vpn = [ (va >> 12) & 0x1ff, 
-                    (va >> 21) & 0x1ff, 
-                    (va >> 30) & 0x1ff, ];
+        let vpn = [(va >> 12) & 0x1ff, (va >> 21) & 0x1ff, (va >> 30) & 0x1ff];
         let mut pt_addr = 0;
         let mut i = (LEVEL - 1) as i64;
         let mut pte = 0;
@@ -220,16 +225,17 @@ impl Cpu {
         } else {
             self.csr.load_csrs(SIP)
         };
-        let priority_order: [(u64, Interrupt); 6] = 
-            [ (1 << 11, Interrupt::MachineExternalInterrupt),       //MEI
-              (1 <<  3, Interrupt::MachineSoftwareInterrupt),       //MSI
-              (1 <<  7, Interrupt::MachineTimerInterrupt),          //MTI
-              (1 <<  9, Interrupt::SupervisorExternalInterrupt),    //SEI
-              (1 <<  1, Interrupt::SupervisorSoftwareInterrupt),    //SSI
-              (1 <<  5, Interrupt::SupervisorTimerInterrupt) ];     //STI
+        let priority_order: [(u64, Interrupt); 6] = [
+            (1 << 11, Interrupt::MachineExternalInterrupt),   //MEI
+            (1 << 3, Interrupt::MachineSoftwareInterrupt),    //MSI
+            (1 << 7, Interrupt::MachineTimerInterrupt),       //MTI
+            (1 << 9, Interrupt::SupervisorExternalInterrupt), //SEI
+            (1 << 1, Interrupt::SupervisorSoftwareInterrupt), //SSI
+            (1 << 5, Interrupt::SupervisorTimerInterrupt),
+        ]; //STI
         for i in priority_order.iter().enumerate() {
-            if (xip & i.1.0) != 0 {
-                return Some(i.1.1);
+            if (xip & i.1 .0) != 0 {
+                return Some(i.1 .1);
             }
         }
         None
@@ -274,23 +280,25 @@ impl Cpu {
                 let previous_pc = self.csr.load_csrs(MEPC);
                 self.csr.set_mstatus_bit(pie, MASK_MIE, BIT_MIE);
                 self.csr.set_mstatus_bit(0b1, MASK_MPIE, BIT_MPIE);
-                self.csr.set_mstatus_bit(U_MODE, MASK_MPP, BIT_MPP);        
+                self.csr.set_mstatus_bit(U_MODE, MASK_MPP, BIT_MPP);
                 self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
                 self.mode = pp;
                 self.log(format!("back to privilege {}", pp));
-            },
+            }
             S_MODE => {
                 let pp = self.csr.get_sstatus_bit(MASK_SPP, BIT_SPP);
                 let pie = self.csr.get_sstatus_bit(MASK_SPIE, BIT_SPIE);
                 let previous_pc = self.csr.load_csrs(SEPC);
                 self.csr.set_sstatus_bit(pie, MASK_SIE, BIT_SIE);
                 self.csr.set_sstatus_bit(0b1, MASK_SPIE, BIT_SPIE);
-                self.csr.set_sstatus_bit(U_MODE, MASK_SPP, BIT_SPP);        
+                self.csr.set_sstatus_bit(U_MODE, MASK_SPP, BIT_SPP);
                 self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
                 self.mode = pp;
                 self.log(format!("back to privilege {}", pp));
-            },
-            _ => { panic!("m/sret from U_MODE\n");}
+            }
+            _ => {
+                panic!("m/sret from U_MODE\n");
+            }
         }
     }
 
@@ -356,12 +364,14 @@ impl Cpu {
                     }
                     (0x1, 0x1) => {
                         self.print_inst_r("mulh", rd, rs1, rs2);
-                        let mul = (self.regs[rs1] as i64 as i128).wrapping_mul(self.regs[rs2] as i64 as i128);
+                        let mul = (self.regs[rs1] as i64 as i128)
+                            .wrapping_mul(self.regs[rs2] as i64 as i128);
                         self.regs[rd] = (mul >> 64) as u64;
                     }
                     (0x2, 0x1) => {
                         self.print_inst_r("mulhsu", rd, rs1, rs2);
-                        let mul = (self.regs[rs1] as i64 as i128).wrapping_mul(self.regs[rs2] as u128 as i128);
+                        let mul = (self.regs[rs1] as i64 as i128)
+                            .wrapping_mul(self.regs[rs2] as u128 as i128);
                         self.regs[rd] = (mul >> 64) as u64;
                     }
                     (0x3, 0x1) => {
@@ -811,10 +821,13 @@ impl Cpu {
                     }
                     (0x0, 0x9, _) => {
                         self.print_inst_r("sfence.vma", rd, rs1, rs2);
-                    } 
+                    }
                     (_, _, _) => {
                         self.log(format!("Unsupported CSR instruction!\n"));
-                        self.log(format!("pc = 0x{:x}, funct3:{}, funct7:{}\n", self.pc, funct3, funct7));
+                        self.log(format!(
+                            "pc = 0x{:x}, funct3:{}, funct7:{}\n",
+                            self.pc, funct3, funct7
+                        ));
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -824,7 +837,8 @@ impl Cpu {
                 self.inst_string = format!("pc=0x{:x}\nfence(do nothing)\n", self.pc);
                 Ok(())
             }
-            0x2f => { // Atomic Operation instructions
+            0x2f => {
+                // Atomic Operation instructions
                 let funct5 = funct7 >> 2;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
@@ -1048,9 +1062,9 @@ impl Cpu {
                         // store operation result
                         self.store(addr, 64, result)?;
                     }
-                   _ => {
-                    return Err(Exception::IllegalInstruction(inst));
-                   }
+                    _ => {
+                        return Err(Exception::IllegalInstruction(inst));
+                    }
                 }
                 Ok(())
             }

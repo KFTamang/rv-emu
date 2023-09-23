@@ -1,8 +1,8 @@
-use crate::dram::*;
 use crate::clint::*;
-use crate::uart::*;
+use crate::dram::*;
 use crate::interrupt::*;
 use crate::plic::*;
+use crate::uart::*;
 use crate::virtio::*;
 
 pub struct Bus {
@@ -40,7 +40,10 @@ impl Bus {
         if self.virtio.is_accessible(addr) {
             return self.virtio.load(addr, size);
         }
-        eprintln!("Error while load operation: accessing 0x{:x}, size:{}", addr, size);
+        eprintln!(
+            "Error while load operation: accessing 0x{:x}, size:{}",
+            addr, size
+        );
         Err(Exception::LoadAccessFault)
     }
 
@@ -60,7 +63,10 @@ impl Bus {
         if self.virtio.is_accessible(addr) {
             return self.virtio.store(addr, size, value);
         }
-        eprintln!("Error while store operation: accessing 0x{:x}, size:{}, value:{}(0x{:x})", addr, size, value, value);
+        eprintln!(
+            "Error while store operation: accessing 0x{:x}, size:{}, value:{}(0x{:x})",
+            addr, size, value, value
+        );
         Err(Exception::StoreAMOAccessFault)
     }
 

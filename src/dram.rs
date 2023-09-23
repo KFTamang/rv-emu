@@ -14,7 +14,10 @@ impl Dram {
     pub fn new(code: Vec<u8>, base: u64) -> Dram {
         let mut dram = vec![0; DRAM_SIZE as usize];
         dram.splice(..code.len(), code.iter().cloned());
-        Self { dram:dram, dram_base:base }
+        Self {
+            dram: dram,
+            dram_base: base,
+        }
     }
 
     pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
@@ -100,7 +103,7 @@ impl Dram {
 
     pub fn dump(&self, path: &str) {
         let mut file = File::create(path).expect("Cannot open file");
-    
+
         file.write_all(&self.dram).expect("Cannot dump memory");
     }
 }

@@ -1,12 +1,12 @@
 mod bus;
+mod clint;
 mod cpu;
 mod csr;
 mod dram;
-mod clint;
-mod uart;
-mod plic;
-mod virtio;
 mod interrupt;
+mod plic;
+mod uart;
+mod virtio;
 use crate::cpu::*;
 use clap::Parser; // command-line option parser
 
@@ -42,9 +42,7 @@ fn main() -> io::Result<()> {
     let mut entry_address = 0 as u64;
     let base_addr = cli.base_addr.unwrap_or(0) as u64;
     let logger = io::BufWriter::new(match cli.output {
-        Some(path) => {
-            Box::new(File::create(&path).unwrap()) as Box<dyn Write>
-        }
+        Some(path) => Box::new(File::create(&path).unwrap()) as Box<dyn Write>,
         None => Box::new(io::stdout()) as Box<dyn Write>,
     });
 
@@ -60,7 +58,6 @@ fn main() -> io::Result<()> {
     let mut cpu = Cpu::new(code, base_addr, reg_dump_count as u64, logger);
     cpu.pc = entry_address;
     loop {
-
         if let Some(mut interrupt) = cpu.get_pending_interrupt() {
             interrupt.take_trap(&mut cpu);
         }
@@ -93,7 +90,7 @@ fn main() -> io::Result<()> {
                 counter = cli.count.unwrap();
             } else {
                 cpu.log(format!("Program readched execution limit.\n"));
-                break;        
+                break;
             }
         } else {
             counter = counter - 1;
@@ -153,14 +150,21 @@ fn load_elf(code: &mut Vec<u8>, file: &mut File, base_addr: usize) -> io::Result
             continue;
         }
         if base_addr > va {
-            panic!("Base address {:>#x} is larger than virtual address {:>#x}\n", base_addr, va);
+            panic!(
+                "Base address {:>#x} is larger than virtual address {:>#x}\n",
+                base_addr, va
+            );
         }
         if code.len() <= (va - base_addr) {
             code.extend(vec![0; va - base_addr - code.len()].iter());
             // extend for .text and .data sections
             code.extend(&elf[segment..segment + filesize]);
             // extend for .bss section, filling with zeros
-            code.extend(std::iter::repeat(0).take(memsize - filesize).collect::<Vec<u8>>());
+            code.extend(
+                std::iter::repeat(0)
+                    .take(memsize - filesize)
+                    .collect::<Vec<u8>>(),
+            );
         } else if code.len() > va - base_addr + memsize {
             code[va..va + memsize].copy_from_slice(&elf[segment..segment + memsize]);
         } else {

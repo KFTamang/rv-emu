@@ -1,10 +1,9 @@
 use crate::interrupt::*;
 
-pub struct Uart{
+pub struct Uart {
     start_addr: u64,
     size: u64,
 }
-
 
 const REG_RHR_THR: u64 = 0;
 const REG_IER: u64 = 1;
@@ -15,7 +14,6 @@ const REG_LSR: u64 = 5;
 const REG_MSR: u64 = 6;
 const REG_SPR: u64 = 7;
 
-
 const RECEIVE_DATA_READY: u64 = 1 << 0;
 const OVERRUN_ERROR: u64 = 1 << 1;
 const PARITY_ERROR: u64 = 1 << 2;
@@ -25,12 +23,15 @@ const TRANSMIT_HOLDING_EMPTY: u64 = 1 << 5;
 const TRANSMIT_EMPTY: u64 = 1 << 6;
 const FIFO_ERROR: u64 = 1 << 7;
 
-impl Uart{
+impl Uart {
     pub fn new(_start_addr: u64, _size: u64) -> Uart {
-        Self{start_addr: _start_addr, size: _size}
+        Self {
+            start_addr: _start_addr,
+            size: _size,
+        }
     }
 
-    pub fn is_accessible(&self, addr: u64) -> bool{
+    pub fn is_accessible(&self, addr: u64) -> bool {
         (addr >= self.start_addr) & (addr < self.start_addr + self.size)
     }
 
@@ -41,12 +42,12 @@ impl Uart{
         let actual_addr = addr - self.start_addr;
         match actual_addr {
             REG_LSR => {
-                // returns TRANSMIT_EMPTY | TRANSMIT_HOLDING_EMPTY, 
-                // assuming infinitely fast UART, with FIFO being always empty    
+                // returns TRANSMIT_EMPTY | TRANSMIT_HOLDING_EMPTY,
+                // assuming infinitely fast UART, with FIFO being always empty
                 Ok(TRANSMIT_EMPTY | TRANSMIT_HOLDING_EMPTY)
             }
-            _ => Ok(0x0)
-        } 
+            _ => Ok(0x0),
+        }
     }
 
     pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
@@ -59,7 +60,7 @@ impl Uart{
                 print!("{}", value as u8 as char);
                 Ok(())
             }
-            _ => Ok(())
+            _ => Ok(()),
         }
     }
 }

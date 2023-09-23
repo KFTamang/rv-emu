@@ -2,7 +2,7 @@ use crate::cpu::*;
 use crate::csr::*;
 use std::process::exit;
 
-const INTERRUPT_BIT:u64 = 1 << 63;
+const INTERRUPT_BIT: u64 = 1 << 63;
 
 #[derive(Clone, Copy)]
 pub enum Interrupt {
@@ -17,16 +17,15 @@ pub enum Interrupt {
 impl Interrupt {
     fn exception_code(&self) -> u64 {
         match self {
-            SupervisorSoftwareInterrupt =>  1 | INTERRUPT_BIT,
-            MachineSoftwareInterrupt    =>  3 | INTERRUPT_BIT,
-            SupervisorTimerInterrupt    =>  5 | INTERRUPT_BIT,
-            MachineTimerInterrupt       =>  7 | INTERRUPT_BIT,
-            SupervisorExternalInterrupt =>  9 | INTERRUPT_BIT,
-            MachineExternalInterrupt    => 11 | INTERRUPT_BIT,        
+            Interrupt::SupervisorSoftwareInterrupt => 1 | INTERRUPT_BIT,
+            Interrupt::MachineSoftwareInterrupt => 3 | INTERRUPT_BIT,
+            Interrupt::SupervisorTimerInterrupt => 5 | INTERRUPT_BIT,
+            Interrupt::MachineTimerInterrupt => 7 | INTERRUPT_BIT,
+            Interrupt::SupervisorExternalInterrupt => 9 | INTERRUPT_BIT,
+            Interrupt::MachineExternalInterrupt => 11 | INTERRUPT_BIT,
         }
     }
     pub fn take_trap(&mut self, cpu: &mut Cpu) {
-
         let exception_code = self.exception_code();
         let target_mode = self.get_trap_mode(cpu);
         match target_mode {
@@ -35,7 +34,8 @@ impl Interrupt {
                 cpu.csr.store_csrs(MCAUSE, exception_code);
                 cpu.csr.set_mstatus_bit(cpu.mode, MASK_MPP, BIT_MPP);
                 let mie = MASK_MIE & cpu.csr.load_csrs(MSTATUS);
-                cpu.csr.set_mstatus_bit(if mie > 0 { 1 } else { 0 }, MASK_MPIE, BIT_MPIE);
+                cpu.csr
+                    .set_mstatus_bit(if mie > 0 { 1 } else { 0 }, MASK_MPIE, BIT_MPIE);
                 cpu.csr.set_mstatus_bit(0, MASK_MIE, MASK_MIE);
 
                 let mtvec = cpu.csr.load_csrs(MTVEC);
@@ -51,13 +51,14 @@ impl Interrupt {
                         exit(1);
                     }
                 }
-            },
+            }
             Ok(S_MODE) => {
                 cpu.csr.store_csrs(SEPC, cpu.pc);
                 cpu.csr.store_csrs(SCAUSE, exception_code);
                 cpu.csr.set_sstatus_bit(cpu.mode, MASK_SPP, BIT_SPP);
                 let sie = MASK_SIE & cpu.csr.load_csrs(SSTATUS);
-                cpu.csr.set_sstatus_bit(if sie > 0 { 1 } else { 0 }, MASK_SPIE, BIT_SPIE);
+                cpu.csr
+                    .set_sstatus_bit(if sie > 0 { 1 } else { 0 }, MASK_SPIE, BIT_SPIE);
                 cpu.csr.set_sstatus_bit(0, MASK_SIE, BIT_SIE);
 
                 let stvec = cpu.csr.load_csrs(STVEC);
@@ -79,14 +80,14 @@ impl Interrupt {
         cpu.log(format!("Exception:{} occurred!", self.exception_code()));
     }
     fn get_trap_mode(&self, cpu: &mut Cpu) -> Result<u64, ()> {
-        // An interrupt i will be taken 
-        // (a)if bit i is set in both mip and mie, 
-        // (b)and if interrupts are globally enabled. 
-        // By default, M-mode interrupts are globally enabled 
-        // (b-1)if the hart’s current privilege mode is less than M, 
-        // (b-2)or if the current privilege mode is M and the MIE bit in the mstatus register is set. 
-        // (c)If bit i in mideleg is set, however, interrupts are considered to be globally enabled 
-        // if the hart’s current privilege mode equals the delegated privilege mode and that mode’s interrupt enable bit (xIE in mstatus for mode x) is set, 
+        // An interrupt i will be taken
+        // (a)if bit i is set in both mip and mie,
+        // (b)and if interrupts are globally enabled.
+        // By default, M-mode interrupts are globally enabled
+        // (b-1)if the hart’s current privilege mode is less than M,
+        // (b-2)or if the current privilege mode is M and the MIE bit in the mstatus register is set.
+        // (c)If bit i in mideleg is set, however, interrupts are considered to be globally enabled
+        // if the hart’s current privilege mode equals the delegated privilege mode and that mode’s interrupt enable bit (xIE in mstatus for mode x) is set,
         // or if the current privilege mode is less than the delegated privilege mode.
         let i = self.exception_code();
         let bit_i = 0b1 << i;
@@ -102,25 +103,27 @@ impl Interrupt {
                 let mstatus = cpu.csr.load_csrs(MSTATUS);
                 if !(((cpu.mode == M_MODE) && (mstatus & MASK_MIE != 0)) || (cpu.mode < M_MODE)) {
                     return Err(());
-                }        
+                }
                 let mip = cpu.csr.load_csrs(MIP);
                 let mie = cpu.csr.load_csrs(MIE);
                 if !((mie & bit_i != 0) && (mip & bit_i != 0)) {
                     return Err(());
                 }
-            },
+            }
             S_MODE => {
                 let sstatus = cpu.csr.load_csrs(SSTATUS);
                 if !(((cpu.mode == S_MODE) && (sstatus & MASK_SIE != 0)) || (cpu.mode < S_MODE)) {
                     return Err(());
-                }        
+                }
                 let sip = cpu.csr.load_csrs(SIP);
                 let sie = cpu.csr.load_csrs(SIE);
                 if !((sie & bit_i != 0) && (sip & bit_i != 0)) {
                     return Err(());
                 }
             }
-            _ => {return Err(());}
+            _ => {
+                return Err(());
+            }
         }
         Ok(destined_mode)
     }
@@ -172,7 +175,8 @@ impl Exception {
                 cpu.csr.store_csrs(MCAUSE, exception_code);
                 cpu.csr.set_mstatus_bit(cpu.mode, MASK_MPP, BIT_MPP);
                 let mie = MASK_MIE & cpu.csr.load_csrs(MSTATUS);
-                cpu.csr.set_mstatus_bit(if mie > 0 { 1 } else { 0 }, MASK_MPIE, BIT_MPIE);
+                cpu.csr
+                    .set_mstatus_bit(if mie > 0 { 1 } else { 0 }, MASK_MPIE, BIT_MPIE);
                 cpu.csr.set_mstatus_bit(0, MASK_MIE, MASK_MIE);
 
                 let mtvec = cpu.csr.load_csrs(MTVEC);
@@ -188,13 +192,14 @@ impl Exception {
                         exit(1);
                     }
                 }
-            },
+            }
             S_MODE => {
                 cpu.csr.store_csrs(SEPC, cpu.pc);
                 cpu.csr.store_csrs(SCAUSE, exception_code);
                 cpu.csr.set_sstatus_bit(cpu.mode, MASK_SPP, BIT_SPP);
                 let sie = MASK_SIE & cpu.csr.load_csrs(SSTATUS);
-                cpu.csr.set_sstatus_bit(if sie > 0 { 1 } else { 0 }, MASK_SPIE, BIT_SPIE);
+                cpu.csr
+                    .set_sstatus_bit(if sie > 0 { 1 } else { 0 }, MASK_SPIE, BIT_SPIE);
                 cpu.csr.set_sstatus_bit(0, MASK_SIE, BIT_SIE);
 
                 let stvec = cpu.csr.load_csrs(STVEC);

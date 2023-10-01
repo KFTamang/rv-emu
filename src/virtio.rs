@@ -57,6 +57,7 @@ impl Virtio {
         _registers[VIRTIO_MMIO_VENDOR_ID + 1] = 0x45;
         _registers[VIRTIO_MMIO_VENDOR_ID + 2] = 0x4d;
         _registers[VIRTIO_MMIO_VENDOR_ID + 3] = 0x55;
+        _registers[VIRTIO_MMIO_QUEUE_NUM_MAX] = 10;
 
         Self {
             start_addr: _start_addr,

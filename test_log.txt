@@ -1,0 +1,372 @@
+   Compiling rv-emu v0.1.0 (/home/kento/prog/rv-emu/rv-emu)
+warning: unused variable: `addr`
+  --> src/clint.rs:20:24
+   |
+20 |     pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
+   |                        ^^^^ help: if this is intentional, prefix it with an underscore: `_addr`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `size`
+  --> src/clint.rs:20:35
+   |
+20 |     pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
+   |                                   ^^^^ help: if this is intentional, prefix it with an underscore: `_size`
+
+warning: unused variable: `addr`
+  --> src/clint.rs:24:29
+   |
+24 |     pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
+   |                             ^^^^ help: if this is intentional, prefix it with an underscore: `_addr`
+
+warning: unused variable: `size`
+  --> src/clint.rs:24:40
+   |
+24 |     pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
+   |                                        ^^^^ help: if this is intentional, prefix it with an underscore: `_size`
+
+warning: unused variable: `value`
+  --> src/clint.rs:24:51
+   |
+24 |     pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
+   |                                                   ^^^^^ help: if this is intentional, prefix it with an underscore: `_value`
+
+warning: unused variable: `asid`
+   --> src/cpu.rs:178:13
+    |
+178 |         let asid = (satp >> 22) & 0x1ff;
+    |             ^^^^ help: if this is intentional, prefix it with an underscore: `_asid`
+
+warning: unused variable: `u`
+   --> src/cpu.rs:195:21
+    |
+195 |                 let u = bit(pte, 4);
+    |                     ^ help: if this is intentional, prefix it with an underscore: `_u`
+
+warning: unused variable: `g`
+   --> src/cpu.rs:196:21
+    |
+196 |                 let g = bit(pte, 5);
+    |                     ^ help: if this is intentional, prefix it with an underscore: `_g`
+
+warning: unused variable: `addr`
+  --> src/plic.rs:20:24
+   |
+20 |     pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
+   |                        ^^^^ help: if this is intentional, prefix it with an underscore: `_addr`
+
+warning: unused variable: `size`
+  --> src/plic.rs:20:35
+   |
+20 |     pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
+   |                                   ^^^^ help: if this is intentional, prefix it with an underscore: `_size`
+
+warning: unused variable: `addr`
+  --> src/plic.rs:24:29
+   |
+24 |     pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
+   |                             ^^^^ help: if this is intentional, prefix it with an underscore: `_addr`
+
+warning: unused variable: `size`
+  --> src/plic.rs:24:40
+   |
+24 |     pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
+   |                                        ^^^^ help: if this is intentional, prefix it with an underscore: `_size`
+
+warning: unused variable: `value`
+  --> src/plic.rs:24:51
+   |
+24 |     pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
+   |                                                   ^^^^^ help: if this is intentional, prefix it with an underscore: `_value`
+
+warning: method `trap` is never used
+   --> src/cpu.rs:244:8
+    |
+39  | impl Cpu {
+    | -------- method in this implementation
+...
+244 |     fn trap(&mut self) {
+    |        ^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: methods `mstatus_mie`, `mie`, `mip`, and `set_bit_in_mip` are never used
+   --> src/csr.rs:77:12
+    |
+56  | impl Csr {
+    | -------- methods in this implementation
+...
+77  |     pub fn mstatus_mie(&self) -> bool {
+    |            ^^^^^^^^^^^
+...
+105 |     pub fn mie(&self) -> u64 {
+    |            ^^^
+...
+109 |     pub fn mip(&self) -> u64 {
+    |            ^^^
+...
+113 |     pub fn set_bit_in_mip(&mut self, val: u32) {
+    |            ^^^^^^^^^^^^^^
+
+warning: multiple variants are never constructed
+   --> src/interrupt.rs:134:5
+    |
+133 | pub enum Exception {
+    |          --------- variants in this enum
+134 |     InstructionAddressMissaligned,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+135 |     InstructionAccessFault,
+    |     ^^^^^^^^^^^^^^^^^^^^^^
+136 |     IllegalInstruction(u32),
+137 |     BreakPoint,
+    |     ^^^^^^^^^^
+138 |     LoadAddressMissaligned,
+    |     ^^^^^^^^^^^^^^^^^^^^^^
+139 |     LoadAccessFault,
+140 |     StoreAMOAddressMisaligned,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+141 |     StoreAMOAccessFault,
+142 |     EnvironmentalCallFromUMode,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+143 |     EnvironmentalCallFromSMode,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+144 |     EnvironmentalCallFromMMode,
+145 |     InstructionPageFault(u32),
+    |     ^^^^^^^^^^^^^^^^^^^^
+146 |     LoadPageFault(u32),
+147 |     StoreAMOPageFault(u32),
+    |     ^^^^^^^^^^^^^^^^^
+    |
+    = note: `Exception` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: constant `REG_IER` is never used
+ --> src/uart.rs:9:7
+  |
+9 | const REG_IER: u64 = 1;
+  |       ^^^^^^^
+
+warning: constant `REG_FCR_ISR` is never used
+  --> src/uart.rs:10:7
+   |
+10 | const REG_FCR_ISR: u64 = 2;
+   |       ^^^^^^^^^^^
+
+warning: constant `REG_LCR` is never used
+  --> src/uart.rs:11:7
+   |
+11 | const REG_LCR: u64 = 3;
+   |       ^^^^^^^
+
+warning: constant `REG_MCR` is never used
+  --> src/uart.rs:12:7
+   |
+12 | const REG_MCR: u64 = 4;
+   |       ^^^^^^^
+
+warning: constant `REG_MSR` is never used
+  --> src/uart.rs:14:7
+   |
+14 | const REG_MSR: u64 = 6;
+   |       ^^^^^^^
+
+warning: constant `REG_SPR` is never used
+  --> src/uart.rs:15:7
+   |
+15 | const REG_SPR: u64 = 7;
+   |       ^^^^^^^
+
+warning: constant `RECEIVE_DATA_READY` is never used
+  --> src/uart.rs:17:7
+   |
+17 | const RECEIVE_DATA_READY: u64 = 1 << 0;
+   |       ^^^^^^^^^^^^^^^^^^
+
+warning: constant `OVERRUN_ERROR` is never used
+  --> src/uart.rs:18:7
+   |
+18 | const OVERRUN_ERROR: u64 = 1 << 1;
+   |       ^^^^^^^^^^^^^
+
+warning: constant `PARITY_ERROR` is never used
+  --> src/uart.rs:19:7
+   |
+19 | const PARITY_ERROR: u64 = 1 << 2;
+   |       ^^^^^^^^^^^^
+
+warning: constant `FRAMING_ERROR` is never used
+  --> src/uart.rs:20:7
+   |
+20 | const FRAMING_ERROR: u64 = 1 << 3;
+   |       ^^^^^^^^^^^^^
+
+warning: constant `BREAK_INTERRUPT` is never used
+  --> src/uart.rs:21:7
+   |
+21 | const BREAK_INTERRUPT: u64 = 1 << 4;
+   |       ^^^^^^^^^^^^^^^
+
+warning: constant `FIFO_ERROR` is never used
+  --> src/uart.rs:24:7
+   |
+24 | const FIFO_ERROR: u64 = 1 << 7;
+   |       ^^^^^^^^^^
+
+warning: `rv-emu` (bin "rv-emu") generated 28 warnings (run `cargo fix --bin "rv-emu"` to apply 13 suggestions)
+    Finished release [optimized] target(s) in 1.21s
+     Running `target/release/rv-emu apps/xv6/kernel --elf --base-addr 2147483648 --loop-on -c 100000 -o log/output_kernel.log`
+load clint addr:200bff8, size:64, value:0(0x0)
+store addr:2004000, size:64, value:1000000(0xf4240)
+store addr:10000001, size:8, value:0(0x0)
+store addr:10000003, size:8, value:18446744073709551488(0xffffffffffffff80)
+store addr:10000000, size:8, value:3(0x3)
+store addr:10000001, size:8, value:0(0x0)
+store addr:10000003, size:8, value:3(0x3)
+store addr:10000002, size:8, value:7(0x7)
+store addr:10000001, size:8, value:3(0x3)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:10(0xa)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:120(0x78)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:118(0x76)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:54(0x36)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:32(0x20)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:107(0x6b)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:101(0x65)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:114(0x72)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:110(0x6e)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:101(0x65)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:108(0x6c)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:32(0x20)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:105(0x69)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:115(0x73)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:32(0x20)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:98(0x62)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:111(0x6f)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:111(0x6f)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:116(0x74)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:105(0x69)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:110(0x6e)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:103(0x67)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:10(0xa)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:10(0xa)
+store addr:c000028, size:32, value:1(0x1)
+store addr:c000004, size:32, value:1(0x1)
+store addr:c002080, size:32, value:1026(0x402)
+store addr:c201000, size:32, value:0(0x0)
+virtio: load addr:10001000(relative 0), size:32, value:1953655158
+load virtio addr:10001000, size:32, value:1953655158(0x74726976)
+virtio: load addr:10001004(relative 4), size:32, value:1
+load virtio addr:10001004, size:32, value:1(0x1)
+virtio: load addr:10001008(relative 8), size:32, value:2
+load virtio addr:10001008, size:32, value:2(0x2)
+virtio: load addr:1000100c(relative c), size:32, value:1431127377
+load virtio addr:1000100c, size:32, value:1431127377(0x554d4551)
+store addr:10001070, size:32, value:1(0x1)
+virtio: store addr:10001070, size:32, value:1
+store addr:10001070, size:32, value:3(0x3)
+virtio: store addr:10001070, size:32, value:3
+virtio: load addr:10001010(relative 10), size:32, value:0
+load virtio addr:10001010, size:32, value:0(0x0)
+store addr:10001020, size:32, value:0(0x0)
+virtio: store addr:10001020, size:32, value:0
+store addr:10001070, size:32, value:11(0xb)
+virtio: store addr:10001070, size:32, value:11
+store addr:10001070, size:32, value:15(0xf)
+virtio: store addr:10001070, size:32, value:15
+store addr:10001028, size:32, value:4096(0x1000)
+virtio: store addr:10001028, size:32, value:4096
+store addr:10001030, size:32, value:0(0x0)
+virtio: store addr:10001030, size:32, value:0
+virtio: load addr:10001034(relative 34), size:32, value:0
+load virtio addr:10001034, size:32, value:0(0x0)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:112(0x70)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:97(0x61)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:110(0x6e)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:105(0x69)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:99(0x63)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:58(0x3a)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:32(0x20)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:118(0x76)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:105(0x69)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:114(0x72)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:116(0x74)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:105(0x69)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:111(0x6f)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:32(0x20)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:100(0x64)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:105(0x69)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:115(0x73)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:107(0x6b)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:32(0x20)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:104(0x68)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:97(0x61)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:115(0x73)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:32(0x20)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:110(0x6e)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:111(0x6f)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:32(0x20)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:113(0x71)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:117(0x75)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:101(0x65)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:117(0x75)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:101(0x65)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:32(0x20)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:48(0x30)
+load uart addr:10000005, size:8, value:96(0x60)
+store addr:10000000, size:8, value:10(0xa)
+make: *** [xv6] Interrupt

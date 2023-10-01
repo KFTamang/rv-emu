@@ -129,6 +129,7 @@ impl Interrupt {
     }
 }
 
+#[derive(Debug)]
 pub enum Exception {
     InstructionAddressMissaligned,
     InstructionAccessFault,

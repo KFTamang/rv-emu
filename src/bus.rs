@@ -26,19 +26,28 @@ impl Bus {
 
     pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
         if self.dram.dram_base <= addr {
-            return self.dram.load(addr, size);
+            let ret_val = self.dram.load(addr, size);
+            return ret_val;
         }
         if self.clint.is_accessible(addr) {
-            return self.clint.load(addr, size);
+            let ret_val = self.clint.load(addr, size);
+            eprintln!("load clint addr:{:x}, size:{}, value:{}(0x{:x})", addr, size, ret_val.as_ref().unwrap(), ret_val.as_ref().unwrap());
+            return ret_val;
         }
         if self.uart.is_accessible(addr) {
-            return self.uart.load(addr, size);
+            let ret_val = self.uart.load(addr, size);
+            eprintln!("load uart addr:{:x}, size:{}, value:{}(0x{:x})", addr, size, ret_val.as_ref().unwrap(), ret_val.as_ref().unwrap());
+            return ret_val;
         }
         if self.plic.is_accessible(addr) {
-            return self.plic.load(addr, size);
+            let ret_val = self.plic.load(addr, size);
+            eprintln!("load plic addr:{:x}, size:{}, value:{}(0x{:x})", addr, size, ret_val.as_ref().unwrap(), ret_val.as_ref().unwrap());
+            return ret_val;
         }
         if self.virtio.is_accessible(addr) {
-            return self.virtio.load(addr, size);
+            let ret_val = self.virtio.load(addr, size);
+            eprintln!("load virtio addr:{:x}, size:{}, value:{}(0x{:x})", addr, size, ret_val.as_ref().unwrap(), ret_val.as_ref().unwrap());
+            return ret_val;
         }
         eprintln!(
             "Error while load operation: accessing 0x{:x}, size:{}",
@@ -51,6 +60,7 @@ impl Bus {
         if self.dram.dram_base <= addr {
             return self.dram.store(addr, size, value);
         }
+        eprintln!("store addr:{:x}, size:{}, value:{}(0x{:x})", addr, size, value, value);
         if self.clint.is_accessible(addr) {
             return self.clint.store(addr, size, value);
         }

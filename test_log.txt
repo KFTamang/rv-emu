@@ -211,7 +211,7 @@ warning: constant `FIFO_ERROR` is never used
    |       ^^^^^^^^^^
 
 warning: `rv-emu` (bin "rv-emu") generated 28 warnings (run `cargo fix --bin "rv-emu"` to apply 13 suggestions)
-    Finished release [optimized] target(s) in 0.01s
+    Finished release [optimized] target(s) in 0.05s
      Running `target/release/rv-emu apps/xv6/kernel --elf --base-addr 2147483648 --loop-on -c 100000 -o log/output_kernel.log`
 load clint addr:200bff8, size:64, value:0(0x0)
 store addr:2004000, size:64, value:1000000(0xf4240)
@@ -270,4 +270,40 @@ load uart addr:10000005, size:8, value:96(0x60)
 store addr:10000000, size:8, value:10(0xa)
 load uart addr:10000005, size:8, value:96(0x60)
 store addr:10000000, size:8, value:10(0xa)
+store addr:c000028, size:32, value:1(0x1)
+store addr:c000004, size:32, value:1(0x1)
+store addr:c002080, size:32, value:1026(0x402)
+store addr:c201000, size:32, value:0(0x0)
+virtio: load addr:10001000(relative 0), size:32, value:1953655158
+load virtio addr:10001000, size:32, value:1953655158(0x74726976)
+virtio: load addr:10001004(relative 4), size:32, value:1
+load virtio addr:10001004, size:32, value:1(0x1)
+virtio: load addr:10001008(relative 8), size:32, value:2
+load virtio addr:10001008, size:32, value:2(0x2)
+virtio: load addr:1000100c(relative c), size:32, value:1431127377
+load virtio addr:1000100c, size:32, value:1431127377(0x554d4551)
+store addr:10001070, size:32, value:1(0x1)
+virtio: store addr:10001070, size:32, value:1
+store addr:10001070, size:32, value:3(0x3)
+virtio: store addr:10001070, size:32, value:3
+virtio: load addr:10001010(relative 10), size:32, value:0
+load virtio addr:10001010, size:32, value:0(0x0)
+store addr:10001020, size:32, value:0(0x0)
+virtio: store addr:10001020, size:32, value:0
+store addr:10001070, size:32, value:11(0xb)
+virtio: store addr:10001070, size:32, value:11
+store addr:10001070, size:32, value:15(0xf)
+virtio: store addr:10001070, size:32, value:15
+store addr:10001028, size:32, value:4096(0x1000)
+virtio: store addr:10001028, size:32, value:4096
+store addr:10001030, size:32, value:0(0x0)
+virtio: store addr:10001030, size:32, value:0
+virtio: load addr:10001034(relative 34), size:32, value:10
+load virtio addr:10001034, size:32, value:10(0xa)
+store addr:10001038, size:32, value:8(0x8)
+virtio: store addr:10001038, size:32, value:8
+store addr:10001040, size:32, value:524325(0x80025)
+virtio: store addr:10001040, size:32, value:524325
+store addr:10001050, size:32, value:0(0x0)
+virtio: store addr:10001050, size:32, value:0
 make: *** [xv6] Interrupt

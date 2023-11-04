@@ -1115,4 +1115,35 @@ impl Cpu {
         self.log(format!("{}", output));
         self.log(format!("----\n"));
     }
+
+    pub fn step_run(&mut self){
+        
+        if let Some(mut interrupt) = self.get_pending_interrupt() {
+            interrupt.take_trap(&mut self);
+        }
+
+        let inst = match self.fetch() {
+            Ok(inst) => inst,
+            Err(_) => return,
+        };
+
+        self.execute(inst as u32)
+            .map_err(|mut e| e.take_trap(&mut self))
+            .expect("Execution failed!\n");
+        self.regs[0] = 0;
+
+        self.pc = self.pc.wrapping_add(4);
+
+        if self.pc == 0 {
+            self.dump_registers();
+            self.log(format!("Program finished!\n"));
+            return;
+        }
+    }
+
+    pub fn free_run(&self){
+        loop{
+            self.step_run();
+        }
+    }
 }

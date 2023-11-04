@@ -14,6 +14,7 @@ use std::convert::TryInto;
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
+use std::net::{TcpListener, TcpStream};
 
 /// Search for a pattern in a file and display the lines that contain it.
 /// c.f. https://rust-cli.github.io/book/tutorial/cli-args.html
@@ -57,50 +58,14 @@ fn main() -> io::Result<()> {
 
     let mut cpu = Cpu::new(code, base_addr, reg_dump_count as u64, logger);
     cpu.pc = entry_address;
-    loop {
-        if let Some(mut interrupt) = cpu.get_pending_interrupt() {
-            interrupt.take_trap(&mut cpu);
-        }
-
-        let inst = match cpu.fetch() {
-            Ok(inst) => inst,
-            Err(_) => break,
-        };
-
-        cpu.execute(inst as u32)
-            .map_err(|mut e| e.take_trap(&mut cpu))
-            .expect("Execution failed!\n");
-        cpu.regs[0] = 0;
-
-        cpu.pc = cpu.pc.wrapping_add(4);
-
-        if cpu.pc == 0 {
-            cpu.dump_registers();
-            cpu.log(format!("Program finished!\n"));
-            break;
-        }
-
-        if !(cli.loop_on) & (counter >= 0) & (counter < reg_dump_count) {
-            cpu.dump_registers();
-        }
-
-        if counter == 0 {
-            if cli.loop_on {
-                cpu.log(format!("0x{:x}\n", cpu.pc));
-                counter = cli.count.unwrap();
-            } else {
-                cpu.log(format!("Program readched execution limit.\n"));
-                break;
-            }
-        } else {
-            counter = counter - 1;
-        }
-    }
+    
+    cpu.free_run();
 
     cpu.bus.dump("log/memory.dump");
 
     Ok(())
 }
+
 
 pub const E_ENTRY_POS: usize = 0x18; // 64bit
 pub const PH_POS: usize = 0x20; // 64bit

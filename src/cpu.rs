@@ -1119,7 +1119,7 @@ impl Cpu {
     pub fn step_run(&mut self){
         
         if let Some(mut interrupt) = self.get_pending_interrupt() {
-            interrupt.take_trap(&mut self);
+            interrupt.take_trap(self);
         }
 
         let inst = match self.fetch() {
@@ -1128,7 +1128,7 @@ impl Cpu {
         };
 
         self.execute(inst as u32)
-            .map_err(|mut e| e.take_trap(&mut self))
+            .map_err(|mut e| e.take_trap(self))
             .expect("Execution failed!\n");
         self.regs[0] = 0;
 
@@ -1141,7 +1141,7 @@ impl Cpu {
         }
     }
 
-    pub fn free_run(&self){
+    pub fn free_run(&mut self){
         loop{
             self.step_run();
         }

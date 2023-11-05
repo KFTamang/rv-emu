@@ -7,6 +7,7 @@ mod interrupt;
 mod plic;
 mod uart;
 mod virtio;
+mod debugger;
 use crate::cpu::*;
 use clap::Parser; // command-line option parser
 
@@ -55,6 +56,15 @@ fn main() -> io::Result<()> {
 
     let reg_dump_count = cli.dump.unwrap_or(0);
     let mut counter = cli.count.unwrap_or(-1);
+
+    // Set-up a valid `Target`
+    let mut target = MyTarget::new()?; // implements `Target`
+
+    // Establish a `Connection`
+    let connection: TcpStream = wait_for_gdb_connection(9001);
+
+    // Create a new `gdbstub::GdbStub` using the established `Connection`.
+    let mut debugger = gdbstub::GdbStub::new(connection);
 
     let mut cpu = Cpu::new(code, base_addr, reg_dump_count as u64, logger);
     cpu.pc = entry_address;

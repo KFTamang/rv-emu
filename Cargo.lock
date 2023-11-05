@@ -85,6 +85,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "gdbstub_arch"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eecb536c55c43593a00dde9074dbbdb0e81ce5f20dbca921400f8779c21dea9c"
+dependencies = [
+ "gdbstub",
+ "num-traits",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -208,6 +218,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "gdbstub",
+ "gdbstub_arch",
 ]
 
 [[package]]

@@ -7,9 +7,8 @@ edition = "2018"
 
 [dependencies]
 clap = { version = "3.0", features = ["derive"] }
-gdbstub = {version = "0.6.6"}
-gdbstub_arch = {version = "0.2.4"}
-
+gdbstub = {version = "0.7.0"}
+gdbstub_arch = {version = "0.3.0"}
 [profile.release-with-debug]
 inherits = "release"
 debug = true

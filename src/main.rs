@@ -16,6 +16,8 @@ use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
+use crate::debugger::{MyTarget,wait_for_gdb_connection};
+use gdbstub::stub::GdbStub;
 
 /// Search for a pattern in a file and display the lines that contain it.
 /// c.f. https://rust-cli.github.io/book/tutorial/cli-args.html
@@ -58,13 +60,13 @@ fn main() -> io::Result<()> {
     let mut counter = cli.count.unwrap_or(-1);
 
     // Set-up a valid `Target`
-    let mut target = MyTarget::new()?; // implements `Target`
+    let mut target = MyTarget::new(); // implements `Target`
 
     // Establish a `Connection`
-    let connection: TcpStream = wait_for_gdb_connection(9001);
+    let connection: TcpStream = wait_for_gdb_connection(9001)?;
 
     // Create a new `gdbstub::GdbStub` using the established `Connection`.
-    let mut debugger = gdbstub::GdbStub::new(connection);
+    let debugger: GdbStub<MyTarget, TcpStream> = GdbStub::new(connection);
 
     let mut cpu = Cpu::new(code, base_addr, reg_dump_count as u64, logger);
     cpu.pc = entry_address;

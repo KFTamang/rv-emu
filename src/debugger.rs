@@ -13,7 +13,13 @@ use gdbstub::target::ext::base::singlethread::{
 use gdbstub::target::ext::breakpoints::{Breakpoints, SwBreakpoint};
 use gdbstub::target::ext::breakpoints::{BreakpointsOps, SwBreakpointOps};
 
-struct MyTarget;
+pub struct MyTarget;
+
+impl MyTarget{
+    pub fn new() -> MyTarget {
+        Self
+    }
+}
 
 impl Target for MyTarget {
     type Error = ();
@@ -46,7 +52,7 @@ impl SingleThreadBase for MyTarget {
         &mut self,
         start_addr: u32,
         data: &mut [u8],
-    ) -> TargetResult<(), Self> { todo!() }
+    ) -> TargetResult<usize, Self> { todo!() }
 
     fn write_addrs(
         &mut self,
@@ -108,7 +114,7 @@ impl SwBreakpoint for MyTarget {
     ) -> TargetResult<bool, Self> { todo!() }
 }
 
-fn wait_for_gdb_connection(port: u16) -> io::Result<TcpStream> {
+pub fn wait_for_gdb_connection(port: u16) -> io::Result<TcpStream> {
     let sockaddr = format!("localhost:{}", port);
     eprintln!("Waiting for a GDB connection on {:?}...", sockaddr);
     let sock = TcpListener::bind(sockaddr)?;

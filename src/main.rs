@@ -71,7 +71,13 @@ fn main() -> io::Result<()> {
     let mut cpu = Cpu::new(code, base_addr, reg_dump_count as u64, logger);
     cpu.pc = entry_address;
     
-    cpu.free_run();
+    let mut poll_incoming_data = || {
+        // gdbstub takes ownership of the underlying connection, so the `borrow_conn`
+        // method is used to borrow the underlying connection back from the stub to
+        // check for incoming data.
+        connection.peek().map(|b| b.is_some()).unwrap_or(true)
+    };
+    cpu.free_run(poll_incoming_data);
 
     cpu.bus.dump("log/memory.dump");
 

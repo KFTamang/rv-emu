@@ -30,17 +30,6 @@ pub enum Event {
     WatchRead(u32),
 }
 
-pub enum RunEvent {
-    IncomingData,
-    Event(Event),
-}
-
-pub enum ExecMode {
-    Step,
-    Continue,
-    RangeStep(u32, u32),
-}
-
 pub struct Cpu {
     pub regs: [u64; 32],
     pub pc: u64,
@@ -53,7 +42,6 @@ pub struct Cpu {
     dump_count: u64,
     logger: BufWriter<Box<dyn Write>>,
     inst_string: String,
-    exec_mode: ExecMode, 
 }
 
 impl Cpu {
@@ -77,7 +65,6 @@ impl Cpu {
             dump_count: _dump_count,
             logger: _logger,
             inst_string: String::from(""),
-            exec_mode: ExecMode::Continue,
         }
     }
 
@@ -1137,7 +1124,7 @@ impl Cpu {
         self.log(format!("----\n"));
     }
 
-    pub fn step_run(&mut self) -> Event {
+    pub fn step_run(&mut self) -> u64 {
         
         if let Some(mut interrupt) = self.get_pending_interrupt() {
             interrupt.take_trap(self);
@@ -1145,7 +1132,7 @@ impl Cpu {
 
         let inst = match self.fetch() {
             Ok(inst) => inst,
-            Err(_) => return Event::DoneStep,
+            Err(_) => return 0x0,
         };
 
         self.execute(inst as u32)
@@ -1159,49 +1146,6 @@ impl Cpu {
             self.dump_registers();
             self.log(format!("Program finished!\n"));
         }
-        Event::DoneStep
-    }
-
-    pub fn free_run(&mut self, mut poll_incoming_data: impl FnMut() -> bool) -> RunEvent {
-        match self.exec_mode {
-            ExecMode::Step => RunEvent::Event(self.step_run()),
-            ExecMode::Continue => {
-                let mut cycles = 0;
-                loop {
-                    if cycles % 1024 == 0 {
-                        // poll for incoming data
-                        if poll_incoming_data() {
-                            break RunEvent::IncomingData;
-                        }
-                    }
-                    cycles += 1;
-
-                    if let Some(event) = self.step_run() {
-                        break RunEvent::Event(event);
-                    };
-                }
-            }
-            // just continue, but with an extra PC check
-            ExecMode::RangeStep(start, end) => {
-                let mut cycles = 0;
-                loop {
-                    if cycles % 1024 == 0 {
-                        // poll for incoming data
-                        if poll_incoming_data() {
-                            break RunEvent::IncomingData;
-                        }
-                    }
-                    cycles += 1;
-
-                    if let Some(event) = self.step_run() {
-                        break RunEvent::Event(event);
-                    };
-
-                    if !(start..end).contains(&self.cpu.reg_get(self.cpu.mode(), reg::PC)) {
-                        break RunEvent::Event(Event::DoneStep);
-                    }
-                }
-            }
-        }
+        self.pc
     }
 }

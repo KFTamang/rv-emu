@@ -1,6 +1,8 @@
 use std::io;
 use std::net::{TcpListener, TcpStream};
 
+use crate::emu::{Emu, RunEvent, Event};
+
 use gdbstub::common::Signal;
 use gdbstub::target::{Target, TargetResult};
 use gdbstub::target::ext::base::BaseOps;
@@ -14,35 +16,10 @@ use gdbstub::target::ext::breakpoints::{Breakpoints, SwBreakpoint};
 use gdbstub::target::ext::breakpoints::{BreakpointsOps, SwBreakpointOps};
 
 use gdbstub::conn::{Connection, ConnectionExt}; // note the use of `ConnectionExt`
-use gdbstub::stub::{run_blocking, DisconnectReason, GdbStub};
+use gdbstub::stub::run_blocking;
 use gdbstub::stub::SingleThreadStopReason;
 
-enum MyTargetEvent {
-    IncomingData,
-    StopReason(SingleThreadStopReason<u32>),
-}
-
-pub struct MyTarget;
-
-impl MyTarget{
-    pub fn new() -> MyTarget {
-        Self
-    }
-
-    fn run_and_check_for_incoming_data(
-        &mut self,
-        conn: &mut impl Connection
-    ) -> MyTargetEvent { todo!() }
-
-    fn stop_in_response_to_ctrl_c_interrupt(
-        &mut self
-    ) -> Result<(), ()> {
-        Ok(())
-    }
-
-}
-
-impl Target for MyTarget {
+impl Target for Emu {
     type Error = ();
     type Arch = gdbstub_arch::arm::Armv4t; // as an example
 
@@ -58,7 +35,7 @@ impl Target for MyTarget {
     }
 }
 
-impl SingleThreadBase for MyTarget {
+impl SingleThreadBase for Emu {
     fn read_registers(
         &mut self,
         regs: &mut gdbstub_arch::arm::reg::ArmCoreRegs,
@@ -89,7 +66,7 @@ impl SingleThreadBase for MyTarget {
     }
 }
 
-impl SingleThreadResume for MyTarget {
+impl SingleThreadResume for Emu {
     fn resume(
         &mut self,
         signal: Option<Signal>,
@@ -106,14 +83,14 @@ impl SingleThreadResume for MyTarget {
     }
 }
 
-impl SingleThreadSingleStep for MyTarget {
+impl SingleThreadSingleStep for Emu {
     fn step(
         &mut self,
         signal: Option<Signal>,
     ) -> Result<(), Self::Error> { todo!() }
 }
 
-impl Breakpoints for MyTarget {
+impl Breakpoints for Emu {
     // there are several kinds of breakpoints - this target uses software breakpoints
     #[inline(always)]
     fn support_sw_breakpoint(&mut self) -> Option<SwBreakpointOps<Self>> {
@@ -121,7 +98,7 @@ impl Breakpoints for MyTarget {
     }
 }
 
-impl SwBreakpoint for MyTarget {
+impl SwBreakpoint for Emu {
     fn add_sw_breakpoint(
         &mut self,
         addr: u32,
@@ -149,12 +126,12 @@ pub fn wait_for_gdb_connection(port: u16) -> io::Result<TcpStream> {
 }
 
 
-enum MyGdbBlockingEventLoop {}
+pub enum MyGdbBlockingEventLoop {}
 
 // The `run_blocking::BlockingEventLoop` groups together various callbacks
 // the `GdbStub::run_blocking` event loop requires you to implement.
 impl run_blocking::BlockingEventLoop for MyGdbBlockingEventLoop {
-    type Target = MyTarget;
+    type Target = Emu;
     type Connection = Box<dyn ConnectionExt<Error = std::io::Error>>;
 
     // or MultiThreadStopReason on multi threaded targets
@@ -164,7 +141,7 @@ impl run_blocking::BlockingEventLoop for MyGdbBlockingEventLoop {
     // called. The implementation should block until either the target
     // reports a stop reason, or if new data was sent over the connection.
     fn wait_for_stop_reason(
-        target: &mut MyTarget,
+        target: &mut Emu,
         conn: &mut Self::Connection,
     ) -> Result<
         run_blocking::Event<SingleThreadStopReason<u32>>,
@@ -181,64 +158,41 @@ impl run_blocking::BlockingEventLoop for MyGdbBlockingEventLoop {
         //
         // in this example, lets assume the target has a magic method that handles
         // this for us.
-        let event = match target.run_and_check_for_incoming_data(conn) {
-            MyTargetEvent::IncomingData => {
-                let byte = conn
-                    .read() // method provided by the `ConnectionExt` trait
-                    .map_err(run_blocking::WaitForStopReasonError::Connection)?;
 
-                run_blocking::Event::IncomingData(byte)
-            }
-            MyTargetEvent::StopReason(reason) => {
-                run_blocking::Event::TargetStopped(reason)
-            }
+        let poll_incoming_data = || {
+            // gdbstub takes ownership of the underlying connection, so the `borrow_conn`
+            // method is used to borrow the underlying connection back from the stub to
+            // check for incoming data.
+            conn.peek().map(|b| b.is_some()).unwrap_or(true)
         };
 
-        Ok(event)
-    }
+        match target.run(poll_incoming_data) {
+            RunEvent::IncomingData => {
+                let byte = conn
+                    .read()
+                    .map_err(run_blocking::WaitForStopReasonError::Connection)?;
+                Ok(run_blocking::Event::IncomingData(byte))
+            },
+            RunEvent::Event(event) => {
+                // translate emulator stop reason into GDB stop reason
+                let stop_reason = match event {
+                    Event::DoneStep => SingleThreadStopReason::DoneStep,
+                    Event::Halted => SingleThreadStopReason::Terminated(Signal::SIGSTOP),
+                    Event::Break => SingleThreadStopReason::SwBreak(()),
+                };
+                Ok(run_blocking::Event::TargetStopped(stop_reason))
+            }
+        }
+}
 
     // Invoked when the GDB client sends a Ctrl-C interrupt.
     fn on_interrupt(
-        target: &mut MyTarget,
-    ) -> Result<Option<SingleThreadStopReason<u32>>, <MyTarget as Target>::Error> {
+        target: &mut Emu,
+    ) -> Result<Option<SingleThreadStopReason<u32>>, <Emu as Target>::Error> {
         // notify the target that a ctrl-c interrupt has occurred.
-        target.stop_in_response_to_ctrl_c_interrupt()?;
 
         // a pretty typical stop reason in response to a Ctrl-C interrupt is to
         // report a "Signal::SIGINT".
         Ok(Some(SingleThreadStopReason::Signal(Signal::SIGINT).into()))
-    }
-}
-
-fn gdb_event_loop_thread(
-    debugger: GdbStub<MyTarget, Box<dyn ConnectionExt<Error = std::io::Error>>>,
-    mut target: MyTarget
-) {
-    match debugger.run_blocking::<MyGdbBlockingEventLoop>(&mut target) {
-        Ok(disconnect_reason) => match disconnect_reason {
-            DisconnectReason::Disconnect => {
-                println!("Client disconnected")
-            }
-            DisconnectReason::TargetExited(code) => {
-                println!("Target exited with code {}", code)
-            }
-            DisconnectReason::TargetTerminated(sig) => {
-                println!("Target terminated with signal {}", sig)
-            }
-            DisconnectReason::Kill => println!("GDB sent a kill command"),
-        },
-        Err(e) => {
-            if e.is_target_error() {
-                println!(
-                    "target encountered a fatal error: {:?}",
-                    e.into_target_error().unwrap()
-                )
-            } else if e.is_connection_error() {
-                let (e, kind) = e.into_connection_error().unwrap();
-                println!("connection error: {:?} - {:?}", kind, e,)
-            } else {
-                println!("gdbstub encountered a fatal error: {:?}", e)
-            }
-        }
     }
 }

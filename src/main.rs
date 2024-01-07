@@ -8,16 +8,18 @@ mod plic;
 mod uart;
 mod virtio;
 mod debugger;
-use crate::cpu::*;
+mod emu;
 use clap::Parser; // command-line option parser
 
 use std::convert::TryInto;
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
-use std::net::{TcpListener, TcpStream};
-use crate::debugger::{MyTarget,wait_for_gdb_connection};
+use crate::debugger::{wait_for_gdb_connection, MyGdbBlockingEventLoop};
+use crate::emu::Emu;
 use gdbstub::stub::GdbStub;
+use gdbstub::stub::DisconnectReason;
+use gdbstub::conn::ConnectionExt;
 
 /// Search for a pattern in a file and display the lines that contain it.
 /// c.f. https://rust-cli.github.io/book/tutorial/cli-args.html
@@ -59,30 +61,74 @@ fn main() -> io::Result<()> {
     let reg_dump_count = cli.dump.unwrap_or(0);
     let mut counter = cli.count.unwrap_or(-1);
 
-    // Set-up a valid `Target`
-    let mut target = MyTarget::new(); // implements `Target`
 
     // Establish a `Connection`
-    let connection: TcpStream = wait_for_gdb_connection(9001)?;
+    let connection: Box<dyn ConnectionExt<Error = std::io::Error>> = Box::new(wait_for_gdb_connection(9001)?);
 
     // Create a new `gdbstub::GdbStub` using the established `Connection`.
-    let debugger: GdbStub<MyTarget, TcpStream> = GdbStub::new(connection);
+    let debugger = GdbStub::new(connection);
 
-    let mut cpu = Cpu::new(code, base_addr, reg_dump_count as u64, logger);
-    cpu.pc = entry_address;
+    let mut emu = Emu::new(code, base_addr, reg_dump_count as u64, logger);
+    emu.set_entry_point(entry_address);
     
-    let mut poll_incoming_data = || {
-        // gdbstub takes ownership of the underlying connection, so the `borrow_conn`
-        // method is used to borrow the underlying connection back from the stub to
-        // check for incoming data.
-        connection.peek().map(|b| b.is_some()).unwrap_or(true)
-    };
-    cpu.free_run(poll_incoming_data);
+    match debugger.run_blocking::<MyGdbBlockingEventLoop>(&mut emu) {
+        Ok(disconnect_reason) => match disconnect_reason {
+            DisconnectReason::Disconnect => {
+                println!("GDB client has disconnected. Running to completion...");
+                while emu.step() != Some(emu::Event::Halted) {}
+            }
+            DisconnectReason::TargetExited(code) => {
+                println!("Target exited with code {}!", code)
+            }
+            DisconnectReason::TargetTerminated(sig) => {
+                println!("Target terminated with signal {}!", sig)
+            }
+            DisconnectReason::Kill => println!("GDB sent a kill command!"),
+        },
+        Err(e) => {
+            if e.is_target_error() {
+                println!(
+                    "target encountered a fatal error: {:?}",
+                    e.into_target_error().unwrap()
+                )
+            } else if e.is_connection_error() {
+                let (e, kind) = e.into_connection_error().unwrap();
+                println!("connection error: {:?} - {:?}", kind, e,)
+            } else {
+                println!("gdbstub encountered a fatal error: {:?}", e)
+            }
+        }
+    }
 
-    cpu.bus.dump("log/memory.dump");
+
+    // cpu.bus.dump("log/memory.dump");
 
     Ok(())
 }
+
+
+// fn free_run(cpu: &Cpu, mut poll_incoming_data: impl FnMut() -> bool) -> RunEvent {
+//     match exec_mode {
+//         ExecMode::Step => RunEvent::Event(step(&cpu).unwrap()),
+//         ExecMode::Continue => {
+//             let mut cycles = 0;
+//             loop {
+//                 if cycles % 1024 == 0 {
+//                     // poll for incoming data
+//                     if poll_incominng_data() {
+//                         break RunEvent::IncomingData;
+//                     }
+//                 }
+//                 cycles += 1;
+
+//                 if let Some(event) = step(&cpu) {
+//                     break RunEvent::Event(event);
+//                 };
+//             }
+//         }
+//     }
+// }
+
 
 
 pub const E_ENTRY_POS: usize = 0x18; // 64bit

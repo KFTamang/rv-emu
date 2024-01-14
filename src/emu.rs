@@ -20,9 +20,9 @@ pub enum RunEvent {
 }
 
 pub struct Emu{
-    breakpoints: Vec<u64>,
-    exec_mode: ExecMode,
-    cpu: Cpu,
+    pub breakpoints: Vec<u64>,
+    pub exec_mode: ExecMode,
+    pub cpu: Cpu,
 }
 
 impl Emu {

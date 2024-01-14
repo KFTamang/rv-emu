@@ -39,12 +39,20 @@ impl SingleThreadBase for Emu {
     fn read_registers(
         &mut self,
         regs: &mut gdbstub_arch::riscv::reg::RiscvCoreRegs<u64>,
-    ) -> TargetResult<(), Self> { todo!() }
+    ) -> TargetResult<(), Self> {
+        regs.x = self.cpu.regs;
+        regs.pc = self.cpu.pc;
+        Ok(())
+    }
 
     fn write_registers(
         &mut self,
         regs: &gdbstub_arch::riscv::reg::RiscvCoreRegs<u64>
-    ) -> TargetResult<(), Self> { todo!() }
+    ) -> TargetResult<(), Self> {
+        self.cpu.regs = regs.x;
+        self.cpu.pc = regs.pc;
+        Ok(())
+    }
 
     fn read_addrs(
         &mut self,

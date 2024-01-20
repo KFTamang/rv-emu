@@ -2,6 +2,7 @@ use std::io;
 use std::net::{TcpListener, TcpStream};
 
 use crate::emu::{Emu, RunEvent, Event, ExecMode};
+use crate::dram;
 
 use gdbstub::common::Signal;
 use gdbstub::target::{Target, TargetResult};
@@ -58,7 +59,10 @@ impl SingleThreadBase for Emu {
         &mut self,
         start_addr: u64,
         data: &mut [u8],
-    ) -> TargetResult<usize, Self> { todo!() }
+    ) -> TargetResult<usize, Self> {
+        let end_addr = start_addr + data.len() as u64;
+        for
+    }
 
     fn write_addrs(
         &mut self,

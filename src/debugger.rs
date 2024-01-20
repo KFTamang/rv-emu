@@ -1,7 +1,7 @@
 use std::io;
 use std::net::{TcpListener, TcpStream};
 
-use crate::emu::{Emu, RunEvent, Event};
+use crate::emu::{Emu, RunEvent, Event, ExecMode};
 
 use gdbstub::common::Signal;
 use gdbstub::target::{Target, TargetResult};
@@ -78,7 +78,10 @@ impl SingleThreadResume for Emu {
     fn resume(
         &mut self,
         signal: Option<Signal>,
-    ) -> Result<(), Self::Error> { todo!() }
+    ) -> Result<(), Self::Error> {
+        self.exec_mode = ExecMode::Continue;
+        Ok(())
+    }
 
     // ...and if the target supports resumption, it'll likely want to support
     // single-step resume as well
@@ -95,7 +98,10 @@ impl SingleThreadSingleStep for Emu {
     fn step(
         &mut self,
         signal: Option<Signal>,
-    ) -> Result<(), Self::Error> { todo!() }
+    ) -> Result<(), Self::Error> {
+        self.exec_mode = ExecMode::Step;
+        Ok(())
+    }
 }
 
 impl Breakpoints for Emu {

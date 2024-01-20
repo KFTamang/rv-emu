@@ -53,7 +53,7 @@ impl Emu {
 
     pub fn run(&mut self, mut poll_incoming_data: impl FnMut() -> bool) -> RunEvent {
         match self.exec_mode {
-            ExecMode::Step => RunEvent::Event(self.step().unwrap()),
+            ExecMode::Step => RunEvent::Event(self.step().unwrap_or(Event::DoneStep)),
             ExecMode::Continue => {
                 let mut cycles = 0;
                 loop {

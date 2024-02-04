@@ -1,20 +1,20 @@
+use std::convert::TryInto;
 use std::io;
 use std::net::{TcpListener, TcpStream};
+use std::ptr::read;
 
-use crate::emu::{Emu, RunEvent, Event, ExecMode};
 use crate::dram;
+use crate::emu::{Emu, Event, ExecMode, RunEvent};
 
 use gdbstub::common::Signal;
-use gdbstub::target::{Target, TargetResult};
+use gdbstub::target::ext::base::singlethread::{
+    SingleThreadBase, SingleThreadResume, SingleThreadSingleStep,
+};
+use gdbstub::target::ext::base::singlethread::{SingleThreadResumeOps, SingleThreadSingleStepOps};
 use gdbstub::target::ext::base::BaseOps;
-use gdbstub::target::ext::base::singlethread::{
-    SingleThreadResumeOps, SingleThreadSingleStepOps
-};
-use gdbstub::target::ext::base::singlethread::{
-    SingleThreadBase, SingleThreadResume, SingleThreadSingleStep
-};
 use gdbstub::target::ext::breakpoints::{Breakpoints, SwBreakpoint};
 use gdbstub::target::ext::breakpoints::{BreakpointsOps, SwBreakpointOps};
+use gdbstub::target::{Target, TargetError, TargetResult};
 
 use gdbstub::conn::{Connection, ConnectionExt}; // note the use of `ConnectionExt`
 use gdbstub::stub::run_blocking;
@@ -48,27 +48,65 @@ impl SingleThreadBase for Emu {
 
     fn write_registers(
         &mut self,
-        regs: &gdbstub_arch::riscv::reg::RiscvCoreRegs<u64>
+        regs: &gdbstub_arch::riscv::reg::RiscvCoreRegs<u64>,
     ) -> TargetResult<(), Self> {
         self.cpu.regs = regs.x;
         self.cpu.pc = regs.pc;
         Ok(())
     }
 
-    fn read_addrs(
-        &mut self,
-        start_addr: u64,
-        data: &mut [u8],
-    ) -> TargetResult<usize, Self> {
-        let end_addr = start_addr + data.len() as u64;
-        for
+    fn read_addrs(&mut self, start_addr: u64, data: &mut [u8]) -> TargetResult<usize, Self> {
+        let mut read_size = 0;
+        while data.len() - read_size >= 8 {
+            // load 64 bytes at a time, copy to data
+            if let Ok(source_slice) = self.cpu.bus.load(start_addr + read_size as u64, 64) {
+                data[read_size..read_size + 8].copy_from_slice(&source_slice.to_le_bytes());
+                read_size += 8;
+            } else {
+                return Err(TargetError::NonFatal);
+            }
+        }
+        while data.len() - read_size > 0 {
+            if let Ok(source_slice) = self.cpu.bus.load(start_addr + read_size as u64, 8) {
+                data[read_size] = source_slice as u8;
+                read_size += 1;
+            } else {
+                return Err(TargetError::NonFatal);
+            }
+        }
+        Ok(read_size)
     }
 
-    fn write_addrs(
-        &mut self,
-        start_addr: u64,
-        data: &[u8],
-    ) -> TargetResult<(), Self> { todo!() }
+    fn write_addrs(&mut self, start_addr: u64, data: &[u8]) -> TargetResult<(), Self> {
+        let mut wrote_size = 0;
+        while data.len() - wrote_size >= 8 {
+            // convert data[wrote_size..wrote_size + 8] into one integer `data_8byte`
+            let data_8byte =
+                u64::from_le_bytes(data[wrote_size..wrote_size + 8].try_into().unwrap());
+            // store 64 bytes at a time, copy to data
+            if let Ok(source_slice) =
+                self.cpu
+                    .bus
+                    .store(start_addr + wrote_size as u64, data_8byte, 64)
+            {
+                wrote_size += 8;
+            } else {
+                return Err(TargetError::NonFatal);
+            }
+        }
+        while data.len() - wrote_size > 0 {
+            if let Ok(source_slice) =
+                self.cpu
+                    .bus
+                    .store(start_addr + wrote_size as u64, data[wrote_size] as u64, 8)
+            {
+                wrote_size += 1;
+            } else {
+                return Err(TargetError::NonFatal);
+            }
+        }
+        Ok(())
+    }
 
     // most targets will want to support at resumption as well...
 
@@ -79,10 +117,7 @@ impl SingleThreadBase for Emu {
 }
 
 impl SingleThreadResume for Emu {
-    fn resume(
-        &mut self,
-        signal: Option<Signal>,
-    ) -> Result<(), Self::Error> {
+    fn resume(&mut self, signal: Option<Signal>) -> Result<(), Self::Error> {
         self.exec_mode = ExecMode::Continue;
         Ok(())
     }
@@ -91,18 +126,13 @@ impl SingleThreadResume for Emu {
     // single-step resume as well
 
     #[inline(always)]
-    fn support_single_step(
-        &mut self
-    ) -> Option<SingleThreadSingleStepOps<'_, Self>> {
+    fn support_single_step(&mut self) -> Option<SingleThreadSingleStepOps<'_, Self>> {
         Some(self)
     }
 }
 
 impl SingleThreadSingleStep for Emu {
-    fn step(
-        &mut self,
-        signal: Option<Signal>,
-    ) -> Result<(), Self::Error> {
+    fn step(&mut self, signal: Option<Signal>) -> Result<(), Self::Error> {
         self.exec_mode = ExecMode::Step;
         Ok(())
     }
@@ -117,17 +147,13 @@ impl Breakpoints for Emu {
 }
 
 impl SwBreakpoint for Emu {
-    fn add_sw_breakpoint(
-        &mut self,
-        addr: u64,
-        kind: usize,
-    ) -> TargetResult<bool, Self> { todo!() }
+    fn add_sw_breakpoint(&mut self, addr: u64, kind: usize) -> TargetResult<bool, Self> {
+        todo!()
+    }
 
-    fn remove_sw_breakpoint(
-        &mut self,
-        addr: u64,
-        kind: usize,
-    ) -> TargetResult<bool, Self> { todo!() }
+    fn remove_sw_breakpoint(&mut self, addr: u64, kind: usize) -> TargetResult<bool, Self> {
+        todo!()
+    }
 }
 
 pub fn wait_for_gdb_connection(port: u16) -> io::Result<TcpStream> {
@@ -142,7 +168,6 @@ pub fn wait_for_gdb_connection(port: u16) -> io::Result<TcpStream> {
     eprintln!("Debugger connected from {}", addr);
     Ok(stream) // `TcpStream` implements `gdbstub::Connection`
 }
-
 
 pub enum MyGdbBlockingEventLoop {}
 
@@ -190,7 +215,7 @@ impl run_blocking::BlockingEventLoop for MyGdbBlockingEventLoop {
                     .read()
                     .map_err(run_blocking::WaitForStopReasonError::Connection)?;
                 Ok(run_blocking::Event::IncomingData(byte))
-            },
+            }
             RunEvent::Event(event) => {
                 // translate emulator stop reason into GDB stop reason
                 let stop_reason = match event {
@@ -201,7 +226,7 @@ impl run_blocking::BlockingEventLoop for MyGdbBlockingEventLoop {
                 Ok(run_blocking::Event::TargetStopped(stop_reason))
             }
         }
-}
+    }
 
     // Invoked when the GDB client sends a Ctrl-C interrupt.
     fn on_interrupt(

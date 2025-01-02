@@ -1,0 +1,9 @@
+services:
+  rust:
+    image: rust:1.83.0
+    volumes:
+      - .:/projects
+    working_dir: /projects
+    environment:
+      - USER=user
+

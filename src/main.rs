@@ -39,6 +39,8 @@ struct Cli {
     output: Option<std::path::PathBuf>,
     #[clap(long)]
     loop_on: bool,
+    #[clap(long)]
+    gdb: bool,
 }
 
 fn main() -> io::Result<()> {
@@ -62,44 +64,59 @@ fn main() -> io::Result<()> {
     let mut counter = cli.count.unwrap_or(-1);
 
 
-    // Establish a `Connection`
-    let connection: Box<dyn ConnectionExt<Error = std::io::Error>> = Box::new(wait_for_gdb_connection(9001)?);
+    if cli.gdb {
+        println!("GDB enabled");
+        // Establish a `Connection`
+        let connection: Box<dyn ConnectionExt<Error = std::io::Error>> = Box::new(wait_for_gdb_connection(9001)?);
 
-    // Create a new `gdbstub::GdbStub` using the established `Connection`.
-    let debugger = GdbStub::new(connection);
+        // Create a new `gdbstub::GdbStub` using the established `Connection`.
+        let debugger = GdbStub::new(connection);
 
-    let mut emu = Emu::new(code, base_addr, reg_dump_count as u64, logger);
-    emu.set_entry_point(entry_address);
-    
-    match debugger.run_blocking::<MyGdbBlockingEventLoop>(&mut emu) {
-        Ok(disconnect_reason) => match disconnect_reason {
-            DisconnectReason::Disconnect => {
-                println!("GDB client has disconnected. Running to completion...");
-                while emu.step() != Some(emu::Event::Halted) {}
+        let mut emu = Emu::new(code, base_addr, reg_dump_count as u64, logger);
+        emu.set_entry_point(entry_address);
+        
+        match debugger.run_blocking::<MyGdbBlockingEventLoop>(&mut emu) {
+            Ok(disconnect_reason) => match disconnect_reason {
+                DisconnectReason::Disconnect => {
+                    println!("GDB client has disconnected. Running to completion...");
+                    while emu.step() != Some(emu::Event::Halted) {}
+                }
+                DisconnectReason::TargetExited(code) => {
+                    println!("Target exited with code {}!", code)
+                }
+                DisconnectReason::TargetTerminated(sig) => {
+                    println!("Target terminated with signal {}!", sig)
+                }
+                DisconnectReason::Kill => println!("GDB sent a kill command!"),
+            },
+            Err(e) => {
+                if e.is_target_error() {
+                    println!(
+                        "target encountered a fatal error: {:?}",
+                        e.into_target_error().unwrap()
+                    )
+                } else if e.is_connection_error() {
+                    let (e, kind) = e.into_connection_error().unwrap();
+                    println!("connection error: {:?} - {:?}", kind, e,)
+                } else {
+                    println!("gdbstub encountered a fatal error: {:?}", e)
+                }
             }
-            DisconnectReason::TargetExited(code) => {
-                println!("Target exited with code {}!", code)
+        }
+    } else {
+        println!("No GDB");
+        let mut emu = Emu::new(code, base_addr, reg_dump_count as u64, logger);
+        emu.set_entry_point(entry_address);
+        while counter != 0 {
+            if emu.step() == Some(emu::Event::Halted) {
+                println!("Halted");
+                break;
             }
-            DisconnectReason::TargetTerminated(sig) => {
-                println!("Target terminated with signal {}!", sig)
-            }
-            DisconnectReason::Kill => println!("GDB sent a kill command!"),
-        },
-        Err(e) => {
-            if e.is_target_error() {
-                println!(
-                    "target encountered a fatal error: {:?}",
-                    e.into_target_error().unwrap()
-                )
-            } else if e.is_connection_error() {
-                let (e, kind) = e.into_connection_error().unwrap();
-                println!("connection error: {:?} - {:?}", kind, e,)
-            } else {
-                println!("gdbstub encountered a fatal error: {:?}", e)
+            if counter > 0 {
+                counter -= 1;
             }
         }
     }
-
 
     // cpu.bus.dump("log/memory.dump");
 

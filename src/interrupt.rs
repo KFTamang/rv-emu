@@ -1,6 +1,7 @@
 use crate::cpu::*;
 use crate::csr::*;
 use std::process::exit;
+use log::{error, info};
 
 const INTERRUPT_BIT: u64 = 1 << 63;
 
@@ -40,7 +41,7 @@ impl Interrupt {
 
                 let mtvec = cpu.csr.load_csrs(MTVEC);
                 cpu.log(format!("mtvec is {}\n", mtvec));
-                eprintln!("enter M mode\n");
+                info!("enter M mode\n");
                 match mtvec & 0x3 {
                     0x0 => {
                         cpu.pc = (mtvec & 0xfffffffc).wrapping_sub(4);
@@ -63,7 +64,7 @@ impl Interrupt {
 
                 let stvec = cpu.csr.load_csrs(STVEC);
                 cpu.log(format!("stvec is {}", stvec));
-                eprintln!("enter S mode");
+                info!("enter S mode");
                 match stvec & 0x3 {
                     0x0 => {
                         cpu.pc = (stvec & 0xfffffffc).wrapping_sub(4);
@@ -182,7 +183,7 @@ impl Exception {
 
                 let mtvec = cpu.csr.load_csrs(MTVEC);
                 cpu.log(format!("mtvec is {}\n", mtvec));
-                eprintln!("enter M mode\n");
+                info!("enter M mode\n");
                 match mtvec & 0x3 {
                     0x0 => {
                         cpu.pc = (mtvec & 0xfffffffc).wrapping_sub(4);
@@ -205,7 +206,7 @@ impl Exception {
 
                 let stvec = cpu.csr.load_csrs(STVEC);
                 cpu.log(format!("stvec is {}", stvec));
-                eprintln!("enter S mode");
+                info!("enter S mode");
                 match stvec & 0x3 {
                     0x0 => {
                         cpu.pc = (stvec & 0xfffffffc).wrapping_sub(4);

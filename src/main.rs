@@ -20,6 +20,8 @@ use crate::emu::Emu;
 use gdbstub::stub::GdbStub;
 use gdbstub::stub::DisconnectReason;
 use gdbstub::conn::ConnectionExt;
+use env_logger;
+use log::{error, info};
 
 /// Search for a pattern in a file and display the lines that contain it.
 /// c.f. https://rust-cli.github.io/book/tutorial/cli-args.html
@@ -44,6 +46,7 @@ struct Cli {
 }
 
 fn main() -> io::Result<()> {
+    env_logger::init();
     let cli = Cli::parse();
     let mut file = File::open(&cli.bin)?;
     let mut code = Vec::new();
@@ -65,7 +68,7 @@ fn main() -> io::Result<()> {
 
 
     if cli.gdb {
-        println!("GDB enabled");
+        info!("GDB enabled");
         // Establish a `Connection`
         let connection: Box<dyn ConnectionExt<Error = std::io::Error>> = Box::new(wait_for_gdb_connection(9001)?);
 
@@ -78,38 +81,38 @@ fn main() -> io::Result<()> {
         match debugger.run_blocking::<MyGdbBlockingEventLoop>(&mut emu) {
             Ok(disconnect_reason) => match disconnect_reason {
                 DisconnectReason::Disconnect => {
-                    println!("GDB client has disconnected. Running to completion...");
+                    info!("GDB client has disconnected. Running to completion...");
                     while emu.step() != Some(emu::Event::Halted) {}
                 }
                 DisconnectReason::TargetExited(code) => {
-                    println!("Target exited with code {}!", code)
+                    info!("Target exited with code {}!", code)
                 }
                 DisconnectReason::TargetTerminated(sig) => {
-                    println!("Target terminated with signal {}!", sig)
+                    info!("Target terminated with signal {}!", sig)
                 }
-                DisconnectReason::Kill => println!("GDB sent a kill command!"),
+                DisconnectReason::Kill => info!("GDB sent a kill command!"),
             },
             Err(e) => {
                 if e.is_target_error() {
-                    println!(
+                    info!(
                         "target encountered a fatal error: {:?}",
                         e.into_target_error().unwrap()
                     )
                 } else if e.is_connection_error() {
                     let (e, kind) = e.into_connection_error().unwrap();
-                    println!("connection error: {:?} - {:?}", kind, e,)
+                    info!("connection error: {:?} - {:?}", kind, e,)
                 } else {
-                    println!("gdbstub encountered a fatal error: {:?}", e)
+                    info!("gdbstub encountered a fatal error: {:?}", e)
                 }
             }
         }
     } else {
-        println!("No GDB");
+        info!("No GDB");
         let mut emu = Emu::new(code, base_addr, reg_dump_count as u64, logger);
         emu.set_entry_point(entry_address);
         while counter != 0 {
             if emu.step() == Some(emu::Event::Halted) {
-                println!("Halted");
+                info!("Halted");
                 break;
             }
             if counter > 0 {
@@ -172,7 +175,7 @@ fn load_elf(code: &mut Vec<u8>, file: &mut File, base_addr: usize) -> io::Result
     let ph_offset = u8_slice_to_u64(&elf[PH_POS..PH_POS + 8]) as usize;
     let ph_entries = u8_slice_to_u16(&elf[PH_ENTRIES_POS..PH_ENTRIES_POS + 2]) as usize;
     let ph_entry_size = u8_slice_to_u16(&elf[PH_ENTRY_SIZE_POS..PH_ENTRY_SIZE_POS + 2]) as usize;
-    println!(
+    info!(
         "Prog Header Entries:{}, Offset:{:>#x}, size:{:>#x}, entry:{:>#x}",
         ph_entries, ph_offset, ph_entry_size, entry
     );
@@ -189,9 +192,9 @@ fn load_elf(code: &mut Vec<u8>, file: &mut File, base_addr: usize) -> io::Result
         let va = u8_slice_to_u64(&elf[va_offset..va_offset + 8]) as usize;
         let filesize = u8_slice_to_u64(&elf[filesize_offset..filesize_offset + 8]) as usize;
         let memsize = u8_slice_to_u64(&elf[memsize_offset..memsize_offset + 8]) as usize;
-        println!("Offset:{:>#x}, Entry:{}, segment offset: {:>#x}, va:{:>#x}, filesize:{:>#x}, memsize:{:>#x}",
+        info!("Offset:{:>#x}, Entry:{}, segment offset: {:>#x}, va:{:>#x}, filesize:{:>#x}, memsize:{:>#x}",
                  entry_offset, entry, segment, va, filesize, memsize);
-        println!("Code length: {}", code.len());
+        info!("Code length: {}", code.len());
         if p_type != 0x1 {
             continue;
         }

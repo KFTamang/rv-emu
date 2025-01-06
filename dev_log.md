@@ -40,3 +40,17 @@ ELFファイルを読み込めるようにした。これまでは0番地から�
 
 ## 2022/07/24
 CSRの中身と割込みの実装を始めた。
+
+## 2025/01/04
+久しぶりに再開。docker containerを使って開発できるようにしている。
+使い方：
+
+- gdb用コンテナイメージビルド
+    - `docker build -f Dockerfile.riscv_gdb . -t riscv_gdb`
+- コンテナ起動
+    - ` docker compose up  --remove-orphans --build`
+- gdbコンテナ内でのgdb操作
+    - `docker exec -it rv-emu-gdb-1 /bin/bash` で起動
+    - `riscv64-unknown-elf-gdb apps/xv6/kernel` を実行
+    - `target remote rv-emu-rust-1:9001` を実行
+    - `continue` で実行開始

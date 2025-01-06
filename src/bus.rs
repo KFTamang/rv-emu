@@ -4,7 +4,7 @@ use crate::interrupt::*;
 use crate::plic::*;
 use crate::uart::*;
 use crate::virtio::*;
-use log::{error, info};
+use log::{error, info, debug};
 
 pub struct Bus {
     dram: Dram,
@@ -32,7 +32,7 @@ impl Bus {
         }
         if self.clint.is_accessible(addr) {
             let ret_val = self.clint.load(addr, size);
-            info!(
+            debug!(
                 "load clint addr:{:x}, size:{}, value:{}(0x{:x})",
                 addr,
                 size,
@@ -43,7 +43,7 @@ impl Bus {
         }
         if self.uart.is_accessible(addr) {
             let ret_val = self.uart.load(addr, size);
-            info!(
+            debug!(
                 "load uart addr:{:x}, size:{}, value:{}(0x{:x})",
                 addr,
                 size,
@@ -54,7 +54,7 @@ impl Bus {
         }
         if self.plic.is_accessible(addr) {
             let ret_val = self.plic.load(addr, size);
-            info!(
+            debug!(
                 "load plic addr:{:x}, size:{}, value:{}(0x{:x})",
                 addr,
                 size,
@@ -65,7 +65,7 @@ impl Bus {
         }
         if self.virtio.is_accessible(addr) {
             let ret_val = self.virtio.load(addr, size);
-            info!(
+            debug!(
                 "load virtio addr:{:x}, size:{}, value:{}(0x{:x})",
                 addr,
                 size,
@@ -74,7 +74,7 @@ impl Bus {
             );
             return ret_val;
         }
-        info!(
+        debug!(
             "Error while load operation: accessing 0x{:x}, size:{}",
             addr, size
         );
@@ -85,7 +85,7 @@ impl Bus {
         if self.dram.dram_base <= addr {
             return self.dram.store(addr, size, value);
         }
-        info!(
+        debug!(
             "store addr:{:x}, size:{}, value:{}(0x{:x})",
             addr, size, value, value
         );
@@ -101,7 +101,7 @@ impl Bus {
         if self.virtio.is_accessible(addr) {
             return self.virtio.store(addr, size, value);
         }
-        info!(
+        debug!(
             "Error while store operation: accessing 0x{:x}, size:{}, value:{}(0x{:x})",
             addr, size, value, value
         );

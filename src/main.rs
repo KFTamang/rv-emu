@@ -64,7 +64,7 @@ fn main() -> io::Result<()> {
     }
 
     let reg_dump_count = cli.dump.unwrap_or(0);
-    let mut counter = cli.count.unwrap_or(-1);
+    let mut counter = cli.count.unwrap_or(1);
 
 
     if cli.gdb {
@@ -94,15 +94,15 @@ fn main() -> io::Result<()> {
             },
             Err(e) => {
                 if e.is_target_error() {
-                    info!(
+                    error!(
                         "target encountered a fatal error: {:?}",
                         e.into_target_error().unwrap()
                     )
                 } else if e.is_connection_error() {
                     let (e, kind) = e.into_connection_error().unwrap();
-                    info!("connection error: {:?} - {:?}", kind, e,)
+                    error!("connection error: {:?} - {:?}", kind, e,)
                 } else {
-                    info!("gdbstub encountered a fatal error: {:?}", e)
+                    error!("gdbstub encountered a fatal error: {:?}", e)
                 }
             }
         }
@@ -115,7 +115,7 @@ fn main() -> io::Result<()> {
                 info!("Halted");
                 break;
             }
-            if counter > 0 {
+            if !cli.loop_on && counter > 0 {
                 counter -= 1;
             }
         }

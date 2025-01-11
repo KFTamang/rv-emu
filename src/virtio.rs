@@ -68,77 +68,69 @@ impl Virtio {
     }
 
     pub fn is_accessible(&self, addr: u64) -> bool {
-        (addr >= self.start_addr) & (addr < self.start_addr + self.size)
+        (addr >= self.start_addr) && (addr < self.start_addr + self.size)
     }
 
     pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
-        if (addr >= self.start_addr) && (addr < self.start_addr + self.size) {
-            let relative_addr = (addr - self.start_addr) as usize;
-            let ret_val = match size {
-                8 => (self.registers[relative_addr + 0] << 0) as u64,
-                16 => {
-                    ((self.registers[relative_addr + 0] as u64) << 0)
-                        | ((self.registers[relative_addr + 1] as u64) << 8)
-                }
-                32 => {
-                    ((self.registers[relative_addr + 0] as u64) << 0)
-                        | ((self.registers[relative_addr + 1] as u64) << 8)
-                        | ((self.registers[relative_addr + 2] as u64) << 16)
-                        | ((self.registers[relative_addr + 3] as u64) << 24)
-                }
-                64 => {
-                    ((self.registers[relative_addr + 0] as u64) << 0)
-                        | ((self.registers[relative_addr + 1] as u64) << 8)
-                        | ((self.registers[relative_addr + 2] as u64) << 16)
-                        | ((self.registers[relative_addr + 3] as u64) << 24)
-                        | ((self.registers[relative_addr + 4] as u64) << 32)
-                        | ((self.registers[relative_addr + 5] as u64) << 40)
-                        | ((self.registers[relative_addr + 6] as u64) << 48)
-                        | ((self.registers[relative_addr + 7] as u64) << 56)
-                }
-                _ => {
-                    panic!("Invalid access size: {}", size)
-                }
-            };
-            debug!("virtio: load addr:{:x}(relative {:x}), size:{}, value:{}", addr, relative_addr, size, ret_val);
-            Ok(ret_val)
-        } else {
-            debug!("virtio: load addr:{:x}, size:{}, self.size:{}", addr, size, self.size);
-            Ok(0x0)
-        }
+        let relative_addr = (addr - self.start_addr) as usize;
+        let ret_val = match size {
+            8 => (self.registers[relative_addr + 0] << 0) as u64,
+            16 => {
+                ((self.registers[relative_addr + 0] as u64) << 0)
+                    | ((self.registers[relative_addr + 1] as u64) << 8)
+            }
+            32 => {
+                ((self.registers[relative_addr + 0] as u64) << 0)
+                    | ((self.registers[relative_addr + 1] as u64) << 8)
+                    | ((self.registers[relative_addr + 2] as u64) << 16)
+                    | ((self.registers[relative_addr + 3] as u64) << 24)
+            }
+            64 => {
+                ((self.registers[relative_addr + 0] as u64) << 0)
+                    | ((self.registers[relative_addr + 1] as u64) << 8)
+                    | ((self.registers[relative_addr + 2] as u64) << 16)
+                    | ((self.registers[relative_addr + 3] as u64) << 24)
+                    | ((self.registers[relative_addr + 4] as u64) << 32)
+                    | ((self.registers[relative_addr + 5] as u64) << 40)
+                    | ((self.registers[relative_addr + 6] as u64) << 48)
+                    | ((self.registers[relative_addr + 7] as u64) << 56)
+            }
+            _ => {
+                panic!("Invalid access size: {}", size)
+            }
+        };
+        debug!("virtio: load addr:{:x}(relative {:x}), size:{}, value:{}", addr, relative_addr, size, ret_val);
+        Ok(ret_val)
     }
 
     pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
         debug!("virtio: store addr:{:x}, size:{}, value:{}", addr, size, value);
-        if (addr > self.start_addr) && (addr + self.size < addr) {
-            let relative_addr = (addr - self.start_addr) as usize;
-            match size {
-                8 => self.registers[relative_addr + 0] = (value & 0xff) as u8,
-                16 => {
-                    self.registers[relative_addr + 0] = ((value << 0) & 0xff) as u8;
-                    self.registers[relative_addr + 1] = ((value << 8) & 0xff) as u8;
-                }
-                32 => {
-                    self.registers[relative_addr + 0] = ((value << 0) & 0xff) as u8;
-                    self.registers[relative_addr + 1] = ((value << 8) & 0xff) as u8;
-                    self.registers[relative_addr + 2] = ((value << 16) & 0xff) as u8;
-                    self.registers[relative_addr + 3] = ((value << 24) & 0xff) as u8;
-                }
-                64 => {
-                    self.registers[relative_addr + 0] = ((value << 0) & 0xff) as u8;
-                    self.registers[relative_addr + 1] = ((value << 8) & 0xff) as u8;
-                    self.registers[relative_addr + 2] = ((value << 16) & 0xff) as u8;
-                    self.registers[relative_addr + 3] = ((value << 24) & 0xff) as u8;
-                    self.registers[relative_addr + 4] = ((value << 32) & 0xff) as u8;
-                    self.registers[relative_addr + 5] = ((value << 40) & 0xff) as u8;
-                    self.registers[relative_addr + 6] = ((value << 48) & 0xff) as u8;
-                    self.registers[relative_addr + 7] = ((value << 56) & 0xff) as u8;
-                }
-                _ => {}
-            };
-            Ok(())
-        } else {
-            Ok(())
-        }
+        let relative_addr = (addr - self.start_addr) as usize;
+        match size {
+            8 => self.registers[relative_addr + 0] = (value & 0xff) as u8,
+            16 => {
+                self.registers[relative_addr + 0] = ((value << 0) & 0xff) as u8;
+                self.registers[relative_addr + 1] = ((value << 8) & 0xff) as u8;
+            }
+            32 => {
+                self.registers[relative_addr + 0] = ((value << 0) & 0xff) as u8;
+                self.registers[relative_addr + 1] = ((value << 8) & 0xff) as u8;
+                self.registers[relative_addr + 2] = ((value << 16) & 0xff) as u8;
+                self.registers[relative_addr + 3] = ((value << 24) & 0xff) as u8;
+            }
+            64 => {
+                self.registers[relative_addr + 0] = ((value << 0) & 0xff) as u8;
+                self.registers[relative_addr + 1] = ((value << 8) & 0xff) as u8;
+                self.registers[relative_addr + 2] = ((value << 16) & 0xff) as u8;
+                self.registers[relative_addr + 3] = ((value << 24) & 0xff) as u8;
+                self.registers[relative_addr + 4] = ((value << 32) & 0xff) as u8;
+                self.registers[relative_addr + 5] = ((value << 40) & 0xff) as u8;
+                self.registers[relative_addr + 6] = ((value << 48) & 0xff) as u8;
+                self.registers[relative_addr + 7] = ((value << 56) & 0xff) as u8;
+            }
+            _ => {}
+        };
+        debug!("register after store: 0x{} at 0x{:x}", self.registers[relative_addr], addr);
+        Ok(())
     }
 }

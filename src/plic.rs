@@ -14,7 +14,7 @@ impl Plic {
     }
 
     pub fn is_accessible(&self, addr: u64) -> bool {
-        (addr >= self.start_addr) & (addr < self.start_addr + self.size)
+        (addr >= self.start_addr) && (addr < self.start_addr + self.size)
     }
 
     pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {

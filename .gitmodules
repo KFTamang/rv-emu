@@ -1,0 +1,3 @@
+[submodule "apps/xv6-riscv"]
+	path = apps/xv6-riscv
+	url = ./

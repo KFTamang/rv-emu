@@ -52,7 +52,7 @@ impl Virtio {
         _registers[VIRTIO_MMIO_MAGIC_VALUE + 1] = 0x69;
         _registers[VIRTIO_MMIO_MAGIC_VALUE + 2] = 0x72;
         _registers[VIRTIO_MMIO_MAGIC_VALUE + 3] = 0x74;
-        _registers[VIRTIO_MMIO_VERSION] = 1;
+        _registers[VIRTIO_MMIO_VERSION] = 2;
         _registers[VIRTIO_MMIO_DEVICE_ID] = 2;
         _registers[VIRTIO_MMIO_VENDOR_ID + 0] = 0x51;
         _registers[VIRTIO_MMIO_VENDOR_ID + 1] = 0x45;

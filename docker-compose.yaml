@@ -11,7 +11,7 @@ services:
     command:
       - /bin/bash
       - -c
-      - RUST_LOG=info cargo run --release apps/xv6/kernel --elf --base-addr 2147483648 --loop-on -c 100000 -o log/output_kernel.log --gdb
+      - RUST_LOG=info cargo run --release apps/xv6-riscv/kernel/kernel --elf --base-addr 2147483648 --loop-on -c 100000 -o log/output_kernel.log --gdb
   gdb:
     image: riscv_gdb:latest
     volumes:

@@ -48,9 +48,8 @@ CSRの中身と割込みの実装を始めた。
 - gdb用コンテナイメージビルド
     - `docker build -f Dockerfile.riscv_gdb . -t riscv_gdb`
 - コンテナ起動
-    - ` docker compose up  --remove-orphans --build`
+    - `docker compose up  --remove-orphans --build`
 - gdbコンテナ内でのgdb操作
-    - `docker exec -it rv-emu-gdb-1 /bin/bash` で起動
-    - `riscv64-unknown-elf-gdb apps/xv6/kernel` を実行
+    - `docker exec -it rv-emu-gdb-1 riscv64-unknown-elf-gdb /projects/apps/xv6-riscv/kernel/kernel` で起動
     - `target remote rv-emu-rust-1:9001` を実行
     - `continue` で実行開始

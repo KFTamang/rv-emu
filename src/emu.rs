@@ -1,6 +1,4 @@
 use crate::cpu::*;
-use std::io;
-use std::io::prelude::*;
 
 pub enum ExecMode {
     Step,
@@ -30,12 +28,11 @@ impl Emu {
         binary: Vec<u8>,
         base_addr: u64,
         _dump_count: u64,
-        _logger: io::BufWriter<Box<dyn Write>>,
     ) -> Self {
         Self{
             breakpoints: vec![0; 32 as usize],
             exec_mode: ExecMode::Continue,
-            cpu: Cpu::new(binary, base_addr, _dump_count as u64, _logger),    
+            cpu: Cpu::new(binary, base_addr, _dump_count as u64),    
         }
     }
     

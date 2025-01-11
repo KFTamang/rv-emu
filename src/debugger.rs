@@ -1,10 +1,8 @@
 use std::convert::TryInto;
 use std::io;
 use std::net::{TcpListener, TcpStream};
-use std::ptr::read;
-use log::{error, info};
+use log::info;
 
-use crate::dram;
 use crate::emu::{Emu, Event, ExecMode, RunEvent};
 
 use gdbstub::common::Signal;

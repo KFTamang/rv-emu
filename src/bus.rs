@@ -4,7 +4,7 @@ use crate::interrupt::*;
 use crate::plic::*;
 use crate::uart::*;
 use crate::virtio::*;
-use log::{error, info, debug};
+use log::debug;
 
 pub struct Bus {
     dram: Dram,

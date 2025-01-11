@@ -52,10 +52,6 @@ fn main() -> io::Result<()> {
     let mut code = Vec::new();
     let mut entry_address = 0 as u64;
     let base_addr = cli.base_addr.unwrap_or(0) as u64;
-    let logger = io::BufWriter::new(match cli.output {
-        Some(path) => Box::new(File::create(&path).unwrap()) as Box<dyn Write>,
-        None => Box::new(io::stdout()) as Box<dyn Write>,
-    });
 
     if cli.elf != false {
         entry_address = load_elf(&mut code, &mut file, base_addr as usize).unwrap();
@@ -75,7 +71,7 @@ fn main() -> io::Result<()> {
         // Create a new `gdbstub::GdbStub` using the established `Connection`.
         let debugger = GdbStub::new(connection);
 
-        let mut emu = Emu::new(code, base_addr, reg_dump_count as u64, logger);
+        let mut emu = Emu::new(code, base_addr, reg_dump_count as u64);
         emu.set_entry_point(entry_address);
         
         match debugger.run_blocking::<MyGdbBlockingEventLoop>(&mut emu) {
@@ -108,7 +104,7 @@ fn main() -> io::Result<()> {
         }
     } else {
         info!("No GDB");
-        let mut emu = Emu::new(code, base_addr, reg_dump_count as u64, logger);
+        let mut emu = Emu::new(code, base_addr, reg_dump_count as u64);
         emu.set_entry_point(entry_address);
         while counter != 0 {
             if emu.step() == Some(emu::Event::Halted) {

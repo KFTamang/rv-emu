@@ -1,7 +1,7 @@
 use crate::cpu::*;
 use crate::csr::*;
 use std::process::exit;
-use log::{error, info};
+use log::info;
 
 const INTERRUPT_BIT: u64 = 1 << 63;
 
@@ -40,7 +40,7 @@ impl Interrupt {
                 cpu.csr.set_mstatus_bit(0, MASK_MIE, MASK_MIE);
 
                 let mtvec = cpu.csr.load_csrs(MTVEC);
-                cpu.log(format!("mtvec is {}\n", mtvec));
+                info!("mtvec is 0x{:x}\n", mtvec);
                 info!("enter M mode\n");
                 match mtvec & 0x3 {
                     0x0 => {
@@ -48,7 +48,7 @@ impl Interrupt {
                     }
                     0x1 => {}
                     _ => {
-                        cpu.log(format!("Exception Error, this should not be reached!"));
+                        info!("Exception Error, this should not be reached!");
                         exit(1);
                     }
                 }
@@ -63,7 +63,7 @@ impl Interrupt {
                 cpu.csr.set_sstatus_bit(0, MASK_SIE, BIT_SIE);
 
                 let stvec = cpu.csr.load_csrs(STVEC);
-                cpu.log(format!("stvec is {}", stvec));
+                info!("stvec is 0x{:x}", stvec);
                 info!("enter S mode");
                 match stvec & 0x3 {
                     0x0 => {
@@ -71,14 +71,14 @@ impl Interrupt {
                     }
                     0x1 => {}
                     _ => {
-                        cpu.log(format!("Exception Error, this should not be reached!"));
+                        info!("Exception Error, this should not be reached!");
                         exit(1);
                     }
                 }
             }
             _ => {}
         }
-        cpu.log(format!("Exception:{} occurred!", self.exception_code()));
+        info!("Exception:{} occurred!", self.exception_code());
     }
     fn get_trap_mode(&self, cpu: &mut Cpu) -> Result<u64, ()> {
         // An interrupt i will be taken
@@ -182,7 +182,7 @@ impl Exception {
                 cpu.csr.set_mstatus_bit(0, MASK_MIE, MASK_MIE);
 
                 let mtvec = cpu.csr.load_csrs(MTVEC);
-                cpu.log(format!("mtvec is {}\n", mtvec));
+                info!("mtvec is {}\n", mtvec);
                 info!("enter M mode\n");
                 match mtvec & 0x3 {
                     0x0 => {
@@ -190,7 +190,7 @@ impl Exception {
                     }
                     0x1 => {}
                     _ => {
-                        cpu.log(format!("Exception Error, this should not be reached!"));
+                        info!("Exception Error, this should not be reached!");
                         exit(1);
                     }
                 }
@@ -205,7 +205,7 @@ impl Exception {
                 cpu.csr.set_sstatus_bit(0, MASK_SIE, BIT_SIE);
 
                 let stvec = cpu.csr.load_csrs(STVEC);
-                cpu.log(format!("stvec is {}", stvec));
+                info!("stvec is 0x{:x}", stvec);
                 info!("enter S mode");
                 match stvec & 0x3 {
                     0x0 => {
@@ -213,14 +213,14 @@ impl Exception {
                     }
                     0x1 => {}
                     _ => {
-                        cpu.log(format!("Exception Error, this should not be reached!"));
+                        info!("Exception Error, this should not be reached!");
                         exit(1);
                     }
                 }
             }
             _ => {}
         }
-        cpu.log(format!("Exception:{} occurred!", self.exception_code()));
+        info!("Exception:{} occurred!", self.exception_code());
     }
 
     fn get_target_mode(&self, cpu: &mut Cpu) -> u64 {

@@ -3,7 +3,7 @@ use crate::csr::*;
 use crate::dram::*;
 use crate::interrupt::*;
 
-use std::io::{BufWriter, Write};
+use log::info;
 
 use std::cmp;
 
@@ -40,7 +40,6 @@ pub struct Cpu {
     src2: usize,
     pub mode: u64,
     dump_count: u64,
-    logger: BufWriter<Box<dyn Write>>,
     inst_string: String,
 }
 
@@ -49,7 +48,6 @@ impl Cpu {
         binary: Vec<u8>,
         base_addr: u64,
         _dump_count: u64,
-        _logger: BufWriter<Box<dyn Write>>,
     ) -> Self {
         let mut regs = [0; 32];
         regs[2] = DRAM_SIZE;
@@ -63,15 +61,8 @@ impl Cpu {
             src2: REG_NUM,
             mode: M_MODE,
             dump_count: _dump_count,
-            logger: _logger,
             inst_string: String::from(""),
         }
-    }
-
-    pub fn log(&mut self, string: String) {
-        self.logger
-            .write_all(string.as_bytes())
-            .expect("Failed to write file");
     }
 
     pub fn fetch(&mut self) -> Result<u64, ()> {
@@ -291,7 +282,7 @@ impl Cpu {
                 self.csr.set_mstatus_bit(U_MODE, MASK_MPP, BIT_MPP);
                 self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
                 self.mode = pp;
-                self.log(format!("back to privilege {}", pp));
+                info!("back to privilege {} from machine mode", pp);
             }
             S_MODE => {
                 let pp = self.csr.get_sstatus_bit(MASK_SPP, BIT_SPP);
@@ -302,7 +293,7 @@ impl Cpu {
                 self.csr.set_sstatus_bit(U_MODE, MASK_SPP, BIT_SPP);
                 self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
                 self.mode = pp;
-                self.log(format!("back to privilege {}", pp));
+                info!("back to privilege {} from supervisor mode", pp);
             }
             _ => {
                 panic!("m/sret from U_MODE\n");
@@ -404,8 +395,8 @@ impl Cpu {
                         self.regs[rd] = ((self.regs[rs1] as i64) % (self.regs[rs2] as i64)) as u64;
                     }
                     (_, _) => {
-                        self.log(format!("This should not be reached!"));
-                        self.log(format!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7));
+                        info!("This should not be reached!");
+                        info!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -470,8 +461,8 @@ impl Cpu {
                         }
                     }
                     _ => {
-                        self.log(format!("This should not be reached!"));
-                        self.log(format!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7));
+                        info!("This should not be reached!");
+                        info!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -521,8 +512,8 @@ impl Cpu {
                         self.regs[rd] = val;
                     }
                     _ => {
-                        self.log(format!("This should not be reached!"));
-                        self.log(format!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7));
+                        info!("This should not be reached!");
+                        info!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -542,8 +533,8 @@ impl Cpu {
                     0x2 => self.store(addr, 32, self.regs[rs2])?,
                     0x3 => self.store(addr, 64, self.regs[rs2])?,
                     _ => {
-                        self.log(format!("This should not be reached!"));
-                        self.log(format!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7));
+                        info!("This should not be reached!");
+                        info!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -575,8 +566,8 @@ impl Cpu {
                         self.pc = next_pc;
                     }
                     _ => {
-                        self.log(format!("This should not be reached!"));
-                        self.log(format!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7));
+                        info!("This should not be reached!");
+                        info!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -623,8 +614,8 @@ impl Cpu {
                         self.regs[rd] = val as i64 as u64;
                     }
                     _ => {
-                        self.log(format!("This should not be reached!"));
-                        self.log(format!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7));
+                        info!("This should not be reached!");
+                        info!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -676,8 +667,8 @@ impl Cpu {
                         }
                     }
                     _ => {
-                        self.log(format!("This should not be reached!"));
-                        self.log(format!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7));
+                        info!("This should not be reached!");
+                        info!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -738,7 +729,7 @@ impl Cpu {
                         self.regs[rd] = rem as u64;
                     }
                     _ => {
-                        self.log(format!("This should not be reached!"));
+                        info!("This should not be reached!");
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -831,11 +822,11 @@ impl Cpu {
                         self.print_inst_r("sfence.vma", rd, rs1, rs2);
                     }
                     (_, _, _) => {
-                        self.log(format!("Unsupported CSR instruction!\n"));
-                        self.log(format!(
-                            "pc = 0x{:x}, funct3:{}, funct7:{}\n",
+                        info!("Unsupported CSR instruction!");
+                        info!(
+                            "pc = 0x{:x}, funct3:{}, funct7:{}",
                             self.pc, funct3, funct7
-                        ));
+                        );
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -1077,9 +1068,9 @@ impl Cpu {
                 Ok(())
             }
             _ => {
-                self.log(format!("not implemented yet!"));
-                self.log(format!("pc=0x{:x}", self.pc));
-                self.log(format!("inst:{inst:b}"));
+                info!("not implemented yet!");
+                info!("pc=0x{:x}", self.pc);
+                info!("inst:{inst:b}");
                 return Err(Exception::IllegalInstruction(inst));
             }
         }
@@ -1120,8 +1111,8 @@ impl Cpu {
                 )
             )
         }
-        self.log(format!("{}", output));
-        self.log(format!("----\n"));
+        info!("{}", output);
+        info!("----\n");
     }
 
     pub fn step_run(&mut self) -> u64 {
@@ -1144,7 +1135,7 @@ impl Cpu {
 
         if self.pc == 0 {
             self.dump_registers();
-            self.log(format!("Program finished!\n"));
+            info!("Program finished!\n");
         }
         self.pc
     }

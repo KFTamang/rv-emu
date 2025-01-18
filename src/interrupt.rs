@@ -16,7 +16,7 @@ pub enum Interrupt {
 }
 
 impl Interrupt {
-    fn exception_code(&self) -> u64 {
+    pub fn code(&self) -> u64 {
         match self {
             Interrupt::SupervisorSoftwareInterrupt => 1 | INTERRUPT_BIT,
             Interrupt::MachineSoftwareInterrupt => 3 | INTERRUPT_BIT,
@@ -27,7 +27,7 @@ impl Interrupt {
         }
     }
     pub fn take_trap(&mut self, cpu: &mut Cpu) {
-        let exception_code = self.exception_code();
+        let exception_code = self.code();
         let target_mode = self.get_trap_mode(cpu);
         match target_mode {
             Ok(M_MODE) => {
@@ -78,7 +78,7 @@ impl Interrupt {
             }
             _ => {}
         }
-        info!("Exception:{} occurred!", self.exception_code());
+        info!("Exception:{} occurred!", self.code());
     }
     fn get_trap_mode(&self, cpu: &mut Cpu) -> Result<u64, ()> {
         // An interrupt i will be taken
@@ -90,7 +90,7 @@ impl Interrupt {
         // (c)If bit i in mideleg is set, however, interrupts are considered to be globally enabled
         // if the hart’s current privilege mode equals the delegated privilege mode and that mode’s interrupt enable bit (xIE in mstatus for mode x) is set,
         // or if the current privilege mode is less than the delegated privilege mode.
-        let i = self.exception_code();
+        let i = self.code();
         let bit_i = 0b1 << i;
         let mideleg = cpu.csr.load_csrs(MIDELEG);
         let destined_mode = if (bit_i & mideleg) == 0 {
@@ -149,7 +149,7 @@ pub enum Exception {
 }
 
 impl Exception {
-    fn exception_code(&self) -> u64 {
+    pub fn code(&self) -> u64 {
         match self {
             Exception::InstructionAddressMissaligned => 0,
             Exception::InstructionAccessFault => 1,
@@ -169,7 +169,7 @@ impl Exception {
     }
 
     pub fn take_trap(&mut self, cpu: &mut Cpu) {
-        let exception_code = self.exception_code();
+        let exception_code = self.code();
         let target_mode = self.get_target_mode(cpu);
         match target_mode {
             M_MODE => {
@@ -220,11 +220,11 @@ impl Exception {
             }
             _ => {}
         }
-        info!("Exception:{} occurred!", self.exception_code());
+        info!("Exception:{} occurred!", self.code());
     }
 
     fn get_target_mode(&self, cpu: &mut Cpu) -> u64 {
-        let bit_shift = self.exception_code();
+        let bit_shift = self.code();
         let exception_bit = 0b1 << bit_shift;
         let medeleg = cpu.csr.load_csrs(MEDELEG);
         if (cpu.mode < M_MODE) && ((exception_bit & medeleg) != 0) {

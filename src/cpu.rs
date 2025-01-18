@@ -6,6 +6,7 @@ use crate::interrupt::*;
 use log::info;
 
 use std::cmp;
+use std::sync::{Arc, Condvar, Mutex};
 
 const REG_NUM: usize = 32;
 pub const M_MODE: u64 = 0b11;
@@ -41,6 +42,7 @@ pub struct Cpu {
     pub mode: u64,
     dump_count: u64,
     inst_string: String,
+    interrupt_flag: Arc<(Mutex<bool>, Condvar)>,
 }
 
 impl Cpu {
@@ -62,6 +64,7 @@ impl Cpu {
             mode: M_MODE,
             dump_count: _dump_count,
             inst_string: String::from(""),
+            interrupt_flag: Arc::new((Mutex::new(false), Condvar::new())),
         }
     }
 
@@ -216,6 +219,25 @@ impl Cpu {
             2 => Ok(((pte << 2) & 0xffffffc0000000) | (va & 0x3fffffff)),
             _ => panic!("something goes wrong at MMU!"),
         }
+    }
+
+    fn wait_for_interrupt(&self) {
+        // wait with condvar until interrupt is set
+        let (lock, cvar) = &*self.interrupt_flag;
+        let mut interrupt_flag = lock.lock().unwrap();
+        while !*interrupt_flag {
+            interrupt_flag = cvar.wait(interrupt_flag).unwrap();
+        }
+    }
+
+    #[allow(unused)]
+    pub fn set_pending_interrupt(&mut self, interrupt: Interrupt) {
+        let (lock, cvar) = &*self.interrupt_flag;
+        let mut interrupt_flag = lock.lock().unwrap();
+        *interrupt_flag = true;
+        self.csr.store_csrs(MCAUSE, interrupt.code() as u64);
+
+        cvar.notify_all(); // Wake up the CPU thread(s)
     }
 
     pub fn get_pending_interrupt(&self) -> Option<Interrupt> {
@@ -768,6 +790,10 @@ impl Cpu {
                         self.print_inst_i("sret", rd, rs1, imm);
                         self.return_from_trap();
                     }
+                    (0x0, 0x8, 0x5) => {
+                        self.print_inst_i("wfi", rd, rs1, imm);
+                        self.wait_for_interrupt();
+                    }                    
                     (0x0, 0x18, 0x2) => {
                         self.print_inst_i("mret", rd, rs1, imm);
                         self.return_from_trap();

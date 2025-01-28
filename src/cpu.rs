@@ -23,14 +23,6 @@ fn bit(integer: u64, bit: u64) -> u64 {
     (integer >> bit) & 0x1
 }
 
-pub enum Event {
-    DoneStep,
-    Halted,
-    Break,
-    WatchWrite(u32),
-    WatchRead(u32),
-}
-
 pub struct Cpu {
     pub regs: [u64; 32],
     pub pc: u64,
@@ -177,7 +169,7 @@ impl Cpu {
         const LEVEL: u64 = 3;
         let satp = self.csr.load_csrs(SATP);
         let mode = satp >> 63;
-        let asid = (satp >> 22) & 0x1ff;
+        let _asid = (satp >> 22) & 0x1ff;
         if mode == 0 {
             return Ok(va);
         }
@@ -194,8 +186,8 @@ impl Cpu {
                 let r = bit(pte, 1);
                 let w = bit(pte, 2);
                 let x = bit(pte, 3);
-                let u = bit(pte, 4);
-                let g = bit(pte, 5);
+                let _u = bit(pte, 4);
+                let _g = bit(pte, 5);
                 if (v == 0) || ((r == 0) && (w == 1)) {
                     return Err(Exception::LoadPageFault(va as u32));
                 }
@@ -262,6 +254,7 @@ impl Cpu {
         None
     }
 
+    #[allow(unused)]
     fn trap(&mut self) {
         // trap process here
 

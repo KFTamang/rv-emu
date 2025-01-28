@@ -108,6 +108,7 @@ impl Bus {
         Err(Exception::StoreAMOAccessFault)
     }
 
+    #[allow(unused)]
     pub fn dump(&self, path: &str) {
         self.dram.dump(path);
     }

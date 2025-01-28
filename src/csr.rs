@@ -74,10 +74,6 @@ impl Csr {
         }
     }
 
-    pub fn mstatus_mie(&self) -> bool {
-        (self.csr[MSTATUS] & MASK_MIE) != 0
-    }
-
     pub fn set_mstatus_bit(&mut self, val: u64, mask: u64, bit: u64) {
         let mut current = self.load_csrs(MSTATUS);
         current &= !mask;
@@ -100,17 +96,5 @@ impl Csr {
     pub fn get_sstatus_bit(&self, mask: u64, bit: u64) -> u64 {
         let status = self.load_csrs(SSTATUS);
         (status & mask) >> bit
-    }
-
-    pub fn mie(&self) -> u64 {
-        self.csr[MIE]
-    }
-
-    pub fn mip(&self) -> u64 {
-        self.csr[MIP]
-    }
-
-    pub fn set_bit_in_mip(&mut self, val: u32) {
-        self.csr[MIP] |= 1u64 << val;
     }
 }

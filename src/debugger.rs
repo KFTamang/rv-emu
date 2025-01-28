@@ -83,7 +83,7 @@ impl SingleThreadBase for Emu {
             let data_8byte =
                 u64::from_le_bytes(data[wrote_size..wrote_size + 8].try_into().unwrap());
             // store 64 bytes at a time, copy to data
-            if let Ok(source_slice) =
+            if let Ok(_source_slice) =
                 self.cpu
                     .bus
                     .store(start_addr + wrote_size as u64, data_8byte, 64)
@@ -94,7 +94,7 @@ impl SingleThreadBase for Emu {
             }
         }
         while data.len() - wrote_size > 0 {
-            if let Ok(source_slice) =
+            if let Ok(_source_slice) =
                 self.cpu
                     .bus
                     .store(start_addr + wrote_size as u64, data[wrote_size] as u64, 8)
@@ -116,7 +116,7 @@ impl SingleThreadBase for Emu {
 }
 
 impl SingleThreadResume for Emu {
-    fn resume(&mut self, signal: Option<Signal>) -> Result<(), Self::Error> {
+    fn resume(&mut self, _signal: Option<Signal>) -> Result<(), Self::Error> {
         self.exec_mode = ExecMode::Continue;
         Ok(())
     }
@@ -131,7 +131,7 @@ impl SingleThreadResume for Emu {
 }
 
 impl SingleThreadSingleStep for Emu {
-    fn step(&mut self, signal: Option<Signal>) -> Result<(), Self::Error> {
+    fn step(&mut self, _signal: Option<Signal>) -> Result<(), Self::Error> {
         self.exec_mode = ExecMode::Step;
         Ok(())
     }
@@ -146,11 +146,11 @@ impl Breakpoints for Emu {
 }
 
 impl SwBreakpoint for Emu {
-    fn add_sw_breakpoint(&mut self, addr: u64, kind: usize) -> TargetResult<bool, Self> {
+    fn add_sw_breakpoint(&mut self, _addr: u64, _kind: usize) -> TargetResult<bool, Self> {
         todo!()
     }
 
-    fn remove_sw_breakpoint(&mut self, addr: u64, kind: usize) -> TargetResult<bool, Self> {
+    fn remove_sw_breakpoint(&mut self, _addr: u64, _kind: usize) -> TargetResult<bool, Self> {
         todo!()
     }
 }
@@ -229,7 +229,7 @@ impl run_blocking::BlockingEventLoop for MyGdbBlockingEventLoop {
 
     // Invoked when the GDB client sends a Ctrl-C interrupt.
     fn on_interrupt(
-        target: &mut Emu,
+        _target: &mut Emu,
     ) -> Result<Option<SingleThreadStopReason<u64>>, <Emu as Target>::Error> {
         // notify the target that a ctrl-c interrupt has occurred.
 

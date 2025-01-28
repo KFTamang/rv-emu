@@ -130,6 +130,7 @@ impl Interrupt {
     }
 }
 
+#[allow(unused)]
 #[derive(Debug)]
 pub enum Exception {
     InstructionAddressMissaligned,

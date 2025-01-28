@@ -17,11 +17,11 @@ impl Plic {
         (addr >= self.start_addr) && (addr < self.start_addr + self.size)
     }
 
-    pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
+    pub fn load(&self, _addr: u64, _size: u64) -> Result<u64, Exception> {
         Ok(0x0)
     }
 
-    pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
+    pub fn store(&mut self, _addr: u64, _size: u64, _value: u64) -> Result<(), Exception> {
         Ok(())
     }
 }

@@ -3,3 +3,5 @@ test
 sandbox/*
 .vscode/*
 log/memory.dump
+Cargo.lock
+.bash_history

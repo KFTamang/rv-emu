@@ -1,9 +1,10 @@
 use crate::bus::*;
 use crate::csr::*;
 use crate::dram::*;
+use crate::clint::*;
 use crate::interrupt::*;
 
-use log::info;
+use log::{info, debug};
 
 use std::cmp;
 use std::sync::{Arc, Condvar, Mutex};
@@ -35,6 +36,7 @@ pub struct Cpu {
     dump_count: u64,
     inst_string: String,
     interrupt_flag: Arc<(Mutex<bool>, Condvar)>,
+    clint: Clint,
 }
 
 impl Cpu {
@@ -42,10 +44,10 @@ impl Cpu {
         binary: Vec<u8>,
         base_addr: u64,
         _dump_count: u64,
-    ) -> Self {
+    ) -> Arc<Mutex<Self>> {
         let mut regs = [0; 32];
         regs[2] = DRAM_SIZE;
-        Self {
+        let cpu = Arc::new(Mutex::new(Self {
             regs,
             pc: base_addr,
             bus: Bus::new(binary, base_addr),
@@ -57,7 +59,16 @@ impl Cpu {
             dump_count: _dump_count,
             inst_string: String::from(""),
             interrupt_flag: Arc::new((Mutex::new(false), Condvar::new())),
-        }
+            clint: Clint::new(0x200_0000, 0x10000),
+        }));
+
+        let cpu_clone = Arc::clone(&cpu);
+        cpu.lock().unwrap().clint.pend_interrupt = Some(Box::new(move |interrupt| {
+            let mut cpu = cpu_clone.lock().unwrap();
+            cpu.set_pending_interrupt(interrupt);
+        }));
+
+        cpu
     }
 
     pub fn fetch(&mut self) -> Result<u64, ()> {
@@ -150,15 +161,31 @@ impl Cpu {
     }
 
     fn load(&mut self, va: u64, size: u64) -> Result<u64, Exception> {
+        debug!("Load access to 0x{:x}", va);
         match self.translate(va, AccessMode::Load) {
-            Ok(pa) => self.bus.load(pa, size),
+            Ok(pa) => {
+                debug!("Physical address :0x{:x}", pa);
+                if self.clint.is_accessible(pa) {
+                    debug!("Access to CLINT");
+                    self.clint.load(pa, size)
+                } else {
+                    debug!("Access to bus");
+                    self.bus.load(pa, size)
+                }
+            },
             Err(e) => Err(e),
         }
     }
 
     fn store(&mut self, va: u64, size: u64, value: u64) -> Result<(), Exception> {
         match self.translate(va, AccessMode::Store) {
-            Ok(pa) => self.bus.store(pa, size, value),
+            Ok(pa) => {
+                if self.clint.is_accessible(pa) {
+                    self.clint.store(pa, size, value)
+                } else {
+                    self.bus.store(pa, size, value)
+                }
+            },
             Err(e) => Err(e),
         }
     }
@@ -222,13 +249,13 @@ impl Cpu {
         }
     }
 
-    #[allow(unused)]
     pub fn set_pending_interrupt(&mut self, interrupt: Interrupt) {
         let (lock, cvar) = &*self.interrupt_flag;
         let mut interrupt_flag = lock.lock().unwrap();
         *interrupt_flag = true;
         self.csr.store_csrs(MCAUSE, interrupt.code() as u64);
 
+        info!("Interrupt {:?} is set", interrupt);
         cvar.notify_all(); // Wake up the CPU thread(s)
     }
 

@@ -5,7 +5,7 @@ use log::info;
 
 const INTERRUPT_BIT: u64 = 1 << 63;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Interrupt {
     SupervisorSoftwareInterrupt,
     MachineSoftwareInterrupt,

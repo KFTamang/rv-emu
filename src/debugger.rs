@@ -40,8 +40,8 @@ impl SingleThreadBase for Emu {
         &mut self,
         regs: &mut gdbstub_arch::riscv::reg::RiscvCoreRegs<u64>,
     ) -> TargetResult<(), Self> {
-        regs.x = self.cpu.regs;
-        regs.pc = self.cpu.pc;
+        regs.x = self.cpu.lock().unwrap().regs;
+        regs.pc = self.cpu.lock().unwrap().pc;
         Ok(())
     }
 
@@ -49,8 +49,8 @@ impl SingleThreadBase for Emu {
         &mut self,
         regs: &gdbstub_arch::riscv::reg::RiscvCoreRegs<u64>,
     ) -> TargetResult<(), Self> {
-        self.cpu.regs = regs.x;
-        self.cpu.pc = regs.pc;
+        self.cpu.lock().unwrap().regs = regs.x;
+        self.cpu.lock().unwrap().pc = regs.pc;
         Ok(())
     }
 
@@ -58,7 +58,7 @@ impl SingleThreadBase for Emu {
         let mut read_size = 0;
         while data.len() - read_size >= 8 {
             // load 64 bytes at a time, copy to data
-            if let Ok(source_slice) = self.cpu.bus.load(start_addr + read_size as u64, 64) {
+            if let Ok(source_slice) = self.cpu.lock().unwrap().bus.load(start_addr + read_size as u64, 64) {
                 data[read_size..read_size + 8].copy_from_slice(&source_slice.to_le_bytes());
                 read_size += 8;
             } else {
@@ -66,7 +66,7 @@ impl SingleThreadBase for Emu {
             }
         }
         while data.len() - read_size > 0 {
-            if let Ok(source_slice) = self.cpu.bus.load(start_addr + read_size as u64, 8) {
+            if let Ok(source_slice) = self.cpu.lock().unwrap().bus.load(start_addr + read_size as u64, 8) {
                 data[read_size] = source_slice as u8;
                 read_size += 1;
             } else {
@@ -84,7 +84,7 @@ impl SingleThreadBase for Emu {
                 u64::from_le_bytes(data[wrote_size..wrote_size + 8].try_into().unwrap());
             // store 64 bytes at a time, copy to data
             if let Ok(_source_slice) =
-                self.cpu
+                self.cpu.lock().unwrap()
                     .bus
                     .store(start_addr + wrote_size as u64, data_8byte, 64)
             {
@@ -95,7 +95,7 @@ impl SingleThreadBase for Emu {
         }
         while data.len() - wrote_size > 0 {
             if let Ok(_source_slice) =
-                self.cpu
+                self.cpu.lock().unwrap()
                     .bus
                     .store(start_addr + wrote_size as u64, data[wrote_size] as u64, 8)
             {

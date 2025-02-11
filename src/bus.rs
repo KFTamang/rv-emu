@@ -1,4 +1,3 @@
-use crate::clint::*;
 use crate::dram::*;
 use crate::interrupt::*;
 use crate::plic::*;
@@ -8,7 +7,6 @@ use log::debug;
 
 pub struct Bus {
     dram: Dram,
-    clint: Clint,
     uart: Uart,
     plic: Plic,
     virtio: Virtio,
@@ -18,7 +16,6 @@ impl Bus {
     pub fn new(code: Vec<u8>, base_addr: u64) -> Bus {
         Self {
             dram: Dram::new(code, base_addr),
-            clint: Clint::new(0x2000000, 0x10000),
             uart: Uart::new(0x10000000, 0x100),
             plic: Plic::new(0xc000000, 0x4000000),
             virtio: Virtio::new(0x10001000, 0x1000),
@@ -28,17 +25,6 @@ impl Bus {
     pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
         if self.dram.dram_base <= addr {
             let ret_val = self.dram.load(addr, size);
-            return ret_val;
-        }
-        if self.clint.is_accessible(addr) {
-            let ret_val = self.clint.load(addr, size);
-            debug!(
-                "load clint addr:{:x}, size:{}, value:{}(0x{:x})",
-                addr,
-                size,
-                ret_val.as_ref().unwrap(),
-                ret_val.as_ref().unwrap()
-            );
             return ret_val;
         }
         if self.uart.is_accessible(addr) {
@@ -89,9 +75,6 @@ impl Bus {
             "store addr:{:x}, size:{}, value:{}(0x{:x})",
             addr, size, value, value
         );
-        if self.clint.is_accessible(addr) {
-            return self.clint.store(addr, size, value);
-        }
         if self.uart.is_accessible(addr) {
             return self.uart.store(addr, size, value);
         }

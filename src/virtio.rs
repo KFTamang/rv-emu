@@ -1,5 +1,5 @@
 use crate::interrupt::*;
-use log::debug;
+use log::{debug, info};
 
 // virtio mmio control registers, mapped starting at 0x10001000.
 // from qemu virtio_mmio.h
@@ -99,12 +99,12 @@ impl Virtio {
                 panic!("Invalid access size: {}", size)
             }
         };
-        debug!("virtio: load addr:{:x}(relative {:x}), size:{}, value:{}", addr, relative_addr, size, ret_val);
+        info!("virtio: load addr:{:x}(relative {:x}), size:{}, value:{}", addr, relative_addr, size, ret_val);
         Ok(ret_val)
     }
 
     pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
-        debug!("virtio: store addr:{:x}, size:{}, value:{}", addr, size, value);
+        info!("virtio: store addr:{:x}, size:{}, value:{}", addr, size, value);
         let relative_addr = (addr - self.start_addr) as usize;
         match size {
             8 => self.registers[relative_addr + 0] = (value & 0xff) as u8,

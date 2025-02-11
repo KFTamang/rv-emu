@@ -54,6 +54,9 @@ CSRの中身と割込みの実装を始めた。
     - `target remote rv-emu-rust-1:9001` を実行
     - `continue` で実行開始
 
+単独でrustコンテナを起動したい場合：
+`docker compose run -it --rm rust /bin/bash`
+
 ## 2025/01/20
 構成を考え直した。
 各コンポーネントがバスを経由して割り込み要求を出せるように、バスへのreferenceを持たせる。

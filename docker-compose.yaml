@@ -24,7 +24,7 @@ services:
     stdin_open: true
     tty: true
     command:
-      riscv64-unknown-elf-gdb apps/xv6/kernel
+      riscv64-unknown-elf-gdb apps/xv6-riscv/kernel/kernel
 
 networks:
   gdb-network:

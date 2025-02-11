@@ -1,0 +1,6 @@
+{
+	"name": "rv-emu debug",	
+	"dockerComposeFile": "../docker-compose.yml",
+	"service": "rust",
+	"workspaceFolder": "/var/www/rust"
+}

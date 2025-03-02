@@ -1,6 +1,6 @@
 use crate::interrupt::*;
 use log::{debug, info};
-use std::sync::{Condvar, Mutex};
+use std::sync::mpsc;
 use std::time::Duration;
 
 const FREQUENCY: u64 = 10000000; // clock frequency: 10MHz
@@ -15,48 +15,37 @@ pub struct Clint {
     // timer thread triggers an interrupt after a certain time
     // as a function call
     thread: Option<std::thread::JoinHandle<()>>,
-    condvar: Condvar,
-    mutex: Mutex<bool>,
-    sleep_duration: Duration,
-    is_finished: bool,
+    duration_sender: mpsc::Sender<Option<Duration>>,
     pub pend_interrupt: Option<Box<dyn Fn(Interrupt)>>,
 }
 
 impl Clint {
     pub fn new(_start_addr: u64, _size: u64) -> Clint {
-        let myself = Self {
+        let (sender, receiver) = mpsc::channel();
+        let thread = std::thread::spawn(
+            move || {
+                Self::timer_thread(receiver);
+            },
+        );
+        Self {
             start_addr: _start_addr,
             size: _size, // size is in bytes, but we store u64
             registers: vec![0; (_size / 8) as usize],
             thread: None,
             pend_interrupt: None,
-            condvar: Condvar::new(),
-            mutex: Mutex::new(false),
-            sleep_duration: Duration::from_secs(1),
-            is_finished: false,
-        };
-
-        let thread = std::thread::spawn(
-            move || {
-                myself.timer_thread();
-            },
-        );
-        myself
+            duration_sender: sender,
+        }
     }
 
-    fn timer_thread(&mut self) {
-
-        let mut mutex = self.mutex.lock().unwrap();
+    fn timer_thread(receiver: mpsc::Receiver<Option<Duration>>) {
         loop {
-            // wait for a signal via condvar
-            mutex = self.condvar.wait(mutex).unwrap();
-            // sleep for duration
-            debug!("timer thread: sleeping for: {:?}", self.sleep_duration);
-            std::thread::sleep(self.sleep_duration);
-            // trigger the interrupt
-            self.pend_interrupt.unwrap()(Interrupt::MachineTimerInterrupt);
-            debug!("timer thread: interrupt triggered Interrupt::MachineTimerInterrupt");
-            if self.is_finished {
+            let maybe_sleep_duration = receiver.recv().unwrap();
+            if let Some(duration) = maybe_sleep_duration {
+                std::thread::sleep(duration);
+                // trigger the interrupt
+                // pend_interrupt.unwrap()(Interrupt::MachineTimerInterrupt);
+                debug!("timer thread: interrupt triggered Interrupt::MachineTimerInterrupt");
+            } else {
                 break;
             }
         }
@@ -74,9 +63,9 @@ impl Clint {
     pub fn store(&mut self, _addr: u64, _size: u64, _value: u64) -> Result<(), Exception> {
         info!("clint: store: addr: {:#x}, value: {:#x}", _addr, _value);
         let offset = (_addr - self.start_addr) as usize;
+        self.registers[offset / 8] = _value;
         if offset == MTIMECMP {
-
-
+            self.set_mtimecmp(_value);
         }
         Ok(())
     }
@@ -87,10 +76,7 @@ impl Clint {
         let wait_time_ms = ((target_counter - current_counter) * 1000 / FREQUENCY) as u64;
         info!("clint: store: mtimecmp: wait_time_ms: {}", wait_time_ms);
 
-        {
-            let mut mutex = self.mutex.lock().unwrap();
-            self.sleep_duration = Duration::from_millis(wait_time_ms);
-            self.condvar.notify_all();
-        }
+        let sleep_duration = Option::Some(Duration::from_millis(wait_time_ms));
+        self.duration_sender.send(sleep_duration).unwrap();
     }
 }

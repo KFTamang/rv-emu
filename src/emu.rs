@@ -1,5 +1,4 @@
 use crate::cpu::*;
-use std::sync::{Arc, Mutex};
 
 pub enum ExecMode {
     Step,
@@ -21,7 +20,7 @@ pub enum RunEvent {
 pub struct Emu{
     pub breakpoints: Vec<u64>,
     pub exec_mode: ExecMode,
-    pub cpu: Arc<Mutex<Cpu>>,
+    pub cpu: Cpu,
 }
 
 impl Emu {
@@ -40,7 +39,7 @@ impl Emu {
     /// single-step the interpreter
     pub fn step(&mut self) -> Option<Event> {
 
-        let pc = self.cpu.lock().unwrap().step_run();
+        let pc = self.cpu.step_run();
 
         if self.breakpoints.contains(&pc) {
             return Some(Event::Break);
@@ -72,7 +71,7 @@ impl Emu {
     }
 
     pub fn set_entry_point(&mut self, entry_addr: u64) {
-        self.cpu.lock().unwrap().pc = entry_addr;
+        self.cpu.pc = entry_addr;
     }
 
 }

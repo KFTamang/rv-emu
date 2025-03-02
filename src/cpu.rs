@@ -7,7 +7,7 @@ use crate::interrupt::*;
 use log::{info, debug};
 
 use std::cmp;
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, mpsc};
 
 const REG_NUM: usize = 32;
 pub const M_MODE: u64 = 0b11;
@@ -35,7 +35,7 @@ pub struct Cpu {
     pub mode: u64,
     dump_count: u64,
     inst_string: String,
-    interrupt_flag: Arc<(Mutex<bool>, Condvar)>,
+    interrupt_receiver: mpsc::Receiver<Interrupt>,
     clint: Clint,
 }
 
@@ -44,10 +44,12 @@ impl Cpu {
         binary: Vec<u8>,
         base_addr: u64,
         _dump_count: u64,
-    ) -> Arc<Mutex<Self>> {
+    ) -> Self {
         let mut regs = [0; 32];
         regs[2] = DRAM_SIZE;
-        let cpu = Arc::new(Mutex::new(Self {
+        let (interrupt_sender, interrupt_receiver) = mpsc::channel();
+
+        Self {
             regs,
             pc: base_addr,
             bus: Bus::new(binary, base_addr),
@@ -58,17 +60,9 @@ impl Cpu {
             mode: M_MODE,
             dump_count: _dump_count,
             inst_string: String::from(""),
-            interrupt_flag: Arc::new((Mutex::new(false), Condvar::new())),
-            clint: Clint::new(0x200_0000, 0x10000),
-        }));
-
-        let cpu_clone = Arc::clone(&cpu);
-        cpu.lock().unwrap().clint.pend_interrupt = Some(Box::new(move |interrupt| {
-            let mut cpu = cpu_clone.lock().unwrap();
-            cpu.set_pending_interrupt(interrupt);
-        }));
-
-        cpu
+            clint: Clint::new(0x200_0000, 0x10000, Arc::new(interrupt_sender)),
+            interrupt_receiver: interrupt_receiver,
+        }
     }
 
     pub fn fetch(&mut self) -> Result<u64, ()> {
@@ -240,23 +234,15 @@ impl Cpu {
         }
     }
 
-    fn wait_for_interrupt(&self) {
-        // wait with condvar until interrupt is set
-        let (lock, cvar) = &*self.interrupt_flag;
-        let mut interrupt_flag = lock.lock().unwrap();
-        while !*interrupt_flag {
-            interrupt_flag = cvar.wait(interrupt_flag).unwrap();
-        }
+    fn wait_for_interrupt(&mut self) {
+        // wait for a message that notifies an interrupt on the interrupt channel
+        let interrupt = self.interrupt_receiver.recv().unwrap();
+        self.set_pending_interrupt(interrupt);
     }
 
-    pub fn set_pending_interrupt(&mut self, interrupt: Interrupt) {
-        let (lock, cvar) = &*self.interrupt_flag;
-        let mut interrupt_flag = lock.lock().unwrap();
-        *interrupt_flag = true;
+    fn set_pending_interrupt(&mut self, interrupt: Interrupt) {
         self.csr.store_csrs(MCAUSE, interrupt.code() as u64);
-
         info!("Interrupt {:?} is set", interrupt);
-        cvar.notify_all(); // Wake up the CPU thread(s)
     }
 
     pub fn get_pending_interrupt(&self) -> Option<Interrupt> {
@@ -1162,7 +1148,12 @@ impl Cpu {
     }
 
     pub fn step_run(&mut self) -> u64 {
-        
+
+        // recieve all the interrupt messages
+        while let Some(interrupt) = self.interrupt_receiver.try_recv().ok() {
+            self.set_pending_interrupt(interrupt);
+        }
+
         if let Some(mut interrupt) = self.get_pending_interrupt() {
             interrupt.take_trap(self);
         }

@@ -236,6 +236,7 @@ impl Cpu {
 
     fn wait_for_interrupt(&mut self) {
         // wait for a message that notifies an interrupt on the interrupt channel
+        info!("waiting for interrupt");
         let interrupt = self.interrupt_receiver.recv().unwrap();
         self.set_pending_interrupt(interrupt);
     }

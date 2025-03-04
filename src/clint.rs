@@ -50,6 +50,7 @@ impl Clint {
     }
 
     pub fn is_accessible(&self, addr: u64) -> bool {
+        info!("clint: is_accessible: addr: {:#x}", addr);
         (addr >= self.start_addr) && (addr < self.start_addr + self.size)
     }
 

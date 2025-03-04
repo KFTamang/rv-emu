@@ -4,6 +4,7 @@ use crate::plic::*;
 use crate::uart::*;
 use crate::virtio::*;
 use log::debug;
+use log::info;
 
 pub struct Bus {
     dram: Dram,
@@ -27,6 +28,7 @@ impl Bus {
             let ret_val = self.dram.load(addr, size);
             return ret_val;
         }
+        info!("load addr:{:x}, size:{}", addr, size);
         if self.uart.is_accessible(addr) {
             let ret_val = self.uart.load(addr, size);
             debug!(
@@ -71,7 +73,7 @@ impl Bus {
         if self.dram.dram_base <= addr {
             return self.dram.store(addr, size, value);
         }
-        debug!(
+        info!(
             "store addr:{:x}, size:{}, value:{}(0x{:x})",
             addr, size, value, value
         );

@@ -8,6 +8,9 @@ pub const STVEC: usize = 0x105;
 pub const SEPC: usize = 0x141;
 pub const SCAUSE: usize = 0x142;
 pub const SIP: usize = 0x144;
+// Sstc extension for supervisor timer registers
+pub const STIMECMP: usize = 0x14D;
+pub const STIMECMPH: usize = 0x15D;
 
 pub const SATP: usize = 0x180;
 

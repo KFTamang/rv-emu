@@ -65,7 +65,7 @@ CSRの中身と割込みの実装を始めた。
 ## 2025/03/12
 XV6をフォークしてsubmoduleとした。
 ビルド方法：
-1. `docker compose run -it --rm rust /bin/bash`でログイン
+1. `docker compose run -it --rm gdb /bin/bash`でログイン
 2. `make -B`
 
 ## 2025/03/59

@@ -53,7 +53,7 @@ impl Cpu {
             regs,
             pc: base_addr,
             bus: Bus::new(binary, base_addr),
-            csr: Csr::new(),
+            csr: Csr::new(Arc::new(interrupt_sender.clone())),
             dest: REG_NUM,
             src1: REG_NUM,
             src2: REG_NUM,

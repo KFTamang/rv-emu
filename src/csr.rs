@@ -1,5 +1,13 @@
+use crate::interrupt::*;
+use log::{debug, info};
+use std::sync::{Arc, mpsc};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
 pub struct Csr {
     csr: [u64; 4096],
+    timer_thread: std::thread::JoinHandle<()>,
+    duration_sender: mpsc::Sender<Option<Duration>>,
+    initial_time: u64,
 }
 
 pub const SSTATUS: usize = 0x100;
@@ -56,12 +64,29 @@ const SSTATUS_MASK: u64 = !(MASK_SXL
     | MASK_MPIE
     | MASK_MIE);
 
+pub const COUNT_PER_MS: u64 = 20; // 50 MHz
+
 impl Csr {
-    pub fn new() -> Self {
-        Self { csr: [0; 4096] }
+    pub fn new(_interrupt_sender: Arc<mpsc::Sender<Interrupt>>) -> Self {
+        let (sender, receiver) = mpsc::channel();
+        let thread = std::thread::spawn(
+            move || {
+                Self::timer_thread(receiver, _interrupt_sender);
+            },
+        );
+        Self {
+            csr: [0; 4096],
+               timer_thread: thread,
+                duration_sender: sender,
+                initial_time: SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64,
+        }
     }
 
     pub fn load_csrs(&self, addr: usize) -> u64 {
+        // debug!("load: addr:{:#x}", addr);
         if addr == SSTATUS {
             self.csr[MSTATUS] & SSTATUS_MASK
         } else {
@@ -70,10 +95,18 @@ impl Csr {
     }
 
     pub fn store_csrs(&mut self, addr: usize, val: u64) {
-        if addr == SSTATUS {
-            self.csr[MSTATUS] = val & SSTATUS_MASK;
-        } else {
-            self.csr[addr] = val;
+        debug!("store: addr:{:#x}, val:{:#x}", addr, val);
+        match addr {
+            SSTATUS => {
+                self.csr[MSTATUS] = val & SSTATUS_MASK;
+            },
+            STIMECMP => {
+                self.csr[STIMECMP] = val;
+                self.set_timer_interrupt(val);
+            },
+            _ => {
+                self.csr[addr] = val;
+            }
         }
     }
 
@@ -99,5 +132,38 @@ impl Csr {
     pub fn get_sstatus_bit(&self, mask: u64, bit: u64) -> u64 {
         let status = self.load_csrs(SSTATUS);
         (status & mask) >> bit
+    }
+
+    fn get_time_ms(&self) -> u64 {
+        let current_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+        current_time - self.initial_time
+    }
+
+    fn set_timer_interrupt(&self, comp_value: u64) {
+        let time = self.get_time_ms();
+        let comptime_ms = comp_value / COUNT_PER_MS;
+        if comptime_ms >= time {
+            let duration = Duration::from_millis(comp_value - time);
+            self.duration_sender.send(Option::Some(duration)).unwrap();
+        }
+    }
+
+    fn timer_thread(receiver: mpsc::Receiver<Option<Duration>>, interrupt_sender: Arc<mpsc::Sender<Interrupt>>) {
+        info!("timer thread: started");
+        loop {
+            let maybe_sleep_duration = receiver.recv().unwrap();
+            if let Some(duration) = maybe_sleep_duration {
+                std::thread::sleep(duration);
+                // trigger the interrupt
+                interrupt_sender.send(Interrupt::MachineTimerInterrupt).unwrap();
+                info!("timer thread: interrupt triggered Interrupt::MachineTimerInterrupt");
+            } else {
+                info!("timer thread: exiting");
+                break;
+            }
+        }
     }
 }

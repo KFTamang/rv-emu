@@ -242,11 +242,12 @@ impl Cpu {
     }
 
     fn set_pending_interrupt(&mut self, interrupt: Interrupt) {
-        self.csr.store_csrs(MCAUSE, interrupt.code() as u64);
+        self.csr.store_csrs(MCAUSE, interrupt.bit_code() as u64);
         info!("Interrupt {:?} is set", interrupt);
     }
 
-    pub fn get_pending_interrupt(&self) -> Option<Interrupt> {
+    // get the takable pending interrupt with the highest priority 
+    pub fn get_interrupt_to_take(&self) -> Option<Interrupt> {
         let xip = if self.mode == M_MODE {
             self.csr.load_csrs(MIP)
         } else {
@@ -258,8 +259,8 @@ impl Cpu {
             (1 << 7, Interrupt::MachineTimerInterrupt),       //MTI
             (1 << 9, Interrupt::SupervisorExternalInterrupt), //SEI
             (1 << 1, Interrupt::SupervisorSoftwareInterrupt), //SSI
-            (1 << 5, Interrupt::SupervisorTimerInterrupt),
-        ]; //STI
+            (1 << 5, Interrupt::SupervisorTimerInterrupt),    //STI
+        ]; 
         for i in priority_order.iter().enumerate() {
             if (xip & i.1 .0) != 0 {
                 return Some(i.1 .1);
@@ -1156,7 +1157,7 @@ impl Cpu {
             self.set_pending_interrupt(interrupt);
         }
 
-        if let Some(mut interrupt) = self.get_pending_interrupt() {
+        if let Some(mut interrupt) = self.get_interrupt_to_take() {
             debug!("Interrupt: {:?} taken", interrupt);
             interrupt.take_trap(self);
         }

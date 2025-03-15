@@ -18,16 +18,19 @@ pub enum Interrupt {
 impl Interrupt {
     pub fn code(&self) -> u64 {
         match self {
-            Interrupt::SupervisorSoftwareInterrupt => 1 | INTERRUPT_BIT,
-            Interrupt::MachineSoftwareInterrupt => 3 | INTERRUPT_BIT,
-            Interrupt::SupervisorTimerInterrupt => 5 | INTERRUPT_BIT,
-            Interrupt::MachineTimerInterrupt => 7 | INTERRUPT_BIT,
-            Interrupt::SupervisorExternalInterrupt => 9 | INTERRUPT_BIT,
-            Interrupt::MachineExternalInterrupt => 11 | INTERRUPT_BIT,
+            Interrupt::SupervisorSoftwareInterrupt => 1,
+            Interrupt::MachineSoftwareInterrupt => 3,
+            Interrupt::SupervisorTimerInterrupt => 5,
+            Interrupt::MachineTimerInterrupt => 7,
+            Interrupt::SupervisorExternalInterrupt => 9,
+            Interrupt::MachineExternalInterrupt => 11,
         }
     }
+    pub fn bit_code(&self) -> u64 {
+        INTERRUPT_BIT | (1 << self.code())
+    }
     pub fn take_trap(&mut self, cpu: &mut Cpu) {
-        let exception_code = self.code();
+        let exception_code = self.bit_code();
         let target_mode = self.get_trap_mode(cpu);
         match target_mode {
             Ok(M_MODE) => {
@@ -78,7 +81,7 @@ impl Interrupt {
             }
             _ => {}
         }
-        info!("Exception:{} occurred!", self.code());
+        info!("Exception:{:?} occurred!", self);
     }
     fn get_trap_mode(&self, cpu: &mut Cpu) -> Result<u64, ()> {
         // An interrupt i will be taken
@@ -90,8 +93,7 @@ impl Interrupt {
         // (c)If bit i in mideleg is set, however, interrupts are considered to be globally enabled
         // if the hart’s current privilege mode equals the delegated privilege mode and that mode’s interrupt enable bit (xIE in mstatus for mode x) is set,
         // or if the current privilege mode is less than the delegated privilege mode.
-        let i = self.code();
-        let bit_i = 0b1 << i;
+        let bit_i = self.bit_code();
         let mideleg = cpu.csr.load_csrs(MIDELEG);
         let destined_mode = if (bit_i & mideleg) == 0 {
             M_MODE
@@ -169,6 +171,10 @@ impl Exception {
         }
     }
 
+    pub fn bit_code(&self) -> u64 {
+        1 << self.code()
+    }
+
     pub fn take_trap(&mut self, cpu: &mut Cpu) {
         let exception_code = self.code();
         let target_mode = self.get_target_mode(cpu);
@@ -225,8 +231,7 @@ impl Exception {
     }
 
     fn get_target_mode(&self, cpu: &mut Cpu) -> u64 {
-        let bit_shift = self.code();
-        let exception_bit = 0b1 << bit_shift;
+        let exception_bit = self.bit_code();
         let medeleg = cpu.csr.load_csrs(MEDELEG);
         if (cpu.mode < M_MODE) && ((exception_bit & medeleg) != 0) {
             S_MODE

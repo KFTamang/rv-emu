@@ -88,12 +88,20 @@ impl Csr {
     }
 
     pub fn load_csrs(&self, addr: usize) -> u64 {
-        debug!("load: addr:{:#x}", addr);
-        if addr == SSTATUS {
-            self.csr[MSTATUS] & SSTATUS_MASK
-        } else {
-            self.csr[addr]
-        }
+        let return_value =
+        match addr {
+            SSTATUS => {
+                self.csr[MSTATUS] & SSTATUS_MASK
+            },
+            TIME => {
+                self.get_time_ms() * COUNT_PER_MS
+            },
+            _ => {
+                self.csr[addr]
+            }
+        };
+        debug!("load: addr:{:#x}, val:{:#x}", addr, return_value);
+        return_value
     }
 
     pub fn store_csrs(&mut self, addr: usize, val: u64) {

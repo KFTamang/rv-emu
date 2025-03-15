@@ -88,7 +88,7 @@ impl Csr {
     }
 
     pub fn load_csrs(&self, addr: usize) -> u64 {
-        // debug!("load: addr:{:#x}", addr);
+        debug!("load: addr:{:#x}", addr);
         if addr == SSTATUS {
             self.csr[MSTATUS] & SSTATUS_MASK
         } else {

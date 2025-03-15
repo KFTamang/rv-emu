@@ -31,6 +31,8 @@ pub const MEPC: usize = 0x341;
 pub const MCAUSE: usize = 0x342;
 pub const MIP: usize = 0x344;
 
+pub const TIME: usize = 0xc01;
+
 pub const BIT_SXL: u64 = 34;
 pub const BIT_TSR: u64 = 22;
 pub const BIT_TW: u64 = 21;

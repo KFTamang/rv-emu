@@ -83,3 +83,4 @@ CSRの調査
 - 0x341: mepc
 - 0x3a0: pmpcfg0
 - 0x3b0: pmpaddr0
+- 0xc01: time

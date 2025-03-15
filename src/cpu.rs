@@ -1152,10 +1152,12 @@ impl Cpu {
 
         // recieve all the interrupt messages
         while let Some(interrupt) = self.interrupt_receiver.try_recv().ok() {
+            debug!("Interrupt: {:?} received", interrupt);
             self.set_pending_interrupt(interrupt);
         }
 
         if let Some(mut interrupt) = self.get_pending_interrupt() {
+            debug!("Interrupt: {:?} taken", interrupt);
             interrupt.take_trap(self);
         }
 

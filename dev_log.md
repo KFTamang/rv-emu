@@ -70,3 +70,16 @@ XV6をフォークしてsubmoduleとした。
 
 ## 2025/03/59
 CSRの調査
+- 0x100: sstatus
+- 0x104: sie
+- 0x14d: stimecmp
+- 0x180: satp
+- 0x300: mstatus
+- 0x302: medeleg
+- 0x303: mideleg
+- 0x304: mie
+- 0x306: mcounteren
+- 0x30a: menvcfg
+- 0x341: mepc
+- 0x3a0: pmpcfg0
+- 0x3b0: pmpaddr0

@@ -66,7 +66,7 @@ const SSTATUS_MASK: u64 = !(MASK_SXL
     | MASK_MPIE
     | MASK_MIE);
 
-pub const COUNT_PER_MS: u64 = 20; // 50 MHz
+pub const TIMER_FREQ: u64 = 100000000; // 100 MHz
 
 impl Csr {
     pub fn new(_interrupt_sender: Arc<mpsc::Sender<Interrupt>>) -> Self {
@@ -94,7 +94,7 @@ impl Csr {
                 self.csr[MSTATUS] & SSTATUS_MASK
             },
             TIME => {
-                self.get_time_ms() * COUNT_PER_MS
+                self.get_time_ms() * TIMER_FREQ / 1000
             },
             _ => {
                 self.csr[addr]
@@ -154,10 +154,12 @@ impl Csr {
 
     fn set_timer_interrupt(&self, comp_value: u64) {
         let time = self.get_time_ms();
-        let comptime_ms = comp_value / COUNT_PER_MS;
+        let comptime_ms = 1000 * comp_value / TIMER_FREQ;
+        debug!("set_timer_interrupt: compvalue_ms:{}, current_time:{}", comptime_ms, time);
         if comptime_ms >= time {
-            let duration = Duration::from_millis(comp_value - time);
+            let duration = Duration::from_millis(comptime_ms - time);
             self.duration_sender.send(Option::Some(duration)).unwrap();
+            info!("set_timer_interrupt: send timer interrupt duration {} ms", comptime_ms - time);
         }
     }
 

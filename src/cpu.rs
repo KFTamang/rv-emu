@@ -242,7 +242,18 @@ impl Cpu {
     }
 
     fn set_pending_interrupt(&mut self, interrupt: Interrupt) {
-        self.csr.store_csrs(MCAUSE, interrupt.bit_code() as u64);
+        let xip = if self.mode == M_MODE {
+            self.csr.load_csrs(MIP)
+        } else {
+            self.csr.load_csrs(SIP)
+        };
+        let new_xip = xip | interrupt.bit_code();
+        if self.mode == M_MODE {
+            self.csr.store_csrs(MIP, new_xip);
+        } else {
+            self.csr.store_csrs(SIP, new_xip);
+        };
+
         info!("Interrupt {:?} is set", interrupt);
     }
 
@@ -253,17 +264,17 @@ impl Cpu {
         } else {
             self.csr.load_csrs(SIP)
         };
-        let priority_order: [(u64, Interrupt); 6] = [
-            (1 << 11, Interrupt::MachineExternalInterrupt),   //MEI
-            (1 << 3, Interrupt::MachineSoftwareInterrupt),    //MSI
-            (1 << 7, Interrupt::MachineTimerInterrupt),       //MTI
-            (1 << 9, Interrupt::SupervisorExternalInterrupt), //SEI
-            (1 << 1, Interrupt::SupervisorSoftwareInterrupt), //SSI
-            (1 << 5, Interrupt::SupervisorTimerInterrupt),    //STI
+        let priority_order: [Interrupt; 6] = [
+            Interrupt::MachineExternalInterrupt,    //MEI
+            Interrupt::MachineSoftwareInterrupt,    //MSI
+            Interrupt::MachineTimerInterrupt,       //MTI
+            Interrupt::SupervisorExternalInterrupt, //SEI
+            Interrupt::SupervisorSoftwareInterrupt, //SSI
+            Interrupt::SupervisorTimerInterrupt,    //STI
         ]; 
-        for i in priority_order.iter().enumerate() {
-            if (xip & i.1 .0) != 0 {
-                return Some(i.1 .1);
+        for interupt in priority_order.iter() {
+            if (xip & interupt.bit_code()) != 0 {
+                return Some(*interupt);
             }
         }
         None

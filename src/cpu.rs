@@ -259,11 +259,26 @@ impl Cpu {
 
     // get the takable pending interrupt with the highest priority 
     pub fn get_interrupt_to_take(&self) -> Option<Interrupt> {
+        // An interrupt i will be taken
+        // (a)if bit i is set in both mip and mie,
+        // (b)and if interrupts are globally enabled.
+        // By default, M-mode interrupts are globally enabled
+        // (b-1)if the hart’s current privilege mode is less than M,
+        // (b-2)or if the current privilege mode is M and the MIE bit in the mstatus register is set.
+        // (c)If bit i in mideleg is set, however, interrupts are considered to be globally enabled
+        // if the hart’s current privilege mode equals the delegated privilege mode and that mode’s interrupt enable bit (xIE in mstatus for mode x) is set,
+        // or if the current privilege mode is less than the delegated privilege mode.
         let xip = if self.mode == M_MODE {
             self.csr.load_csrs(MIP)
         } else {
             self.csr.load_csrs(SIP)
         };
+        let xie = if self.mode == M_MODE {
+            self.csr.load_csrs(MIE)
+        } else {
+            self.csr.load_csrs(SIE)
+        };
+        let pending_interrupt = xip & xie;
         let priority_order: [Interrupt; 6] = [
             Interrupt::MachineExternalInterrupt,    //MEI
             Interrupt::MachineSoftwareInterrupt,    //MSI
@@ -273,7 +288,7 @@ impl Cpu {
             Interrupt::SupervisorTimerInterrupt,    //STI
         ]; 
         for interupt in priority_order.iter() {
-            if (xip & interupt.bit_code()) != 0 {
+            if (pending_interrupt & interupt.bit_code()) != 0 {
                 return Some(*interupt);
             }
         }

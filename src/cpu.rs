@@ -285,10 +285,7 @@ impl Cpu {
                 if self.mode != M_MODE {
                     return Some(*interupt);
                 } else {
-                    let mstatus = self.csr.load_csrs(MSTATUS);
-                    let mideleg = self.csr.load_csrs(MIDELEG);
-                    let mpp = (mstatus >> 11) & 0b11;
-                    ///
+                    //TODO: check if the interrupt is delegated
                 }
                 return Some(*interupt);
             }

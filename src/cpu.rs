@@ -254,7 +254,7 @@ impl Cpu {
             self.csr.store_csrs(SIP, new_xip);
         };
 
-        info!("Interrupt {:?} is set", interrupt);
+        info!("Interrupt {:?} is set, xIP: {:b}, xIE: {:0b}", interrupt, new_xip, self.csr.load_csrs(MIE));
     }
 
     // get the takable pending interrupt with the highest priority 
@@ -1177,12 +1177,12 @@ impl Cpu {
 
         // recieve all the interrupt messages
         while let Some(interrupt) = self.interrupt_receiver.try_recv().ok() {
-            debug!("Interrupt: {:?} received", interrupt);
+            info!("Interrupt: {:?} received", interrupt);
             self.set_pending_interrupt(interrupt);
         }
 
         if let Some(mut interrupt) = self.get_interrupt_to_take() {
-            debug!("Interrupt: {:?} taken", interrupt);
+            info!("Interrupt: {:?} taken", interrupt);
             interrupt.take_trap(self);
         }
 

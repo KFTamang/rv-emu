@@ -279,16 +279,17 @@ impl Cpu {
             self.csr.load_csrs(SIE)
         };
         let pending_interrupt = xip & xie;
-        let priority_order: [Interrupt; 6] = [
-            Interrupt::MachineExternalInterrupt,    //MEI
-            Interrupt::MachineSoftwareInterrupt,    //MSI
-            Interrupt::MachineTimerInterrupt,       //MTI
-            Interrupt::SupervisorExternalInterrupt, //SEI
-            Interrupt::SupervisorSoftwareInterrupt, //SSI
-            Interrupt::SupervisorTimerInterrupt,    //STI
-        ]; 
-        for interupt in priority_order.iter() {
+        for interupt in Interrupt::PRIORITY_ORDER.iter() {
             if (pending_interrupt & interupt.bit_code()) != 0 {
+                // check if the interrupt is globally enabled
+                if self.mode != M_MODE {
+                    return Some(*interupt);
+                } else {
+                    let mstatus = self.csr.load_csrs(MSTATUS);
+                    let mideleg = self.csr.load_csrs(MIDELEG);
+                    let mpp = (mstatus >> 11) & 0b11;
+                    ///
+                }
                 return Some(*interupt);
             }
         }

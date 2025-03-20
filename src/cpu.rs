@@ -285,7 +285,15 @@ impl Cpu {
                 if self.mode != M_MODE {
                     return Some(*interrupt);
                 } else {
-                    //TODO: check if the interrupt is delegated
+                    let mideleg = self.csr.load_csrs(MIDELEG);
+                    if (mideleg & interrupt.bit_code()) != 0 {
+                        let sie = self.csr.load_csrs(SIE);
+                        let sstatus = self.csr.load_csrs(SSTATUS);
+                        let sie_enabled = (sstatus & MASK_SIE) != 0;
+                        if (sie & interrupt.bit_code()) != 0 && sie_enabled {
+                            return Some(*interrupt);
+                        }
+                    }
                 }
                 return Some(*interrupt);
             }

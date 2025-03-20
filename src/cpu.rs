@@ -279,15 +279,15 @@ impl Cpu {
             self.csr.load_csrs(SIE)
         };
         let pending_interrupt = xip & xie;
-        for interupt in Interrupt::PRIORITY_ORDER.iter() {
-            if (pending_interrupt & interupt.bit_code()) != 0 {
+        for interrupt in Interrupt::PRIORITY_ORDER.iter() {
+            if (pending_interrupt & interrupt.bit_code()) != 0 {
                 // check if the interrupt is globally enabled
                 if self.mode != M_MODE {
-                    return Some(*interupt);
+                    return Some(*interrupt);
                 } else {
                     //TODO: check if the interrupt is delegated
                 }
-                return Some(*interupt);
+                return Some(*interrupt);
             }
         }
         None

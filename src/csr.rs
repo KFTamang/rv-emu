@@ -105,7 +105,7 @@ impl Csr {
     }
 
     pub fn store_csrs(&mut self, addr: usize, val: u64) {
-        debug!("store: addr:{:#x}, val:{:#x}", addr, val);
+        info!("store: addr:{:#x}, val:{:#x}", addr, val);
         match addr {
             SSTATUS => {
                 self.csr[MSTATUS] = val & SSTATUS_MASK;
@@ -170,7 +170,7 @@ impl Csr {
             if let Some(duration) = maybe_sleep_duration {
                 std::thread::sleep(duration);
                 // trigger the interrupt
-                interrupt_sender.send(Interrupt::MachineTimerInterrupt).unwrap();
+                interrupt_sender.send(Interrupt::SupervisorTimerInterrupt).unwrap();
                 info!("timer thread: interrupt triggered Interrupt::MachineTimerInterrupt");
             } else {
                 info!("timer thread: exiting");

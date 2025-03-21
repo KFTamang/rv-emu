@@ -92,7 +92,7 @@ impl Interrupt {
         }
         info!("Exception:{:?} occurred!", self);
     }
-    fn get_trap_mode(&self, cpu: &mut Cpu) -> Result<u64, ()> {
+    pub fn get_trap_mode(&self, cpu: &mut Cpu) -> Result<u64, ()> {
         // An interrupt i will be taken
         // (a)if bit i is set in both mip and mie,
         // (b)and if interrupts are globally enabled.

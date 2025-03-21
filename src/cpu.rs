@@ -258,7 +258,7 @@ impl Cpu {
     }
 
     // get the takable pending interrupt with the highest priority 
-    pub fn get_interrupt_to_take(&self) -> Option<Interrupt> {
+    pub fn get_interrupt_to_take(&mut self) -> Option<Interrupt> {
         // An interrupt i will be taken
         // (a)if bit i is set in both mip and mie,
         // (b)and if interrupts are globally enabled.
@@ -268,34 +268,12 @@ impl Cpu {
         // (c)If bit i in mideleg is set, however, interrupts are considered to be globally enabled
         // if the hart’s current privilege mode equals the delegated privilege mode and that mode’s interrupt enable bit (xIE in mstatus for mode x) is set,
         // or if the current privilege mode is less than the delegated privilege mode.
-        let xip = if self.mode == M_MODE {
-            self.csr.load_csrs(MIP)
-        } else {
-            self.csr.load_csrs(SIP)
-        };
-        let xie = if self.mode == M_MODE {
-            self.csr.load_csrs(MIE)
-        } else {
-            self.csr.load_csrs(SIE)
-        };
-        let pending_interrupt = xip & xie;
         for interrupt in Interrupt::PRIORITY_ORDER.iter() {
-            if (pending_interrupt & interrupt.bit_code()) != 0 {
-                // check if the interrupt is globally enabled
-                if self.mode != M_MODE {
+            if let Ok(destined_mode) = interrupt.get_trap_mode(self) {
+                info!("interrupt: {:?}, destined mode{}, current mode: {}", interrupt, destined_mode, self.mode);
+                if destined_mode >= self.mode {
                     return Some(*interrupt);
-                } else {
-                    let mideleg = self.csr.load_csrs(MIDELEG);
-                    if (mideleg & interrupt.bit_code()) != 0 {
-                        let sie = self.csr.load_csrs(SIE);
-                        let sstatus = self.csr.load_csrs(SSTATUS);
-                        let sie_enabled = (sstatus & MASK_SIE) != 0;
-                        if (sie & interrupt.bit_code()) != 0 && sie_enabled {
-                            return Some(*interrupt);
-                        }
-                    }
                 }
-                return Some(*interrupt);
             }
         }
         None

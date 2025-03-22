@@ -52,7 +52,10 @@ impl Interrupt {
                 cpu.csr.set_mstatus_bit(0, MASK_MIE, MASK_MIE);
 
                 let mtvec = cpu.csr.load_csrs(MTVEC);
-                info!("mtvec is 0x{:x}", mtvec);
+                info!("MEPC is 0x{:x}", cpu.csr.load_csrs(MEPC));
+                info!("MCAUSE is 0x{:x}", cpu.csr.load_csrs(MCAUSE));
+                info!("MSTATUS is 0x{:x}", cpu.csr.load_csrs(MSTATUS));
+                info!("MTVEC is 0x{:x}", mtvec);
                 info!("enter M mode");
                 match mtvec & 0x3 {
                     0x0 => {

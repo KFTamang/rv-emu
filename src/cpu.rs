@@ -11,7 +11,7 @@ use std::sync::{Arc, mpsc};
 
 const REG_NUM: usize = 32;
 pub const M_MODE: u64 = 0b11;
-pub const S_MODE: u64 = 0b10;
+pub const S_MODE: u64 = 0b01;
 pub const U_MODE: u64 = 0b00;
 
 #[derive(PartialEq)]

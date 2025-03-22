@@ -230,7 +230,7 @@ impl Cpu {
             0 => Ok(((pte << 2) & 0xfffffffffff000) | (va & 0x00000fff)),
             1 => Ok(((pte << 2) & 0xffffffffe00000) | (va & 0x001fffff)),
             2 => Ok(((pte << 2) & 0xffffffc0000000) | (va & 0x3fffffff)),
-            _ => panic!("something goes wrong at MMU!"),
+            _ => panic!("something goes wrong at MMU! va: 0x{:x}, Level: {}", va, i),
         }
     }
 
@@ -1160,6 +1160,8 @@ impl Cpu {
     }
 
     pub fn step_run(&mut self) -> u64 {
+
+        info!("pc={:>#18x}", self.pc);
 
         // recieve all the interrupt messages
         while let Some(interrupt) = self.interrupt_receiver.try_recv().ok() {

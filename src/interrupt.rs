@@ -78,7 +78,10 @@ impl Interrupt {
                 cpu.csr.set_sstatus_bit(0, MASK_SIE, BIT_SIE);
 
                 let stvec = cpu.csr.load_csrs(STVEC);
-                info!("stvec is 0x{:x}", stvec);
+                info!("SEPC is 0x{:x}", cpu.csr.load_csrs(SEPC));
+                info!("SCAUSE is 0x{:x}", cpu.csr.load_csrs(SCAUSE));
+                info!("SSTATUS is 0x{:x}", cpu.csr.load_csrs(SSTATUS));
+                info!("STVEC is 0x{:x}", stvec);
                 info!("enter S mode");
                 match stvec & 0x3 {
                     0x0 => {

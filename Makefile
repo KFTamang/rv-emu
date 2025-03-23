@@ -25,7 +25,7 @@ xv6:apps/xv6-riscv/kernel/kernel ${src}
 run:apps/test.bin apps/fib.bin ${src}
 	RUST_LOG=info cargo run apps/test.bin -c 1000 -d 100 -o log/output_test.log
 	RUST_LOG=info cargo run apps/fib.bin -c 1000 -d 100 -o log/output_fib.log
-	RUST_LOG=info cargo run apps/csr --elf -c 1000 -d 100 -o log/output_csr.log
+	# RUST_LOG=info cargo run apps/csr --elf -c 1000 -d 100 -o log/output_csr.log
 	RUST_LOG=info cargo run apps/exception.elf --elf -c 1000 -d 100 -o log/output_exception.log
 
 all:fib test

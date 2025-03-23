@@ -1,13 +1,13 @@
 use crate::bus::*;
+use crate::clint::*;
 use crate::csr::*;
 use crate::dram::*;
-use crate::clint::*;
 use crate::interrupt::*;
 
-use log::{info, debug};
+use log::{debug, info};
 
 use std::cmp;
-use std::sync::{Arc, mpsc};
+use std::sync::{mpsc, Arc};
 
 const REG_NUM: usize = 32;
 pub const M_MODE: u64 = 0b11;
@@ -40,11 +40,7 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    pub fn new(
-        binary: Vec<u8>,
-        base_addr: u64,
-        _dump_count: u64,
-    ) -> Self {
+    pub fn new(binary: Vec<u8>, base_addr: u64, _dump_count: u64) -> Self {
         let mut regs = [0; 32];
         regs[2] = DRAM_SIZE;
         let (interrupt_sender, interrupt_receiver) = mpsc::channel();
@@ -166,7 +162,7 @@ impl Cpu {
                     debug!("Access to bus");
                     self.bus.load(pa, size)
                 }
-            },
+            }
             Err(e) => Err(e),
         }
     }
@@ -179,7 +175,7 @@ impl Cpu {
                 } else {
                     self.bus.store(pa, size, value)
                 }
-            },
+            }
             Err(e) => Err(e),
         }
     }
@@ -254,10 +250,15 @@ impl Cpu {
             self.csr.store_csrs(SIP, new_xip);
         };
 
-        info!("Interrupt {:?} is set, xIP: {:b}, xIE: {:0b}", interrupt, new_xip, self.csr.load_csrs(MIE));
+        info!(
+            "Interrupt {:?} is set, xIP: {:b}, xIE: {:0b}",
+            interrupt,
+            new_xip,
+            self.csr.load_csrs(MIE)
+        );
     }
 
-    // get the takable pending interrupt with the highest priority 
+    // get the takable pending interrupt with the highest priority
     pub fn get_interrupt_to_take(&mut self) -> Option<Interrupt> {
         // An interrupt i will be taken
         // (a)if bit i is set in both mip and mie,
@@ -270,7 +271,10 @@ impl Cpu {
         // or if the current privilege mode is less than the delegated privilege mode.
         for interrupt in Interrupt::PRIORITY_ORDER.iter() {
             if let Ok(destined_mode) = interrupt.get_trap_mode(self) {
-                info!("interrupt: {:?}, destined mode{}, current mode: {}", interrupt, destined_mode, self.mode);
+                info!(
+                    "interrupt: {:?}, destined mode{}, current mode: {}",
+                    interrupt, destined_mode, self.mode
+                );
                 if destined_mode >= self.mode {
                     return Some(*interrupt);
                 }
@@ -811,7 +815,7 @@ impl Cpu {
                     (0x0, 0x8, 0x5) => {
                         self.print_inst_i("wfi", rd, rs1, imm);
                         self.wait_for_interrupt();
-                    }                    
+                    }
                     (0x0, 0x18, 0x2) => {
                         self.print_inst_i("mret", rd, rs1, imm);
                         self.return_from_trap();
@@ -867,10 +871,7 @@ impl Cpu {
                     }
                     (_, _, _) => {
                         info!("Unsupported CSR instruction!");
-                        info!(
-                            "pc = 0x{:x}, funct3:{}, funct7:{}",
-                            self.pc, funct3, funct7
-                        );
+                        info!("pc = 0x{:x}, funct3:{}, funct7:{}", self.pc, funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -1160,7 +1161,6 @@ impl Cpu {
     }
 
     pub fn step_run(&mut self) -> u64 {
-
         info!("pc={:>#18x}", self.pc);
 
         // recieve all the interrupt messages

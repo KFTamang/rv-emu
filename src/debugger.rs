@@ -1,7 +1,7 @@
+use log::info;
 use std::convert::TryInto;
 use std::io;
 use std::net::{TcpListener, TcpStream};
-use log::info;
 
 use crate::emu::{Emu, Event, ExecMode, RunEvent};
 

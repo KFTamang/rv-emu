@@ -99,12 +99,18 @@ impl Virtio {
                 panic!("Invalid access size: {}", size)
             }
         };
-        info!("virtio: load addr:{:x}(relative {:x}), size:{}, value:{}", addr, relative_addr, size, ret_val);
+        info!(
+            "virtio: load addr:{:x}(relative {:x}), size:{}, value:{}",
+            addr, relative_addr, size, ret_val
+        );
         Ok(ret_val)
     }
 
     pub fn store(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
-        info!("virtio: store addr:{:x}, size:{}, value:{}", addr, size, value);
+        info!(
+            "virtio: store addr:{:x}, size:{}, value:{}",
+            addr, size, value
+        );
         let relative_addr = (addr - self.start_addr) as usize;
         match size {
             8 => self.registers[relative_addr + 0] = (value & 0xff) as u8,
@@ -130,7 +136,10 @@ impl Virtio {
             }
             _ => {}
         };
-        debug!("register after store: 0x{} at 0x{:x}", self.registers[relative_addr], addr);
+        debug!(
+            "register after store: 0x{} at 0x{:x}",
+            self.registers[relative_addr], addr
+        );
         Ok(())
     }
 }

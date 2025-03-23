@@ -2,26 +2,26 @@ mod bus;
 mod clint;
 mod cpu;
 mod csr;
+mod debugger;
 mod dram;
+mod emu;
 mod interrupt;
 mod plic;
 mod uart;
 mod virtio;
-mod debugger;
-mod emu;
 use clap::Parser; // command-line option parser
 
+use crate::debugger::{wait_for_gdb_connection, MyGdbBlockingEventLoop};
+use crate::emu::Emu;
+use env_logger;
+use gdbstub::conn::ConnectionExt;
+use gdbstub::stub::DisconnectReason;
+use gdbstub::stub::GdbStub;
+use log::{error, info};
 use std::convert::TryInto;
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
-use crate::debugger::{wait_for_gdb_connection, MyGdbBlockingEventLoop};
-use crate::emu::Emu;
-use gdbstub::stub::GdbStub;
-use gdbstub::stub::DisconnectReason;
-use gdbstub::conn::ConnectionExt;
-use env_logger;
-use log::{error, info};
 
 /// Search for a pattern in a file and display the lines that contain it.
 /// c.f. https://rust-cli.github.io/book/tutorial/cli-args.html
@@ -62,18 +62,18 @@ fn main() -> io::Result<()> {
     let reg_dump_count = cli.dump.unwrap_or(0);
     let mut counter = cli.count.unwrap_or(1);
 
-
     if cli.gdb {
         info!("GDB enabled");
         // Establish a `Connection`
-        let connection: Box<dyn ConnectionExt<Error = std::io::Error>> = Box::new(wait_for_gdb_connection(9001)?);
+        let connection: Box<dyn ConnectionExt<Error = std::io::Error>> =
+            Box::new(wait_for_gdb_connection(9001)?);
 
         // Create a new `gdbstub::GdbStub` using the established `Connection`.
         let debugger = GdbStub::new(connection);
 
         let mut emu = Emu::new(code, base_addr, reg_dump_count as u64);
         emu.set_entry_point(entry_address);
-        
+
         match debugger.run_blocking::<MyGdbBlockingEventLoop>(&mut emu) {
             Ok(disconnect_reason) => match disconnect_reason {
                 DisconnectReason::Disconnect => {
@@ -122,7 +122,6 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-
 // fn free_run(cpu: &Cpu, mut poll_incoming_data: impl FnMut() -> bool) -> RunEvent {
 //     match exec_mode {
 //         ExecMode::Step => RunEvent::Event(step(&cpu).unwrap()),
@@ -144,8 +143,6 @@ fn main() -> io::Result<()> {
 //         }
 //     }
 // }
-
-
 
 pub const E_ENTRY_POS: usize = 0x18; // 64bit
 pub const PH_POS: usize = 0x20; // 64bit

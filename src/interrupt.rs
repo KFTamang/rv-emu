@@ -1,7 +1,7 @@
 use crate::cpu::*;
 use crate::csr::*;
-use std::process::exit;
 use log::info;
+use std::process::exit;
 
 const INTERRUPT_BIT: u64 = 1 << 63;
 
@@ -23,7 +23,7 @@ impl Interrupt {
         Interrupt::SupervisorExternalInterrupt, //SEI
         Interrupt::SupervisorSoftwareInterrupt, //SSI
         Interrupt::SupervisorTimerInterrupt,    //STI
-    ]; 
+    ];
 
     pub fn code(&self) -> u64 {
         match self {

@@ -1,6 +1,6 @@
 use crate::interrupt::*;
 use log::{debug, info};
-use std::sync::{Arc, mpsc};
+use std::sync::{mpsc, Arc};
 use std::time::Duration;
 
 const FREQUENCY: u64 = 10000000; // clock frequency: 10MHz
@@ -19,13 +19,15 @@ pub struct Clint {
 }
 
 impl Clint {
-    pub fn new(_start_addr: u64, _size: u64, _interrupt_sender: Arc<mpsc::Sender<Interrupt>>) -> Clint {
+    pub fn new(
+        _start_addr: u64,
+        _size: u64,
+        _interrupt_sender: Arc<mpsc::Sender<Interrupt>>,
+    ) -> Clint {
         let (sender, receiver) = mpsc::channel();
-        let thread = std::thread::spawn(
-            move || {
-                Self::timer_thread(receiver, _interrupt_sender);
-            },
-        );
+        let thread = std::thread::spawn(move || {
+            Self::timer_thread(receiver, _interrupt_sender);
+        });
         Self {
             start_addr: _start_addr,
             size: _size, // size is in bytes, but we store u64
@@ -35,13 +37,18 @@ impl Clint {
         }
     }
 
-    fn timer_thread(receiver: mpsc::Receiver<Option<Duration>>, interrupt_sender: Arc<mpsc::Sender<Interrupt>>) {
+    fn timer_thread(
+        receiver: mpsc::Receiver<Option<Duration>>,
+        interrupt_sender: Arc<mpsc::Sender<Interrupt>>,
+    ) {
         loop {
             let maybe_sleep_duration = receiver.recv().unwrap();
             if let Some(duration) = maybe_sleep_duration {
                 std::thread::sleep(duration);
                 // trigger the interrupt
-                interrupt_sender.send(Interrupt::MachineTimerInterrupt).unwrap();
+                interrupt_sender
+                    .send(Interrupt::MachineTimerInterrupt)
+                    .unwrap();
                 debug!("timer thread: interrupt triggered Interrupt::MachineTimerInterrupt");
             } else {
                 break;

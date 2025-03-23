@@ -1,6 +1,6 @@
 use crate::interrupt::*;
 use log::{debug, info};
-use std::sync::{Arc, mpsc};
+use std::sync::{mpsc, Arc};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 pub struct Csr {
@@ -70,34 +70,25 @@ pub const TIMER_FREQ: u64 = 100000000; // 100 MHz
 impl Csr {
     pub fn new(_interrupt_sender: Arc<mpsc::Sender<Interrupt>>) -> Self {
         let (sender, receiver) = mpsc::channel();
-        let thread = std::thread::spawn(
-            move || {
-                Self::timer_thread(receiver, _interrupt_sender);
-            },
-        );
+        let thread = std::thread::spawn(move || {
+            Self::timer_thread(receiver, _interrupt_sender);
+        });
         Self {
             csr: [0; 4096],
-               timer_thread: Some(thread),
-                duration_sender: sender,
-                initial_time: SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
+            timer_thread: Some(thread),
+            duration_sender: sender,
+            initial_time: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64,
         }
     }
 
     pub fn load_csrs(&self, addr: usize) -> u64 {
-        let return_value =
-        match addr {
-            SSTATUS => {
-                self.csr[MSTATUS] & SSTATUS_MASK
-            },
-            TIME => {
-                self.get_time_ms() * TIMER_FREQ / 1000
-            },
-            _ => {
-                self.csr[addr]
-            }
+        let return_value = match addr {
+            SSTATUS => self.csr[MSTATUS] & SSTATUS_MASK,
+            TIME => self.get_time_ms() * TIMER_FREQ / 1000,
+            _ => self.csr[addr],
         };
         debug!("load: addr:{:#x}, val:{:#x}", addr, return_value);
         return_value
@@ -108,11 +99,11 @@ impl Csr {
         match addr {
             SSTATUS => {
                 self.csr[MSTATUS] = val & SSTATUS_MASK;
-            },
+            }
             STIMECMP => {
                 self.csr[STIMECMP] = val;
                 self.set_timer_interrupt(val);
-            },
+            }
             _ => {
                 self.csr[addr] = val;
             }
@@ -154,22 +145,33 @@ impl Csr {
     fn set_timer_interrupt(&self, comp_value: u64) {
         let time = self.get_time_ms();
         let comptime_ms = 1000 * comp_value / TIMER_FREQ;
-        debug!("set_timer_interrupt: compvalue_ms:{}, current_time:{}", comptime_ms, time);
+        debug!(
+            "set_timer_interrupt: compvalue_ms:{}, current_time:{}",
+            comptime_ms, time
+        );
         if comptime_ms >= time {
             let duration = Duration::from_millis(comptime_ms - time);
             self.duration_sender.send(Option::Some(duration)).unwrap();
-            info!("set_timer_interrupt: send timer interrupt duration {} ms", comptime_ms - time);
+            info!(
+                "set_timer_interrupt: send timer interrupt duration {} ms",
+                comptime_ms - time
+            );
         }
     }
 
-    fn timer_thread(receiver: mpsc::Receiver<Option<Duration>>, interrupt_sender: Arc<mpsc::Sender<Interrupt>>) {
+    fn timer_thread(
+        receiver: mpsc::Receiver<Option<Duration>>,
+        interrupt_sender: Arc<mpsc::Sender<Interrupt>>,
+    ) {
         info!("timer thread: started");
         loop {
             let maybe_sleep_duration = receiver.recv().unwrap();
             if let Some(duration) = maybe_sleep_duration {
                 std::thread::sleep(duration);
                 // trigger the interrupt
-                interrupt_sender.send(Interrupt::SupervisorTimerInterrupt).unwrap();
+                interrupt_sender
+                    .send(Interrupt::SupervisorTimerInterrupt)
+                    .unwrap();
                 info!("timer thread: interrupt triggered Interrupt::MachineTimerInterrupt");
             } else {
                 info!("timer thread: exiting");

@@ -1,0 +1,129 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running `target/debug/rv-emu apps/test.bin -c 1000 -d 1`
+[2025-03-23T21:50:33Z INFO  rv_emu] No GDB
+[2025-03-23T21:50:33Z INFO  rv_emu::csr] timer thread: started
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=               0x0
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=               0x4
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=               0x8
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=               0xc
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x10
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x14
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x30
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x34
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x38
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x3c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x40
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x44
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x48
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x118
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x11c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x120
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x124
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x128
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x12c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x4c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x50
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x54
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x58
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x5c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x60
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x64
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x68
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x6c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x70
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x74
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x78
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x7c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x80
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x84
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x88
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x8c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x90
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x94
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x98
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x9c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x118
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x11c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x120
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x124
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x128
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x12c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x4c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x50
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x54
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x58
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x5c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x60
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x64
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x68
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x6c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x70
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x74
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x78
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x7c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x80
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x84
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x88
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x8c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x90
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x94
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x98
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x9c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x118
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x11c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x120
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x124
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x128
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x12c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x4c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x50
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x54
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x58
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x5c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x60
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x64
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x68
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x6c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x70
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x74
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x78
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x7c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x80
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x84
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x88
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x8c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x90
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x94
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x98
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x9c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x118
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x11c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x120
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x124
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x128
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x12c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x130
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x134
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x138
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x13c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=             0x140
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x18
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x1c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x20
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x24
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x28
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=              0x2c
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] pc=               0x0
+    0x2c : jalr, rd:0, rs1:1, imm:0(0x0)
+    x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
+    x04( tp )=               0x0, x05( t0 )=               0x0, x06( t1 )=               0x0, x07( t2 )=               0x0
+    x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
+    x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x3, x15( a5 )=               0x0
+    x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
+    x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
+    x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
+    x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
+    
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] ----
+    
+[2025-03-23T21:50:33Z INFO  rv_emu::cpu] Program finished!

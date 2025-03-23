@@ -5,7 +5,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 pub struct Csr {
     csr: [u64; 4096],
-    timer_thread: std::thread::JoinHandle<()>,
+    timer_thread: Option<std::thread::JoinHandle<()>>,
     duration_sender: mpsc::Sender<Option<Duration>>,
     initial_time: u64,
 }
@@ -18,7 +18,6 @@ pub const SCAUSE: usize = 0x142;
 pub const SIP: usize = 0x144;
 // Sstc extension for supervisor timer registers
 pub const STIMECMP: usize = 0x14D;
-pub const STIMECMPH: usize = 0x15D;
 
 pub const SATP: usize = 0x180;
 
@@ -78,7 +77,7 @@ impl Csr {
         );
         Self {
             csr: [0; 4096],
-               timer_thread: thread,
+               timer_thread: Some(thread),
                 duration_sender: sender,
                 initial_time: SystemTime::now()
                     .duration_since(UNIX_EPOCH)
@@ -176,6 +175,15 @@ impl Csr {
                 info!("timer thread: exiting");
                 break;
             }
+        }
+    }
+}
+
+impl Drop for Csr {
+    fn drop(&mut self) {
+        self.duration_sender.send(Option::None).unwrap();
+        if let Some(thread) = self.timer_thread.take() {
+            thread.join().unwrap();
         }
     }
 }

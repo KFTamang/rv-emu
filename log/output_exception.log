@@ -1,195 +1,61 @@
-Prog Header Entries:2, Offset:0x40, size:0x38, entry:0x100b0
-Offset:0x40, Entry:0, segment offset: 0xf4, va:0x0, filesize:0x34, memsize:0x0
-Code length: 0
-Offset:0x78, Entry:1, segment offset: 0x0, va:0x10000, filesize:0xf4, memsize:0xf4
-Code length: 52
-0x1100b0 : addi, rd:5, rs1:0, imm:1(0x1)
-pc=          0x1100b4
-[92mx00(zero)=               0x0[0m, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, [91mx05( t0 )=               0x1[0m, x06( t1 )=               0x0, x07( t2 )=               0x0
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-0x1100b4 : auipc, dest:6, offset:0(0x0)
-pc=          0x1100b8
-x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, x05( t0 )=               0x1, [91mx06( t1 )=          0x1100b4[0m, x07( t2 )=               0x0
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-0x1100b8 : addi, rd:6, rs1:6, imm:48(0x30)
-pc=          0x1100bc
-x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, x05( t0 )=               0x1, [91mx06( t1 )=          0x1100e4[0m, x07( t2 )=               0x0
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-0x1100bc : csrrw, dest:0, rs1:5, csr:768(0x300)
-pc=          0x1100c0
-x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, x05( t0 )=               0x1, x06( t1 )=          0x1100e4, x07( t2 )=               0x0
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-0x1100c0 : csrrs, dest:0, rs1:6, csr:773(0x305)
-pc=          0x1100c4
-x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, x05( t0 )=               0x1, x06( t1 )=          0x1100e4, x07( t2 )=               0x0
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-0x1100c4 : csrrw, dest:0, rs1:7, csr:833(0x341)
-pc=          0x1100c8
-x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, x05( t0 )=               0x1, x06( t1 )=          0x1100e4, x07( t2 )=               0x0
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-0x1100c8 : csrrc, dest:7, rs1:0, csr:833(0x341)
-pc=          0x1100cc
-x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, x05( t0 )=               0x1, x06( t1 )=          0x1100e4, x07( t2 )=               0x0
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-0x1100cc : csrrwi, dest:0, csr:256(0x100), uimm:4(0x4)
-pc=          0x1100d0
-x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, x05( t0 )=               0x1, x06( t1 )=          0x1100e4, x07( t2 )=               0x0
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-0x1100d0 : csrrsi, dest:0, csr:261(0x105), uimm:5(0x5)
-pc=          0x1100d4
-x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, x05( t0 )=               0x1, x06( t1 )=          0x1100e4, x07( t2 )=               0x0
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-0x1100d4 : csrrwi, dest:0, csr:321(0x141), uimm:6(0x6)
-pc=          0x1100d8
-x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, x05( t0 )=               0x1, x06( t1 )=          0x1100e4, x07( t2 )=               0x0
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-0x1100d8 : csrrci, dest:0, csr:321(0x141), uimm:0(0x0)
-pc=          0x1100dc
-x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, x05( t0 )=               0x1, x06( t1 )=          0x1100e4, x07( t2 )=               0x0
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-0x1100dc : ecall, rd:0, rs1:0, imm:0(0x0)
-mtvec is 1114340
-Exception:11 occurred!
-pc=          0x1100e4
-x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, x05( t0 )=               0x1, x06( t1 )=          0x1100e4, x07( t2 )=               0x0
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-0x1100e4 : csrrs, dest:7, rs1:0, csr:833(0x341)
-pc=          0x1100e8
-x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, x05( t0 )=               0x1, x06( t1 )=          0x1100e4, x07( t2 )=          0x1100dc
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-0x1100e8 : addi, rd:7, rs1:7, imm:4(0x4)
-pc=          0x1100ec
-x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, x05( t0 )=               0x1, x06( t1 )=          0x1100e4, [91mx07( t2 )=          0x1100e0[0m
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-0x1100ec : csrrw, dest:0, rs1:7, csr:833(0x341)
-pc=          0x1100f0
-x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, x05( t0 )=               0x1, x06( t1 )=          0x1100e4, x07( t2 )=          0x1100e0
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-0x1100f0 : mret, rd:0, rs1:0, imm:770(0x302)
-pc=          0x1100e0
-x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, x05( t0 )=               0x1, x06( t1 )=          0x1100e4, x07( t2 )=          0x1100e0
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-0x1100e0 : jalr, rd:0, rs1:1, imm:0(0x0)
-pc=               0x0
-[91mx00(zero)=               0x0[0m, [92mx01( ra )=               0x0[0m, x02( sp )=         0x8000000, x03( gp )=               0x0
-x04( tp )=               0x0, x05( t0 )=               0x1, x06( t1 )=          0x1100e4, x07( t2 )=          0x1100e0
-x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
-x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
-x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
-x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
-x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
-x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
-----
-Program finished!
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running `target/debug/rv-emu apps/exception.elf --elf -c 100 -d 1`
+[2025-03-23T21:52:51Z INFO  rv_emu] Prog Header Entries:2, Offset:0x40, size:0x38, entry:0x100b0
+[2025-03-23T21:52:51Z INFO  rv_emu] Offset:0x40, Entry:0, segment offset: 0xf4, va:0x0, filesize:0x34, memsize:0x0
+[2025-03-23T21:52:51Z INFO  rv_emu] Code length: 0
+[2025-03-23T21:52:51Z INFO  rv_emu] Offset:0x78, Entry:1, segment offset: 0x0, va:0x10000, filesize:0xf4, memsize:0xf4
+[2025-03-23T21:52:51Z INFO  rv_emu] Code length: 0
+[2025-03-23T21:52:51Z INFO  rv_emu] No GDB
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100b0
+[2025-03-23T21:52:51Z INFO  rv_emu::csr] timer thread: started
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100b4
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100b8
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100bc
+[2025-03-23T21:52:51Z INFO  rv_emu::csr] store: addr:0x300, val:0x1
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100c0
+[2025-03-23T21:52:51Z INFO  rv_emu::csr] store: addr:0x305, val:0x100e4
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100c4
+[2025-03-23T21:52:51Z INFO  rv_emu::csr] store: addr:0x341, val:0x0
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100c8
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100cc
+[2025-03-23T21:52:51Z INFO  rv_emu::csr] store: addr:0x100, val:0x4
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100d0
+[2025-03-23T21:52:51Z INFO  rv_emu::csr] store: addr:0x105, val:0x5
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100d4
+[2025-03-23T21:52:51Z INFO  rv_emu::csr] store: addr:0x141, val:0x6
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100d8
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100dc
+[2025-03-23T21:52:51Z INFO  rv_emu::csr] store: addr:0x341, val:0x100dc
+[2025-03-23T21:52:51Z INFO  rv_emu::csr] store: addr:0x342, val:0xb
+[2025-03-23T21:52:51Z INFO  rv_emu::csr] store: addr:0x300, val:0x1804
+[2025-03-23T21:52:51Z INFO  rv_emu::csr] store: addr:0x300, val:0x1804
+[2025-03-23T21:52:51Z INFO  rv_emu::csr] store: addr:0x300, val:0x1804
+[2025-03-23T21:52:51Z INFO  rv_emu::interrupt] mtvec is 65764
+    
+[2025-03-23T21:52:51Z INFO  rv_emu::interrupt] enter M mode
+    
+[2025-03-23T21:52:51Z INFO  rv_emu::interrupt] Exception:11 occurred!
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100e4
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100e8
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100ec
+[2025-03-23T21:52:51Z INFO  rv_emu::csr] store: addr:0x341, val:0x100e0
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100f0
+[2025-03-23T21:52:51Z INFO  rv_emu::csr] store: addr:0x300, val:0x1804
+[2025-03-23T21:52:51Z INFO  rv_emu::csr] store: addr:0x300, val:0x1884
+[2025-03-23T21:52:51Z INFO  rv_emu::csr] store: addr:0x300, val:0x84
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] back to privilege 3 from machine mode
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=           0x100e0
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] pc=               0x0
+    0x100e0 : jalr, rd:0, rs1:1, imm:0(0x0)
+    x00(zero)=               0x0, x01( ra )=               0x0, x02( sp )=         0x8000000, x03( gp )=               0x0
+    x04( tp )=               0x0, x05( t0 )=               0x1, x06( t1 )=           0x100e4, x07( t2 )=           0x100e0
+    x08( s0 )=               0x0, x09( s1 )=               0x0, x10( a0 )=               0x0, x11( a1 )=               0x0
+    x12( a2 )=               0x0, x13( a3 )=               0x0, x14( a4 )=               0x0, x15( a5 )=               0x0
+    x16( a6 )=               0x0, x17( a7 )=               0x0, x18( s2 )=               0x0, x19( s3 )=               0x0
+    x20( s4 )=               0x0, x21( s5 )=               0x0, x22( s6 )=               0x0, x23( s7 )=               0x0
+    x24( s8 )=               0x0, x25( s9 )=               0x0, x26( s10)=               0x0, x27( s11)=               0x0
+    x28( t3 )=               0x0, x29( t4 )=               0x0, x30( t5 )=               0x0, x31( t6 )=               0x0
+    
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] ----
+    
+[2025-03-23T21:52:51Z INFO  rv_emu::cpu] Program finished!

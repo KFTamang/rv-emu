@@ -1188,7 +1188,8 @@ impl Cpu {
 
         if self.pc == 0 {
             self.dump_registers();
-            info!("Program finished!\n");
+            info!("Program finished!");
+            std::process::exit(0);
         }
         self.pc
     }

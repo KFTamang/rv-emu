@@ -1,0 +1,88 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "XV6",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=rv-emu",
+                    "--package=rv-emu"
+                ],
+                "filter": {
+                    "name": "rv-emu",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "apps/xv6-riscv/kernel/kernel",
+                "--elf",
+                "--base-addr",
+                "2147483648",
+                "--loop-on",
+                "-c",
+                "100000",
+                "-o",
+                "log/output_kernel.log"
+            ],
+            "cwd": "${workspaceFolder}",
+            "initCommands": [
+                "settings set target.disable-aslr false"
+            ]
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "exception.s",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=rv-emu",
+                    "--package=rv-emu"
+                ],
+                "filter": {
+                    "name": "rv-emu",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "apps/exception.elf",
+                "--elf",
+                "-c",
+                "100",
+                "-d",
+                "1",
+                "-o",
+                "log/output_exception.log"
+            ],
+            "cwd": "${workspaceFolder}",
+            "initCommands": [
+                "settings set target.disable-aslr false"
+            ]
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'rv-emu'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=rv-emu",
+                    "--package=rv-emu"
+                ],
+                "filter": {
+                    "name": "rv-emu",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

@@ -6,6 +6,7 @@ mod debugger;
 mod dram;
 mod emu;
 mod interrupt;
+mod logger;
 mod plic;
 mod uart;
 mod virtio;
@@ -13,7 +14,7 @@ use clap::Parser; // command-line option parser
 
 use crate::debugger::{wait_for_gdb_connection, MyGdbBlockingEventLoop};
 use crate::emu::Emu;
-use env_logger;
+use crate::logger::init_logger;
 use gdbstub::conn::ConnectionExt;
 use gdbstub::stub::DisconnectReason;
 use gdbstub::stub::GdbStub;
@@ -46,7 +47,7 @@ struct Cli {
 }
 
 fn main() -> io::Result<()> {
-    env_logger::init();
+    init_logger().expect("Failed to initialize logger");
     let cli = Cli::parse();
     let mut file = File::open(&cli.bin)?;
     let mut code = Vec::new();

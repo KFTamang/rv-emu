@@ -5,3 +5,4 @@ log/memory.dump
 Cargo.lock
 .bash_history
 log/*
+venv/*

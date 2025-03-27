@@ -8,6 +8,9 @@ use log::{debug, info};
 
 use std::cmp;
 use std::sync::{mpsc, Arc};
+use std::fs::File;
+use std::io::{Read, Write};
+use serde::{Serialize, Deserialize};
 
 const REG_NUM: usize = 32;
 pub const M_MODE: u64 = 0b11;
@@ -24,6 +27,7 @@ fn bit(integer: u64, bit: u64) -> u64 {
     (integer >> bit) & 0x1
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Cpu {
     pub regs: [u64; 32],
     pub pc: u64,
@@ -34,6 +38,7 @@ pub struct Cpu {
     src2: usize,
     pub mode: u64,
     dump_count: u64,
+    dump_interval: u64,
     inst_string: String,
     interrupt_receiver: mpsc::Receiver<Interrupt>,
     clint: Clint,
@@ -55,6 +60,7 @@ impl Cpu {
             src2: REG_NUM,
             mode: M_MODE,
             dump_count: _dump_count,
+            dump_interval: _dump_count,
             inst_string: String::from(""),
             clint: Clint::new(0x200_0000, 0x10000, Arc::new(interrupt_sender)),
             interrupt_receiver: interrupt_receiver,
@@ -1161,7 +1167,7 @@ impl Cpu {
     }
 
     pub fn step_run(&mut self) -> u64 {
-        info!("pc={:>#18x}", self.pc);
+        // info!("pc={:>#18x}", self.pc);
 
         // recieve all the interrupt messages
         while let Some(interrupt) = self.interrupt_receiver.try_recv().ok() {
@@ -1186,11 +1192,35 @@ impl Cpu {
 
         self.pc = self.pc.wrapping_add(4);
 
+        if self.dump_count > 0 {
+            self.dump_count -= 1;
+            if self.dump_count == 0 {
+                self.save_snapshot("snapshot.bin");
+                self.dump_count = self.dump_interval;
+            }
+        }
+
         if self.pc == 0 {
             self.dump_registers();
             info!("Program finished!");
             std::process::exit(0);
         }
         self.pc
+    }
+
+    pub fn save_snapshot(&self, path: &str) {
+        let mut file = File::create(path).expect("Unable to create file");
+        let data = Serialize::serialize(self).expect("Unable to serialize data");
+        file.write_all(&data).expect("Unable to write data");
+        info!("Snapshot saved to {}", path);
+    }
+
+    pub fn load_snapshot(&mut self, path: &str) {
+        let mut file = File::open(path).expect("Unable to open file");
+        let mut data = Vec::new();
+        file.read_to_end(&mut data).expect("Unable to read data");
+        let snapshot: Self = bincode::deserialize(&data).expect("Unable to deserialize data");
+        *self = snapshot;
+        info!("Snapshot loaded from {}", path);
     }
 }

@@ -5,7 +5,9 @@ use crate::uart::*;
 use crate::virtio::*;
 use log::debug;
 use log::info;
+use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize)]
 pub struct Bus {
     dram: Dram,
     uart: Uart,

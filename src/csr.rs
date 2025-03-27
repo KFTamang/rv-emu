@@ -2,7 +2,9 @@ use crate::interrupt::*;
 use log::{debug, info};
 use std::sync::{mpsc, Arc};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize)]
 pub struct Csr {
     csr: [u64; 4096],
     timer_thread: Option<std::thread::JoinHandle<()>>,

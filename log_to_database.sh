@@ -23,30 +23,42 @@ EOF
 # Buffer to batch inserts (for performance)
 BUFFER_SIZE=1000
 BUFFER=""
+LINE_NUM=0
 
 # Process the log file
 while IFS= read -r line; do
+
+    ((LINE_NUM++))
+
+    # Skip the first 49 lines
+    if (( LINE_NUM <= 49 )); then
+        continue
+    fi
+
+
     # Parse log fields
-    timestamp=$(echo "$line" | grep -oP '(?<=\[)[0-9-T:]+Z')
-    level=$(echo "$line" | grep -oP '(?<=Z )[A-Z]+')
-    module=$(echo "$line" | grep -oP '(?<=\[)[^]]+(?=\])' | sed -n '2p')
+    timestamp=$(echo "$line" | awk '{print substr($1, 2, length($1) - 2)}')
+    level=$(echo "$line" | awk '{print $2}')
+    module=$(echo "$line" | awk '{print substr($3, 1, length($3) - 1)}')
     message=$(echo "$line" | sed -E 's/.*\] //')
 
     # Validate parsed fields
     if [[ -n "$timestamp" && -n "$level" && -n "$module" && -n "$message" ]]; then
         # Add to buffer
-        BUFFER+=$(printf "INSERT INTO logs (timestamp, level, module, message) VALUES ('%s', '%s', '%s', '%s');\n" \
-            "$timestamp" "$level" "$module" "$message")
+        # BUFFER+=$(echo "INSERT INTO logs (timestamp, level, module, message) VALUES ($timestamp, $level, $module, $message);")
+        # echo "INSERT INTO logs (timestamp, level, module, message) VALUES ($timestamp, $level, $module, $message);"
+        sqlite3 emulator_logs.db "INSERT INTO logs (timestamp, level, module, message) VALUES ('$timestamp', '$level', '$module', '$message');"
+        # echo $BUFFER | wc -l
     fi
 
-    # Flush to the database when buffer is full
-    if [[ $(echo "$BUFFER" | wc -l) -ge $BUFFER_SIZE ]]; then
-        echo "BEGIN TRANSACTION;" > batch.sql
-        echo "$BUFFER" >> batch.sql
-        echo "COMMIT;" >> batch.sql
-        sqlite3 -batch "$DB_FILE" < batch.sql
-        BUFFER=""
-    fi
+    # # Flush to the database when buffer is full
+    # if [[ $(echo "$BUFFER" | wc -l) -ge $BUFFER_SIZE ]]; then
+    #     echo "BEGIN TRANSACTION;" > batch.sql
+    #     echo "$BUFFER" >> batch.sql
+    #     echo "COMMIT;" >> batch.sql
+    #     sqlite3 -batch "$DB_FILE" < batch.sql
+    #     BUFFER=""
+    # fi
 done < "$LOG_FILE"
 
 # Insert remaining logs

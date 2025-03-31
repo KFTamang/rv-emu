@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct Csr {
     csr: [u64; 4096],
-    timer_thread: Option<std::thread::JoinHandle<()>>,
-    duration_sender: mpsc::Sender<Option<Duration>>,
+    // timer_thread: Option<std::thread::JoinHandle<()>>,
+    // duration_sender: mpsc::Sender<Option<Duration>>,
     initial_time: u64,
 }
 
@@ -71,14 +71,14 @@ pub const TIMER_FREQ: u64 = 100000000; // 100 MHz
 
 impl Csr {
     pub fn new(_interrupt_sender: Arc<mpsc::Sender<Interrupt>>) -> Self {
-        let (sender, receiver) = mpsc::channel();
-        let thread = std::thread::spawn(move || {
-            Self::timer_thread(receiver, _interrupt_sender);
-        });
+        // let (sender, receiver) = mpsc::channel();
+        // let thread = std::thread::spawn(move || {
+        //     Self::timer_thread(receiver, _interrupt_sender);
+        // });
         Self {
             csr: [0; 4096],
-            timer_thread: Some(thread),
-            duration_sender: sender,
+            // timer_thread: Some(thread),
+            // duration_sender: sender,
             initial_time: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -152,8 +152,8 @@ impl Csr {
             comptime_ms, time
         );
         if comptime_ms >= time {
-            let duration = Duration::from_millis(comptime_ms - time);
-            self.duration_sender.send(Option::Some(duration)).unwrap();
+            // let duration = Duration::from_millis(comptime_ms - time);
+            // self.duration_sender.send(Option::Some(duration)).unwrap();
             info!(
                 "set_timer_interrupt: send timer interrupt duration {} ms",
                 comptime_ms - time
@@ -185,9 +185,9 @@ impl Csr {
 
 impl Drop for Csr {
     fn drop(&mut self) {
-        self.duration_sender.send(Option::None).unwrap();
-        if let Some(thread) = self.timer_thread.take() {
-            thread.join().unwrap();
-        }
+        // self.duration_sender.send(Option::None).unwrap();
+        // if let Some(thread) = self.timer_thread.take() {
+        //     thread.join().unwrap();
+        // }
     }
 }

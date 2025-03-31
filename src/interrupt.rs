@@ -2,10 +2,11 @@ use crate::cpu::*;
 use crate::csr::*;
 use log::info;
 use std::process::exit;
+use serde::{Serialize, Deserialize};
 
 const INTERRUPT_BIT: u64 = 1 << 63;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Interrupt {
     SupervisorSoftwareInterrupt,
     MachineSoftwareInterrupt,
@@ -145,6 +146,13 @@ impl Interrupt {
         }
         Ok(destined_mode)
     }
+}
+
+// Interrupt that will be pending after a specified cycle
+#[derive(Serialize, Deserialize)]
+pub struct DelayedInterrupt {
+    pub interrupt: Interrupt,
+    pub cycle: u64,
 }
 
 #[allow(unused)]

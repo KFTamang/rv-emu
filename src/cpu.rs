@@ -11,6 +11,7 @@ use std::sync::{mpsc, Arc};
 use std::fs::File;
 use std::io::{Read, Write};
 use serde::{Serialize, Deserialize};
+use bincode::{serialize, deserialize};
 
 const REG_NUM: usize = 32;
 pub const M_MODE: u64 = 0b11;
@@ -40,7 +41,8 @@ pub struct Cpu {
     dump_count: u64,
     dump_interval: u64,
     inst_string: String,
-    interrupt_receiver: mpsc::Receiver<Interrupt>,
+    pub interrupt_list: Vec<DelayedInterrupt>,
+    pub cycle: u64,
     clint: Clint,
 }
 
@@ -63,7 +65,9 @@ impl Cpu {
             dump_interval: _dump_count,
             inst_string: String::from(""),
             clint: Clint::new(0x200_0000, 0x10000, Arc::new(interrupt_sender)),
-            interrupt_receiver: interrupt_receiver,
+            interrupt_list: Vec::new(),
+            cycle: 0,
+            // interrupt_receiver: interrupt_receiver,
         }
     }
 
@@ -239,8 +243,8 @@ impl Cpu {
     fn wait_for_interrupt(&mut self) {
         // wait for a message that notifies an interrupt on the interrupt channel
         info!("waiting for interrupt");
-        let interrupt = self.interrupt_receiver.recv().unwrap();
-        self.set_pending_interrupt(interrupt);
+        // let interrupt = self.interrupt_receiver.recv().unwrap();
+        // self.set_pending_interrupt(interrupt);
     }
 
     fn set_pending_interrupt(&mut self, interrupt: Interrupt) {
@@ -1168,12 +1172,10 @@ impl Cpu {
 
     pub fn step_run(&mut self) -> u64 {
         // info!("pc={:>#18x}", self.pc);
+        self.cycle += 1;
 
-        // recieve all the interrupt messages
-        while let Some(interrupt) = self.interrupt_receiver.try_recv().ok() {
-            info!("Interrupt: {:?} received", interrupt);
-            self.set_pending_interrupt(interrupt);
-        }
+        // check and pend all the delayed interrupts
+        self.check_and_pend_interrupts();
 
         if let Some(mut interrupt) = self.get_interrupt_to_take() {
             info!("Interrupt: {:?} taken", interrupt);
@@ -1208,9 +1210,19 @@ impl Cpu {
         self.pc
     }
 
+    fn check_and_pend_interrupts(&mut self) {
+        // Check for pending interrupts and pend them
+        self.interrupt_list
+            .iter()
+            .filter(|delayed_interrupt| self.cycle >= delayed_interrupt.cycle)
+            .for_each(|delayed_interrupt| {
+                self.set_pending_interrupt(delayed_interrupt.interrupt);
+            });
+    }
+
     pub fn save_snapshot(&self, path: &str) {
         let mut file = File::create(path).expect("Unable to create file");
-        let data = Serialize::serialize(self).expect("Unable to serialize data");
+        let data = bincode::serialize(self).expect("Unable to serialize data");
         file.write_all(&data).expect("Unable to write data");
         info!("Snapshot saved to {}", path);
     }

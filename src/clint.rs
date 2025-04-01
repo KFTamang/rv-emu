@@ -1,7 +1,7 @@
 use crate::interrupt::*;
-use log::{debug, info};
-use std::sync::{mpsc, Arc};
-use std::time::Duration;
+use log::info;
+// use std::sync::{mpsc, Arc};
+// use std::time::Duration;
 use serde::{Deserialize, Serialize};
 
 const FREQUENCY: u64 = 10000000; // clock frequency: 10MHz
@@ -24,7 +24,7 @@ impl Clint {
     pub fn new(
         _start_addr: u64,
         _size: u64,
-        _interrupt_sender: Arc<mpsc::Sender<Interrupt>>,
+        // _interrupt_sender: Arc<mpsc::Sender<Interrupt>>,
     ) -> Clint {
         // let (sender, receiver) = mpsc::channel();
         // let thread = std::thread::spawn(move || {
@@ -83,7 +83,7 @@ impl Clint {
         let wait_time_ms = ((target_counter - current_counter) * 1000 / FREQUENCY) as u64;
         info!("clint: store: mtimecmp: wait_time_ms: {}", wait_time_ms);
 
-        let sleep_duration = Option::Some(Duration::from_millis(wait_time_ms));
+        // let sleep_duration = Option::Some(Duration::from_millis(wait_time_ms));
         // self.duration_sender.send(sleep_duration).unwrap();
     }
 }

@@ -3,9 +3,11 @@ use log::{debug, info};
 use std::sync::{mpsc, Arc};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
+use serde_big_array::BigArray;
 
 #[derive(Serialize, Deserialize)]
 pub struct Csr {
+    #[serde(with = "BigArray")]
     csr: [u64; 4096],
     // timer_thread: Option<std::thread::JoinHandle<()>>,
     // duration_sender: mpsc::Sender<Option<Duration>>,
@@ -70,7 +72,7 @@ const SSTATUS_MASK: u64 = !(MASK_SXL
 pub const TIMER_FREQ: u64 = 100000000; // 100 MHz
 
 impl Csr {
-    pub fn new(_interrupt_sender: Arc<mpsc::Sender<Interrupt>>) -> Self {
+    pub fn new() -> Self {
         // let (sender, receiver) = mpsc::channel();
         // let thread = std::thread::spawn(move || {
         //     Self::timer_thread(receiver, _interrupt_sender);

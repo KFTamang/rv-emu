@@ -7,11 +7,11 @@ use crate::interrupt::*;
 use log::{debug, info};
 
 use std::cmp;
-use std::sync::{mpsc, Arc};
+// use std::sync::{mpsc, Arc};
 use std::fs::File;
 use std::io::{Read, Write};
 use serde::{Serialize, Deserialize};
-use bincode::{serialize, deserialize};
+use bincode;
 
 const REG_NUM: usize = 32;
 pub const M_MODE: u64 = 0b11;
@@ -50,13 +50,13 @@ impl Cpu {
     pub fn new(binary: Vec<u8>, base_addr: u64, _dump_count: u64) -> Self {
         let mut regs = [0; 32];
         regs[2] = DRAM_SIZE;
-        let (interrupt_sender, interrupt_receiver) = mpsc::channel();
+        // let (interrupt_sender, interrupt_receiver) = mpsc::channel();
 
         Self {
             regs,
             pc: base_addr,
             bus: Bus::new(binary, base_addr),
-            csr: Csr::new(Arc::new(interrupt_sender.clone())),
+            csr: Csr::new(),
             dest: REG_NUM,
             src1: REG_NUM,
             src2: REG_NUM,
@@ -64,7 +64,7 @@ impl Cpu {
             dump_count: _dump_count,
             dump_interval: _dump_count,
             inst_string: String::from(""),
-            clint: Clint::new(0x200_0000, 0x10000, Arc::new(interrupt_sender)),
+            clint: Clint::new(0x200_0000, 0x10000),
             interrupt_list: Vec::new(),
             cycle: 0,
             // interrupt_receiver: interrupt_receiver,
@@ -1221,17 +1221,23 @@ impl Cpu {
     }
 
     pub fn save_snapshot(&self, path: &str) {
+        let config = bincode::config::standard()
+            .with_little_endian()
+            .with_fixed_int_encoding();
         let mut file = File::create(path).expect("Unable to create file");
-        let data = bincode::serialize(self).expect("Unable to serialize data");
+        let data = bincode::serde::encode_to_vec(self, config).expect("Unable to serialize data");
         file.write_all(&data).expect("Unable to write data");
         info!("Snapshot saved to {}", path);
     }
 
     pub fn load_snapshot(&mut self, path: &str) {
+        let config = bincode::config::standard()
+            .with_little_endian()
+            .with_fixed_int_encoding();
         let mut file = File::open(path).expect("Unable to open file");
         let mut data = Vec::new();
         file.read_to_end(&mut data).expect("Unable to read data");
-        let snapshot: Self = bincode::deserialize(&data).expect("Unable to deserialize data");
+        let snapshot: Self = bincode::serde::decode_from_slice(&data, config).expect("Unable to deserialize data").0;
         *self = snapshot;
         info!("Snapshot loaded from {}", path);
     }

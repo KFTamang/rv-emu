@@ -15,6 +15,7 @@ use clap::Parser; // command-line option parser
 use crate::debugger::{wait_for_gdb_connection, MyGdbBlockingEventLoop};
 use crate::emu::Emu;
 use crate::logger::init_logger;
+extern crate serde_big_array;
 use gdbstub::conn::ConnectionExt;
 use gdbstub::stub::DisconnectReason;
 use gdbstub::stub::GdbStub;

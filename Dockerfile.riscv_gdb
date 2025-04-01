@@ -2,7 +2,7 @@ FROM rust:1.85.0
 
 ENV RISCV=/opt/riscv
 ENV PATH=$RISCV/bin:$PATH
-ENV MAKEFLAGS=-j$(nproc)
+ENV MAKEFLAGS=-j4
 
 WORKDIR $RISCV
 

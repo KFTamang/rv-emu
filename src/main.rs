@@ -14,7 +14,7 @@ use clap::Parser; // command-line option parser
 
 use crate::debugger::{wait_for_gdb_connection, MyGdbBlockingEventLoop};
 use crate::emu::Emu;
-use crate::logger::init_logger;
+// use crate::logger::init_logger;
 extern crate serde_big_array;
 use gdbstub::conn::ConnectionExt;
 use gdbstub::stub::DisconnectReason;
@@ -48,7 +48,7 @@ struct Cli {
 }
 
 fn main() -> io::Result<()> {
-    init_logger().expect("Failed to initialize logger");
+    // init_logger().expect("Failed to initialize logger");
     let cli = Cli::parse();
     let mut file = File::open(&cli.bin)?;
     let mut code = Vec::new();

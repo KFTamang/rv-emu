@@ -149,7 +149,7 @@ impl Interrupt {
 }
 
 // Interrupt that will be pending after a specified cycle
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct DelayedInterrupt {
     pub interrupt: Interrupt,
     pub cycle: u64,

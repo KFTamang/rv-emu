@@ -44,9 +44,9 @@ impl Interrupt {
         let target_mode = self.get_trap_mode(cpu);
         match target_mode {
             Ok(M_MODE) => {
-                cpu.csr.store_csrs(MEPC, cpu.pc);
+                cpu.csr.store_csrs(MEPC, cpu.state.pc);
                 cpu.csr.store_csrs(MCAUSE, exception_code);
-                cpu.csr.set_mstatus_bit(cpu.mode, MASK_MPP, BIT_MPP);
+                cpu.csr.set_mstatus_bit(cpu.state.mode, MASK_MPP, BIT_MPP);
                 let mie = MASK_MIE & cpu.csr.load_csrs(MSTATUS);
                 cpu.csr
                     .set_mstatus_bit(if mie > 0 { 1 } else { 0 }, MASK_MPIE, BIT_MPIE);
@@ -60,7 +60,7 @@ impl Interrupt {
                 info!("enter M mode");
                 match mtvec & 0x3 {
                     0x0 => {
-                        cpu.pc = (mtvec & 0xfffffffc).wrapping_sub(4);
+                        cpu.state.pc = (mtvec & 0xfffffffc).wrapping_sub(4);
                     }
                     0x1 => {}
                     _ => {
@@ -70,9 +70,9 @@ impl Interrupt {
                 }
             }
             Ok(S_MODE) => {
-                cpu.csr.store_csrs(SEPC, cpu.pc);
+                cpu.csr.store_csrs(SEPC, cpu.state.pc);
                 cpu.csr.store_csrs(SCAUSE, exception_code);
-                cpu.csr.set_sstatus_bit(cpu.mode, MASK_SPP, BIT_SPP);
+                cpu.csr.set_sstatus_bit(cpu.state.mode, MASK_SPP, BIT_SPP);
                 let sie = MASK_SIE & cpu.csr.load_csrs(SSTATUS);
                 cpu.csr
                     .set_sstatus_bit(if sie > 0 { 1 } else { 0 }, MASK_SPIE, BIT_SPIE);
@@ -86,7 +86,7 @@ impl Interrupt {
                 info!("enter S mode");
                 match stvec & 0x3 {
                     0x0 => {
-                        cpu.pc = (stvec & 0xfffffffc).wrapping_sub(4);
+                        cpu.state.pc = (stvec & 0xfffffffc).wrapping_sub(4);
                     }
                     0x1 => {}
                     _ => {
@@ -120,7 +120,7 @@ impl Interrupt {
         match destined_mode {
             M_MODE => {
                 let mstatus = cpu.csr.load_csrs(MSTATUS);
-                if !(((cpu.mode == M_MODE) && (mstatus & MASK_MIE != 0)) || (cpu.mode < M_MODE)) {
+                if !(((cpu.state.mode == M_MODE) && (mstatus & MASK_MIE != 0)) || (cpu.state.mode < M_MODE)) {
                     return Err(());
                 }
                 let mip = cpu.csr.load_csrs(MIP);
@@ -131,7 +131,7 @@ impl Interrupt {
             }
             S_MODE => {
                 let sstatus = cpu.csr.load_csrs(SSTATUS);
-                if !(((cpu.mode == S_MODE) && (sstatus & MASK_SIE != 0)) || (cpu.mode < S_MODE)) {
+                if !(((cpu.state.mode == S_MODE) && (sstatus & MASK_SIE != 0)) || (cpu.state.mode < S_MODE)) {
                     return Err(());
                 }
                 let sip = cpu.csr.load_csrs(SIP);
@@ -203,9 +203,9 @@ impl Exception {
         let target_mode = self.get_target_mode(cpu);
         match target_mode {
             M_MODE => {
-                cpu.csr.store_csrs(MEPC, cpu.pc);
+                cpu.csr.store_csrs(MEPC, cpu.state.pc);
                 cpu.csr.store_csrs(MCAUSE, exception_code);
-                cpu.csr.set_mstatus_bit(cpu.mode, MASK_MPP, BIT_MPP);
+                cpu.csr.set_mstatus_bit(cpu.state.mode, MASK_MPP, BIT_MPP);
                 let mie = MASK_MIE & cpu.csr.load_csrs(MSTATUS);
                 cpu.csr
                     .set_mstatus_bit(if mie > 0 { 1 } else { 0 }, MASK_MPIE, BIT_MPIE);
@@ -216,7 +216,7 @@ impl Exception {
                 info!("enter M mode\n");
                 match mtvec & 0x3 {
                     0x0 => {
-                        cpu.pc = (mtvec & 0xfffffffc).wrapping_sub(4);
+                        cpu.state.pc = (mtvec & 0xfffffffc).wrapping_sub(4);
                     }
                     0x1 => {}
                     _ => {
@@ -226,9 +226,9 @@ impl Exception {
                 }
             }
             S_MODE => {
-                cpu.csr.store_csrs(SEPC, cpu.pc);
+                cpu.csr.store_csrs(SEPC, cpu.state.pc);
                 cpu.csr.store_csrs(SCAUSE, exception_code);
-                cpu.csr.set_sstatus_bit(cpu.mode, MASK_SPP, BIT_SPP);
+                cpu.csr.set_sstatus_bit(cpu.state.mode, MASK_SPP, BIT_SPP);
                 let sie = MASK_SIE & cpu.csr.load_csrs(SSTATUS);
                 cpu.csr
                     .set_sstatus_bit(if sie > 0 { 1 } else { 0 }, MASK_SPIE, BIT_SPIE);
@@ -239,7 +239,7 @@ impl Exception {
                 info!("enter S mode");
                 match stvec & 0x3 {
                     0x0 => {
-                        cpu.pc = (stvec & 0xfffffffc).wrapping_sub(4);
+                        cpu.state.pc = (stvec & 0xfffffffc).wrapping_sub(4);
                     }
                     0x1 => {}
                     _ => {
@@ -256,7 +256,7 @@ impl Exception {
     fn get_target_mode(&self, cpu: &mut Cpu) -> u64 {
         let exception_bit = self.bit_code();
         let medeleg = cpu.csr.load_csrs(MEDELEG);
-        if (cpu.mode < M_MODE) && ((exception_bit & medeleg) != 0) {
+        if (cpu.state.mode < M_MODE) && ((exception_bit & medeleg) != 0) {
             S_MODE
         } else {
             M_MODE

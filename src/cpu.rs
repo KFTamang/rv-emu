@@ -10,6 +10,7 @@ use std::cmp;
 // use std::sync::{mpsc, Arc};
 use std::fs::File;
 use std::io::{Read, Write};
+use std::sync::{Arc, Mutex};
 use serde::{Serialize, Deserialize};
 use bincode;
 
@@ -41,7 +42,7 @@ pub struct Cpu {
     dump_count: u64,
     dump_interval: u64,
     inst_string: String,
-    pub interrupt_list: Vec<DelayedInterrupt>,
+    pub interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
     pub cycle: u64,
     clint: Clint,
 }
@@ -50,13 +51,13 @@ impl Cpu {
     pub fn new(binary: Vec<u8>, base_addr: u64, _dump_count: u64) -> Self {
         let mut regs = [0; 32];
         regs[2] = DRAM_SIZE;
-        // let (interrupt_sender, interrupt_receiver) = mpsc::channel();
+        let _interrupt_queue = Arc::new(Mutex::new(Vec::new()));
 
         Self {
             regs,
             pc: base_addr,
             bus: Bus::new(binary, base_addr),
-            csr: Csr::new(),
+            csr: Csr::new(_interrupt_queue.clone()),
             dest: REG_NUM,
             src1: REG_NUM,
             src2: REG_NUM,
@@ -65,9 +66,8 @@ impl Cpu {
             dump_interval: _dump_count,
             inst_string: String::from(""),
             clint: Clint::new(0x200_0000, 0x10000),
-            interrupt_list: Vec::new(),
+            interrupt_list: Arc::new(Mutex::new(Vec::new())),
             cycle: 0,
-            // interrupt_receiver: interrupt_receiver,
         }
     }
 
@@ -1210,14 +1210,33 @@ impl Cpu {
         self.pc
     }
 
+    pub fn set_defferred_interrupt(
+        &mut self,
+        interrupt: Interrupt,
+        deffer_cycle: u64,
+    ) {
+        // Set the deferred interrupt
+        let mut interrupt_list = self.interrupt_list.lock().unwrap();
+        interrupt_list.push(DelayedInterrupt {
+            interrupt,
+            cycle: self.cycle + deffer_cycle,
+        });
+    }
+
     fn check_and_pend_interrupts(&mut self) {
         // Check for pending interrupts and pend them
-        self.interrupt_list
+        let ready_interrupts: Vec<_> = self
+            .interrupt_list
+            .lock()
+            .unwrap()   
             .iter()
             .filter(|delayed_interrupt| self.cycle >= delayed_interrupt.cycle)
-            .for_each(|delayed_interrupt| {
-                self.set_pending_interrupt(delayed_interrupt.interrupt);
-            });
+            .cloned() // Clone the filtered interrupts if necessary
+            .collect();
+
+        for delayed_interrupt in ready_interrupts {
+            self.set_pending_interrupt(delayed_interrupt.interrupt);
+        }
     }
 
     pub fn save_snapshot(&self, path: &str) {

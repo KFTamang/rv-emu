@@ -12,6 +12,7 @@ pub struct Csr {
     // timer_thread: Option<std::thread::JoinHandle<()>>,
     // duration_sender: mpsc::Sender<Option<Duration>>,
     initial_time: u64,
+    set_deferred_interrupt: fn(Interrupt, u64),
 }
 
 pub const SSTATUS: usize = 0x100;
@@ -72,15 +73,9 @@ const SSTATUS_MASK: u64 = !(MASK_SXL
 pub const TIMER_FREQ: u64 = 100000000; // 100 MHz
 
 impl Csr {
-    pub fn new() -> Self {
-        // let (sender, receiver) = mpsc::channel();
-        // let thread = std::thread::spawn(move || {
-        //     Self::timer_thread(receiver, _interrupt_sender);
-        // });
+    pub fn new( _set_deffered_interrupt: fn(Interrupt, u64)) -> Self {
         Self {
-            csr: [0; 4096],
-            // timer_thread: Some(thread),
-            // duration_sender: sender,
+            set_deferred_interrupt: _set_deffered_interrupt,
             initial_time: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -154,8 +149,11 @@ impl Csr {
             comptime_ms, time
         );
         if comptime_ms >= time {
-            // let duration = Duration::from_millis(comptime_ms - time);
-            // self.duration_sender.send(Option::Some(duration)).unwrap();
+            let duration = Duration::from_millis(comptime_ms - time);
+            (self.set_deferred_interrupt)(
+                Interrupt::SupervisorTimerInterrupt,
+                TIMER_FREQ * duration.as_millis() as u64 / 1000,
+            );
             info!(
                 "set_timer_interrupt: send timer interrupt duration {} ms",
                 comptime_ms - time

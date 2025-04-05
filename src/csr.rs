@@ -3,11 +3,16 @@ use log::{debug, info};
 use std::sync::{mpsc, Arc};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
+use serde::de::Deserializer;
 use serde_big_array::BigArray;
 
 #[derive(Serialize, Deserialize)]
-pub struct Csr {
+pub struct CsrSnapshot {
     #[serde(with = "BigArray")]
+    csr: [u64; 4096],
+}
+
+pub struct Csr {
     csr: [u64; 4096],
     // timer_thread: Option<std::thread::JoinHandle<()>>,
     // duration_sender: mpsc::Sender<Option<Duration>>,
@@ -75,7 +80,25 @@ pub const TIMER_FREQ: u64 = 100000000; // 100 MHz
 impl Csr {
     pub fn new( _set_deffered_interrupt: fn(Interrupt, u64)) -> Self {
         Self {
+            csr: [0; 4096],
             set_deferred_interrupt: _set_deffered_interrupt,
+            initial_time: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64,
+        }
+    }
+
+    pub fn to_snapshot(&self) -> CsrSnapshot {
+        CsrSnapshot {
+            csr: self.csr,
+        }
+    }
+
+    pub fn from_snapshot(snapshot: CsrSnapshot, set_deferred_interrupt: fn(Interrupt, u64)) -> Self {
+        Self {
+            csr: snapshot.csr,
+            set_deferred_interrupt,
             initial_time: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -180,6 +203,28 @@ impl Csr {
                 break;
             }
         }
+    }
+
+    pub fn deserialize_with_callback<'de, D>(
+        deserializer: D,
+        set_deferred_interrupt: fn(Interrupt, u64),
+    ) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let mut csr = Csr {
+            csr: [0; 4096],
+            set_deferred_interrupt,
+            initial_time: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64,
+        };
+
+        // Deserialize the `csr` array
+        csr.csr = <[u64; 4096]>::deserialize(deserializer)?;
+
+        Ok(csr)
     }
 }
 

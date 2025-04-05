@@ -45,10 +45,11 @@ struct Cli {
     loop_on: bool,
     #[clap(long)]
     gdb: bool,
+    #[clap(long)]
+    snapshot: Option<std::path::PathBuf>,
 }
 
 fn main() -> io::Result<()> {
-    // init_logger().expect("Failed to initialize logger");
     let cli = Cli::parse();
     let mut file = File::open(&cli.bin)?;
     let mut code = Vec::new();
@@ -64,6 +65,15 @@ fn main() -> io::Result<()> {
     let reg_dump_count = cli.dump.unwrap_or(0);
     let mut counter = cli.count.unwrap_or(1);
 
+    let mut emu = if cli.snapshot.is_some(){
+        let path = cli.snapshot.unwrap();
+        Emu::from_snapshot(path, reg_dump_count as u64).unwrap()
+    }else {
+        Emu::new(code, base_addr, reg_dump_count as u64)
+    };
+ 
+    emu.set_entry_point(entry_address);
+
     if cli.gdb {
         info!("GDB enabled");
         // Establish a `Connection`
@@ -72,9 +82,6 @@ fn main() -> io::Result<()> {
 
         // Create a new `gdbstub::GdbStub` using the established `Connection`.
         let debugger = GdbStub::new(connection);
-
-        let mut emu = Emu::new(code, base_addr, reg_dump_count as u64);
-        emu.set_entry_point(entry_address);
 
         match debugger.run_blocking::<MyGdbBlockingEventLoop>(&mut emu) {
             Ok(disconnect_reason) => match disconnect_reason {
@@ -106,8 +113,6 @@ fn main() -> io::Result<()> {
         }
     } else {
         info!("No GDB");
-        let mut emu = Emu::new(code, base_addr, reg_dump_count as u64);
-        emu.set_entry_point(entry_address);
         while counter != 0 {
             if emu.step() == Some(emu::Event::Halted) {
                 info!("Halted");

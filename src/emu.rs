@@ -1,4 +1,9 @@
 use crate::cpu::*;
+use std::fs::File;
+use std::io::{Read, Write};
+use std::path::PathBuf;
+use log::info;
+use bincode;
 
 pub enum ExecMode {
     Step,
@@ -67,5 +72,33 @@ impl Emu {
 
     pub fn set_entry_point(&mut self, entry_addr: u64) {
         self.cpu.pc = entry_addr;
+    }
+
+    pub fn save_snapshot(&self, path: std::path::PathBuf) {
+        let config = bincode::config::standard()
+            .with_little_endian()
+            .with_fixed_int_encoding();
+        let mut file = File::create(path).expect("Unable to create file");
+        let snapshot = self.cpu.to_snapshot();
+        let data = bincode::serde::encode_to_vec(snapshot, config).expect("Unable to serialize snapshot");
+        file.write_all(&data).expect("Unable to write data");
+        // info!("Snapshot saved to {}", path);
+    }
+
+    pub fn from_snapshot(path: std::path::PathBuf, reg_dump_count: u64) -> Result<Emu, std::io::Error> {
+        let config = bincode::config::standard()
+            .with_little_endian()
+            .with_fixed_int_encoding();
+        let mut file = File::open(path).expect("Unable to open file");
+        let mut data = Vec::new();
+        file.read_to_end(&mut data).expect("Unable to read snapshot data");
+        let snapshot: CpuSnapshot = bincode::serde::decode_from_slice(&data, config).expect("Unable to deserialize snapshot").0;
+        let cpu = Cpu::from_snapshot(snapshot);
+        // info!("Snapshot loaded from {}", path);
+        Ok(Self {
+            breakpoints: vec![0; 32 as usize],
+            exec_mode: ExecMode::Continue,
+            cpu: cpu,
+        })
     }
 }

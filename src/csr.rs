@@ -6,11 +6,13 @@ use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 
 #[derive(Serialize, Deserialize)]
-pub struct Csr {
+pub struct CsrState {
     #[serde(with = "BigArray")]
     csr: [u64; 4096],
-    // timer_thread: Option<std::thread::JoinHandle<()>>,
-    // duration_sender: mpsc::Sender<Option<Duration>>,
+}
+
+pub struct Csr {
+    state: CsrState,
     initial_time: u64,
 }
 
@@ -78,9 +80,7 @@ impl Csr {
         //     Self::timer_thread(receiver, _interrupt_sender);
         // });
         Self {
-            csr: [0; 4096],
-            // timer_thread: Some(thread),
-            // duration_sender: sender,
+            state: CsrState { csr: [0; 4096]},
             initial_time: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -90,9 +90,9 @@ impl Csr {
 
     pub fn load_csrs(&self, addr: usize) -> u64 {
         let return_value = match addr {
-            SSTATUS => self.csr[MSTATUS] & SSTATUS_MASK,
+            SSTATUS => self.state.csr[MSTATUS] & SSTATUS_MASK,
             TIME => self.get_time_ms() * TIMER_FREQ / 1000,
-            _ => self.csr[addr],
+            _ => self.state.csr[addr],
         };
         debug!("load: addr:{:#x}, val:{:#x}", addr, return_value);
         return_value
@@ -102,14 +102,14 @@ impl Csr {
         info!("store: addr:{:#x}, val:{:#x}", addr, val);
         match addr {
             SSTATUS => {
-                self.csr[MSTATUS] = val & SSTATUS_MASK;
+                self.state.csr[MSTATUS] = val & SSTATUS_MASK;
             }
             STIMECMP => {
-                self.csr[STIMECMP] = val;
+                self.state.csr[STIMECMP] = val;
                 self.set_timer_interrupt(val);
             }
             _ => {
-                self.csr[addr] = val;
+                self.state.csr[addr] = val;
             }
         }
     }

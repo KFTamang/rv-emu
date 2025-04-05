@@ -40,8 +40,8 @@ impl SingleThreadBase for Emu {
         &mut self,
         regs: &mut gdbstub_arch::riscv::reg::RiscvCoreRegs<u64>,
     ) -> TargetResult<(), Self> {
-        regs.x = self.cpu.regs;
-        regs.pc = self.cpu.pc;
+        regs.x = self.cpu.state.regs;
+        regs.pc = self.cpu.state.pc;
         Ok(())
     }
 
@@ -49,8 +49,8 @@ impl SingleThreadBase for Emu {
         &mut self,
         regs: &gdbstub_arch::riscv::reg::RiscvCoreRegs<u64>,
     ) -> TargetResult<(), Self> {
-        self.cpu.regs = regs.x;
-        self.cpu.pc = regs.pc;
+        self.cpu.state.regs = regs.x;
+        self.cpu.state.pc = regs.pc;
         Ok(())
     }
 

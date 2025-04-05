@@ -66,6 +66,6 @@ impl Emu {
     }
 
     pub fn set_entry_point(&mut self, entry_addr: u64) {
-        self.cpu.pc = entry_addr;
+        self.cpu.state.pc = entry_addr;
     }
 }

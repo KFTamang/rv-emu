@@ -1,3 +1,4 @@
+
 use crate::cpu::*;
 use std::fs::File;
 use std::io::{Read, Write};
@@ -26,6 +27,7 @@ pub struct Emu {
     pub breakpoints: Vec<u64>,
     pub exec_mode: ExecMode,
     pub cpu: Cpu,
+    pub cycle: u64,
 }
 
 impl Emu {
@@ -34,6 +36,7 @@ impl Emu {
             breakpoints: vec![0; 32 as usize],
             exec_mode: ExecMode::Continue,
             cpu: Cpu::new(binary, base_addr, _dump_count as u64),
+            cycle: 0,
         }
     }
 
@@ -41,6 +44,15 @@ impl Emu {
     pub fn step(&mut self) -> Option<Event> {
         let pc = self.cpu.step_run();
 
+        info!("PC: {:#x} Cycle: {}", pc, self.cycle);
+
+        self.cycle += 1;
+        if self.cycle % 10000 == 0 {
+            let path = std::path::PathBuf::from(format!("/tmp/snapshot_{}.bin", self.cycle));
+            self.save_snapshot(path.clone());
+            info!("Snapshot saved to {}", path.clone().display());
+        }
+        
         if self.breakpoints.contains(&pc) {
             return Some(Event::Break);
         }
@@ -65,6 +77,12 @@ impl Emu {
                     if let Some(event) = self.step() {
                         break RunEvent::Event(event);
                     };
+
+                    if cycles % 1000000 == 0 {
+                        let path = std::path::PathBuf::from(format!("/tmp/snapshot_{}.bin", cycles));
+                        self.save_snapshot(path.clone());
+                        info!("Snapshot saved to {}", path.clone().display());
+                    }
                 }
             }
         }
@@ -99,6 +117,7 @@ impl Emu {
             breakpoints: vec![0; 32 as usize],
             exec_mode: ExecMode::Continue,
             cpu: cpu,
+            cycle: 0,
         })
     }
 }

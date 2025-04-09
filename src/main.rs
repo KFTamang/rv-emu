@@ -74,6 +74,8 @@ fn main() -> io::Result<()> {
  
     emu.set_entry_point(entry_address);
 
+    info!("test");
+
     if cli.gdb {
         info!("GDB enabled");
         // Establish a `Connection`

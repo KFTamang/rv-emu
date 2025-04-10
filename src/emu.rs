@@ -44,10 +44,10 @@ impl Emu {
     pub fn step(&mut self) -> Option<Event> {
         let pc = self.cpu.step_run();
 
-        info!("PC: {:#x} Cycle: {}", pc, self.cycle);
+        // info!("PC: {:#x} Cycle: {}", pc, self.cycle);
 
         self.cycle += 1;
-        if self.cycle % 10000 == 0 {
+        if self.cycle % 100000000 == 0 {
             let path = std::path::PathBuf::from(format!("/tmp/snapshot_{}.bin", self.cycle));
             self.save_snapshot(path.clone());
             info!("Snapshot saved to {}", path.clone().display());

@@ -50,6 +50,9 @@ struct Cli {
 }
 
 fn main() -> io::Result<()> {
+    // initialize env_logger
+    env_logger::init();
+
     let cli = Cli::parse();
     let mut file = File::open(&cli.bin)?;
     let mut code = Vec::new();

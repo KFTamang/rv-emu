@@ -94,12 +94,11 @@ impl Cpu {
     }
 
     pub fn from_snapshot(snapshot: CpuSnapshot) -> Self {
-        let bus = Bus::new(Vec::new(), 0);
         let clint = Clint::new(0x200_0000, 0x10000);
         let mut cpu = Self {
             regs: snapshot.regs,
             pc: snapshot.pc,
-            bus,
+            bus: Bus::from_snapshot(snapshot.bus),
             csr: Csr::new(|_,_| {}),
             dest: REG_NUM,
             src1: REG_NUM,

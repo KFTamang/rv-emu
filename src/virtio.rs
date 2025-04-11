@@ -39,7 +39,7 @@ const VIRTIO_MMIO_INTERRUPT_ACK: usize = 0x064; // write-only
 #[allow(dead_code)]
 const VIRTIO_MMIO_STATUS: usize = 0x070; // read/write
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Virtio {
     start_addr: u64,
     size: u64,

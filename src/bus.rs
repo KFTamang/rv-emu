@@ -8,6 +8,13 @@ use log::info;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
+pub struct BusSnapshot {
+    pub dram: Dram,
+    pub uart: Uart,
+    pub plic: Plic,
+    pub virtio: Virtio,
+}
+
 pub struct Bus {
     dram: Dram,
     uart: Uart,
@@ -98,5 +105,22 @@ impl Bus {
     #[allow(unused)]
     pub fn dump(&self, path: &str) {
         self.dram.dump(path);
+    }
+
+    pub fn to_snapshot(&self) -> BusSnapshot {
+        BusSnapshot {
+            dram: self.dram.clone(),
+            uart: self.uart.clone(),
+            plic: self.plic.clone(),
+            virtio: self.virtio.clone(),
+        }
+    }
+    pub fn from_snapshot(snapshot: BusSnapshot) -> Self {
+        Self {
+            dram: snapshot.dram,
+            uart: snapshot.uart,
+            plic: snapshot.plic,
+            virtio: snapshot.virtio,
+        }
     }
 }

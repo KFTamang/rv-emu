@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 // dram memory size, 128MB
 pub const DRAM_SIZE: u64 = 1024 * 1024 * 128;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Dram {
     pub dram: Vec<u8>,
     pub dram_base: u64,

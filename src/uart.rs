@@ -1,7 +1,7 @@
 use crate::interrupt::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Uart {
     start_addr: u64,
     size: u64,

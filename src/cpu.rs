@@ -30,7 +30,7 @@ fn bit(integer: u64, bit: u64) -> u64 {
 pub struct CpuSnapshot {
     pub regs: [u64; 32],
     pub pc: u64,
-    // pub bus: BusSnapshot,
+    pub bus: BusSnapshot,
     pub csr: CsrSnapshot,
     pub mode: u64,
     pub cycle: u64,
@@ -84,7 +84,7 @@ impl Cpu {
         CpuSnapshot {
             regs: self.regs,
             pc: self.pc,
-            // bus: self.bus.to_snapshot(),
+            bus: self.bus.to_snapshot(),
             csr: self.csr.to_snapshot(),
             mode: self.mode,
             cycle: self.cycle,

@@ -117,7 +117,7 @@ impl Csr {
     }
 
     pub fn store_csrs(&mut self, addr: usize, val: u64) {
-        info!("store: addr:{:#x}, val:{:#x}", addr, val);
+        debug!("store: addr:{:#x}, val:{:#x}", addr, val);
         match addr {
             SSTATUS => {
                 self.csr[MSTATUS] = val & SSTATUS_MASK;
@@ -182,6 +182,18 @@ impl Csr {
                 comptime_ms - time
             );
         }
+    }
+
+    pub fn dump(&self) -> String {
+        let mut result = String::new();
+        for i in 0..4096 {
+            if i % 16 == 0 {
+                result.push_str(&format!("\n{:#x} ", i));
+            }
+            result.push_str(&format!("{:#x} ", self.csr[i]));
+        }
+        result.push_str("\n");
+        result
     }
 
     fn timer_thread(

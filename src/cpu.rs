@@ -370,6 +370,7 @@ impl Cpu {
         // mstatus.MPIE <~ 1 [always]
         // mstatus.MPP <~ 00(U-mode) [always]
         // pc(program counter) <~ mepc CSR
+        debug!("{}", self.csr.dump());
         match self.mode {
             M_MODE => {
                 let pp = self.csr.get_mstatus_bit(MASK_MPP, BIT_MPP);

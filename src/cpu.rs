@@ -94,7 +94,6 @@ impl Cpu {
     }
 
     pub fn from_snapshot(snapshot: CpuSnapshot) -> Self {
-        let clint = Clint::new(0x200_0000, 0x10000);
         let mut cpu = Self {
             regs: snapshot.regs,
             pc: snapshot.pc,
@@ -107,7 +106,7 @@ impl Cpu {
             dump_count: 0,
             dump_interval: 0,
             inst_string: String::from(""),
-            clint,
+            clint: snapshot.clint,
             interrupt_list: Arc::new(Mutex::new(Vec::new())),
             cycle: snapshot.cycle,
         };

@@ -35,7 +35,7 @@ pub struct CpuSnapshot {
     pub mode: u64,
     pub cycle: u64,
     // pub interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
-    // pub clint: ClintSnapshot,
+    pub clint: Clint,
 }
 
 pub struct Cpu {
@@ -89,7 +89,7 @@ impl Cpu {
             mode: self.mode,
             cycle: self.cycle,
             // interrupt_list: self.interrupt_list.clone(),
-            // clint: self.clint.to_snapshot(),
+            clint: self.clint.clone(),
         }
     }
 

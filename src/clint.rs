@@ -8,7 +8,7 @@ const FREQUENCY: u64 = 10000000; // clock frequency: 10MHz
 const MTIMECMP: usize = 0x4000;
 const MTIME: usize = 0xBFF8;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Clint {
     start_addr: u64,
     size: u64,

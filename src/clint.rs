@@ -39,25 +39,6 @@ impl Clint {
         }
     }
 
-    fn timer_thread(
-        // receiver: mpsc::Receiver<Option<Duration>>,
-        // interrupt_sender: Arc<mpsc::Sender<Interrupt>>,
-    ) {
-        loop {
-            // let maybe_sleep_duration = receiver.recv().unwrap();
-            // if let Some(duration) = maybe_sleep_duration {
-            //     std::thread::sleep(duration);
-            //     // trigger the interrupt
-            //     interrupt_sender
-            //         .send(Interrupt::MachineTimerInterrupt)
-            //         .unwrap();
-            //     debug!("timer thread: interrupt triggered Interrupt::MachineTimerInterrupt");
-            // } else {
-            //     break;
-            // }
-        }
-    }
-
     pub fn is_accessible(&self, addr: u64) -> bool {
         (addr >= self.start_addr) && (addr < self.start_addr + self.size)
     }

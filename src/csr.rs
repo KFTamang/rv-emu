@@ -196,48 +196,6 @@ impl Csr {
         result
     }
 
-    fn timer_thread(
-        receiver: mpsc::Receiver<Option<Duration>>,
-        interrupt_sender: Arc<mpsc::Sender<Interrupt>>,
-    ) {
-        info!("timer thread: started");
-        loop {
-            let maybe_sleep_duration = receiver.recv().unwrap();
-            if let Some(duration) = maybe_sleep_duration {
-                std::thread::sleep(duration);
-                // trigger the interrupt
-                interrupt_sender
-                    .send(Interrupt::SupervisorTimerInterrupt)
-                    .unwrap();
-                info!("timer thread: interrupt triggered Interrupt::MachineTimerInterrupt");
-            } else {
-                info!("timer thread: exiting");
-                break;
-            }
-        }
-    }
-
-    pub fn deserialize_with_callback<'de, D>(
-        deserializer: D,
-        set_deferred_interrupt: fn(Interrupt, u64),
-    ) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let mut csr = Csr {
-            csr: [0; 4096],
-            set_deferred_interrupt,
-            initial_time: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64,
-        };
-
-        // Deserialize the `csr` array
-        csr.csr = <[u64; 4096]>::deserialize(deserializer)?;
-
-        Ok(csr)
-    }
 }
 
 impl Drop for Csr {

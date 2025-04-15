@@ -2,7 +2,6 @@
 use crate::cpu::*;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::path::PathBuf;
 use log::info;
 use bincode;
 
@@ -48,7 +47,7 @@ impl Emu {
 
         self.cycle += 1;
         if self.cycle % 100000000 == 0 {
-            let path = std::path::PathBuf::from(format!("/tmp/snapshot_{}.bin", self.cycle));
+            let path = std::path::PathBuf::from(format!("log/snapshot_{}.bin", self.cycle));
             self.save_snapshot(path.clone());
             info!("Snapshot saved to {}", path.clone().display());
         }
@@ -79,7 +78,7 @@ impl Emu {
                     };
 
                     if cycles % 1000000 == 0 {
-                        let path = std::path::PathBuf::from(format!("/tmp/snapshot_{}.bin", cycles));
+                        let path = std::path::PathBuf::from(format!("log/snapshot_{}.bin", cycles));
                         self.save_snapshot(path.clone());
                         info!("Snapshot saved to {}", path.clone().display());
                     }

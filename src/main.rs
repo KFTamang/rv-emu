@@ -72,10 +72,11 @@ fn main() -> io::Result<()> {
         let path = cli.snapshot.unwrap();        
         Emu::from_snapshot(path).unwrap()
     }else {
-        Emu::new(code, base_addr, reg_dump_count as u64)
+        let mut emu = Emu::new(code, base_addr, reg_dump_count as u64);
+        emu.set_entry_point(entry_address);
+        emu
     };
  
-    emu.set_entry_point(entry_address);
 
     if cli.gdb {
         info!("GDB enabled");

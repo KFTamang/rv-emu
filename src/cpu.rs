@@ -1216,7 +1216,7 @@ impl Cpu {
     }
 
     pub fn step_run(&mut self) -> u64 {
-        // info!("pc={:>#18x}", self.pc);
+        debug!("pc={:>#18x}", self.pc);
         self.cycle += 1;
 
         // check and pend all the delayed interrupts

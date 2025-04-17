@@ -1275,11 +1275,12 @@ impl Cpu {
             .unwrap()   
             .iter()
             .filter(|delayed_interrupt| self.cycle >= delayed_interrupt.cycle)
+            .map(|delayed_interrupt|  &delayed_interrupt.interrupt)
             .cloned() // Clone the filtered interrupts if necessary
             .collect();
 
-        for delayed_interrupt in ready_interrupts {
-            self.set_pending_interrupt(delayed_interrupt.interrupt);
+        for interrupt in ready_interrupts {
+            self.set_pending_interrupt(interrupt);
         }
     }
 }

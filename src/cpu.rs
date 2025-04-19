@@ -76,7 +76,8 @@ impl Cpu {
             interrupt_list: Arc::new(Mutex::new(Vec::new())),
             cycle: 0,
         };
-        cpu.csr = Csr::new(|_,_| {});
+        let csr = Csr::new(cpu.set_deferred_interrupt);
+        cpu.csr = csr;
         cpu
     }
 

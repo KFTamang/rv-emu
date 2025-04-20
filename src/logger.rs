@@ -1,6 +1,5 @@
 use log::{Record, Level, Metadata, SetLoggerError};
 use rusqlite::{Connection, params};
-use std::sync::{Mutex};
 use once_cell::sync::Lazy;
 use chrono::Utc;
 

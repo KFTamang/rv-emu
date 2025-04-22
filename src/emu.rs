@@ -43,8 +43,6 @@ impl Emu {
     pub fn step(&mut self) -> Option<Event> {
         let pc = self.cpu.step_run();
 
-        // info!("PC: {:#x} Cycle: {}", pc, self.cycle);
-
         self.cycle += 1;
         if self.cycle % 100000000 == 0 {
             let path = std::path::PathBuf::from(format!("log/snapshot_{}.bin", self.cycle));

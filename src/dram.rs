@@ -1,7 +1,7 @@
 use crate::interrupt::*;
+use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Write;
-use serde::{Deserialize, Serialize};
 
 // dram memory size, 128MB
 pub const DRAM_SIZE: u64 = 1024 * 1024 * 128;

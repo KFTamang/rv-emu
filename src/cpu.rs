@@ -6,10 +6,9 @@ use crate::interrupt::*;
 
 use log::{debug, info};
 
+use serde::{Deserialize, Serialize};
 use std::cmp;
-// use std::sync::{mpsc, Arc};
 use std::sync::{Arc, Mutex};
-use serde::{Serialize, Deserialize};
 
 const REG_NUM: usize = 32;
 pub const M_MODE: u64 = 0b11;
@@ -64,7 +63,7 @@ impl Cpu {
             regs,
             pc: base_addr,
             bus: Bus::new(binary, base_addr),
-            csr: Csr::new(|_,_| {}),
+            csr: Csr::new(|_, _| {}),
             dest: REG_NUM,
             src1: REG_NUM,
             src2: REG_NUM,
@@ -99,7 +98,7 @@ impl Cpu {
             regs: snapshot.regs,
             pc: snapshot.pc,
             bus: Bus::from_snapshot(snapshot.bus),
-            csr: Csr::new(|_,_| {}),
+            csr: Csr::new(|_, _| {}),
             dest: REG_NUM,
             src1: REG_NUM,
             src2: REG_NUM,
@@ -112,7 +111,7 @@ impl Cpu {
             cycle: snapshot.cycle,
         };
         cpu.clear_reg_marks();
-        cpu.csr = Csr::from_snapshot(snapshot.csr, |_,_| {});
+        cpu.csr = Csr::from_snapshot(snapshot.csr, |_, _| {});
         cpu
     }
 
@@ -1255,11 +1254,7 @@ impl Cpu {
         self.pc
     }
 
-    pub fn set_deferred_interrupt(
-        &mut self,
-        interrupt: Interrupt,
-        deffer_cycle: u64,
-    ) {
+    pub fn set_deferred_interrupt(&mut self, interrupt: Interrupt, deffer_cycle: u64) {
         // Set the deferred interrupt
         let mut interrupt_list = self.interrupt_list.lock().unwrap();
         interrupt_list.push(DelayedInterrupt {
@@ -1273,10 +1268,10 @@ impl Cpu {
         let ready_interrupts: Vec<_> = self
             .interrupt_list
             .lock()
-            .unwrap()   
+            .unwrap()
             .iter()
             .filter(|delayed_interrupt| self.cycle >= delayed_interrupt.cycle)
-            .map(|delayed_interrupt|  &delayed_interrupt.interrupt)
+            .map(|delayed_interrupt| &delayed_interrupt.interrupt)
             .cloned() // Clone the filtered interrupts if necessary
             .collect();
 

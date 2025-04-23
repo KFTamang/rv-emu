@@ -1,7 +1,7 @@
-use log::{Record, Level, Metadata, SetLoggerError};
-use rusqlite::{Connection, params};
-use once_cell::sync::Lazy;
 use chrono::Utc;
+use log::{Level, Metadata, Record, SetLoggerError};
+use once_cell::sync::Lazy;
+use rusqlite::{params, Connection};
 
 // struct SQLiteLogger {
 //     conn: Mutex<Connection>,

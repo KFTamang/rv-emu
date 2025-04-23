@@ -1,8 +1,8 @@
 use crate::cpu::*;
 use crate::csr::*;
 use log::info;
+use serde::{Deserialize, Serialize};
 use std::process::exit;
-use serde::{Serialize, Deserialize};
 
 const INTERRUPT_BIT: u64 = 1 << 63;
 

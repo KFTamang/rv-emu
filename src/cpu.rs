@@ -33,7 +33,6 @@ pub struct CpuSnapshot {
     pub csr: CsrSnapshot,
     pub mode: u64,
     pub cycle: u64,
-    // pub interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
     pub clint: Clint,
 }
 
@@ -49,7 +48,6 @@ pub struct Cpu {
     dump_count: u64,
     dump_interval: u64,
     inst_string: String,
-    pub interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
     pub cycle: u64,
     clint: Clint,
 }
@@ -72,7 +70,6 @@ impl Cpu {
             dump_interval: _dump_count,
             inst_string: String::from(""),
             clint: Clint::new(0x200_0000, 0x10000),
-            interrupt_list: Arc::new(Mutex::new(Vec::new())),
             cycle: 0,
         };
         let csr = Csr::new(cpu.set_deferred_interrupt);
@@ -107,7 +104,6 @@ impl Cpu {
             dump_interval: 0,
             inst_string: String::from(""),
             clint: snapshot.clint,
-            interrupt_list: Arc::new(Mutex::new(Vec::new())),
             cycle: snapshot.cycle,
         };
         cpu.clear_reg_marks();

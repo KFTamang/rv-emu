@@ -34,6 +34,7 @@ pub struct CpuSnapshot {
     pub mode: u64,
     pub cycle: u64,
     pub clint: Clint,
+    pub interrupt_list: Vec<DelayedInterrupt>,
 }
 
 pub struct Cpu {
@@ -50,18 +51,20 @@ pub struct Cpu {
     inst_string: String,
     pub cycle: u64,
     clint: Clint,
+    interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
 }
 
 impl Cpu {
     pub fn new(binary: Vec<u8>, base_addr: u64, _dump_count: u64) -> Self {
         let mut regs = [0; 32];
         regs[2] = DRAM_SIZE;
+        let interrupt_list = Arc::new(Mutex::new(Vec::new()));
 
-        let mut cpu = Self {
+        Self {
             regs,
             pc: base_addr,
             bus: Bus::new(binary, base_addr),
-            csr: Csr::new(|_, _| {}),
+            csr: Csr::new(interrupt_list.clone()),
             dest: REG_NUM,
             src1: REG_NUM,
             src2: REG_NUM,
@@ -71,10 +74,8 @@ impl Cpu {
             inst_string: String::from(""),
             clint: Clint::new(0x200_0000, 0x10000),
             cycle: 0,
-        };
-        let csr = Csr::new(cpu.set_deferred_interrupt);
-        cpu.csr = csr;
-        cpu
+            interrupt_list: interrupt_list,
+        }
     }
 
     pub fn to_snapshot(&self) -> CpuSnapshot {
@@ -85,17 +86,18 @@ impl Cpu {
             csr: self.csr.to_snapshot(),
             mode: self.mode,
             cycle: self.cycle,
-            // interrupt_list: self.interrupt_list.clone(),
             clint: self.clint.clone(),
+            interrupt_list: self.interrupt_list.lock().unwrap().to_vec(),
         }
     }
 
     pub fn from_snapshot(snapshot: CpuSnapshot) -> Self {
+        let interrupt_list = Arc::new(Mutex::new(snapshot.interrupt_list));
         let mut cpu = Self {
             regs: snapshot.regs,
             pc: snapshot.pc,
             bus: Bus::from_snapshot(snapshot.bus),
-            csr: Csr::new(|_, _| {}),
+            csr: Csr::new(interrupt_list.clone()),
             dest: REG_NUM,
             src1: REG_NUM,
             src2: REG_NUM,
@@ -105,9 +107,9 @@ impl Cpu {
             inst_string: String::from(""),
             clint: snapshot.clint,
             cycle: snapshot.cycle,
+            interrupt_list: interrupt_list,
         };
         cpu.clear_reg_marks();
-        cpu.csr = Csr::from_snapshot(snapshot.csr, |_, _| {});
         cpu
     }
 
@@ -1250,14 +1252,14 @@ impl Cpu {
         self.pc
     }
 
-    pub fn set_deferred_interrupt(&mut self, interrupt: Interrupt, deffer_cycle: u64) {
-        // Set the deferred interrupt
-        let mut interrupt_list = self.interrupt_list.lock().unwrap();
-        interrupt_list.push(DelayedInterrupt {
-            interrupt,
-            cycle: self.cycle + deffer_cycle,
-        });
-    }
+    // pub fn set_deferred_interrupt(&mut self, interrupt: Interrupt, deffer_cycle: u64) {
+    //     // Set the deferred interrupt
+    //     let mut interrupt_list = self.interrupt_list.lock().unwrap();
+    //     interrupt_list.push(DelayedInterrupt {
+    //         interrupt,
+    //         deffer_cycle,
+    //     });
+    // }
 
     fn check_and_pend_interrupts(&mut self) {
         // Check for pending interrupts and pend them

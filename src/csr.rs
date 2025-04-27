@@ -3,6 +3,7 @@ use log::{debug, info};
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::sync::{Arc, Mutex};
 
 #[derive(Serialize, Deserialize)]
 pub struct CsrSnapshot {
@@ -12,10 +13,8 @@ pub struct CsrSnapshot {
 
 pub struct Csr {
     csr: [u64; 4096],
-    // timer_thread: Option<std::thread::JoinHandle<()>>,
-    // duration_sender: mpsc::Sender<Option<Duration>>,
     initial_time: u64,
-    set_deferred_interrupt: fn(Interrupt, u64),
+    interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
 }
 
 pub const SSTATUS: usize = 0x100;
@@ -76,10 +75,10 @@ const SSTATUS_MASK: u64 = !(MASK_SXL
 pub const TIMER_FREQ: u64 = 100000000; // 100 MHz
 
 impl Csr {
-    pub fn new(_set_deffered_interrupt: fn(Interrupt, u64)) -> Self {
+    pub fn new(interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>) -> Self {
         Self {
             csr: [0; 4096],
-            set_deferred_interrupt: _set_deffered_interrupt,
+            interrupt_list,
             initial_time: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -93,11 +92,11 @@ impl Csr {
 
     pub fn from_snapshot(
         snapshot: CsrSnapshot,
-        set_deferred_interrupt: fn(Interrupt, u64),
+        interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>
     ) -> Self {
         Self {
             csr: snapshot.csr,
-            set_deferred_interrupt,
+            interrupt_list,
             initial_time: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -172,10 +171,11 @@ impl Csr {
         );
         if comptime_ms >= time {
             let duration = Duration::from_millis(comptime_ms - time);
-            (self.set_deferred_interrupt)(
-                Interrupt::SupervisorTimerInterrupt,
-                TIMER_FREQ * duration.as_millis() as u64 / 1000,
-            );
+            let mut interrupt_list = self.interrupt_list.lock().unwrap();
+            interrupt_list.push(DelayedInterrupt{
+                interrupt: Interrupt::SupervisorTimerInterrupt,
+                cycle: TIMER_FREQ * duration.as_millis() as u64 / 1000,
+        }            );
             info!(
                 "set_timer_interrupt: send timer interrupt duration {} ms",
                 comptime_ms - time

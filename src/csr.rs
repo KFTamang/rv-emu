@@ -165,20 +165,22 @@ impl Csr {
     fn set_timer_interrupt(&self, comp_value: u64) {
         let time = self.get_time_ms();
         let comptime_ms = 1000 * comp_value / TIMER_FREQ;
-        debug!(
+        info!(
             "set_timer_interrupt: compvalue_ms:{}, current_time:{}",
             comptime_ms, time
         );
         if comptime_ms >= time {
             let duration = Duration::from_millis(comptime_ms - time);
+            let cycle_value = TIMER_FREQ * duration.as_millis() as u64 / 1000;
             let mut interrupt_list = self.interrupt_list.lock().unwrap();
             interrupt_list.push(DelayedInterrupt{
                 interrupt: Interrupt::SupervisorTimerInterrupt,
-                cycle: TIMER_FREQ * duration.as_millis() as u64 / 1000,
-        }            );
+                cycle: cycle_value,
+            });
             info!(
-                "set_timer_interrupt: send timer interrupt duration {} ms",
-                comptime_ms - time
+                "set_timer_interrupt: send timer interrupt duration {} ms, cycle_value {}",
+                comptime_ms - time,
+                cycle_value
             );
         }
     }

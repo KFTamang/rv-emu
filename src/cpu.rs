@@ -2,6 +2,7 @@ use crate::bus::*;
 use crate::clint::*;
 use crate::csr::*;
 use crate::dram::*;
+use crate::interrupt;
 use crate::interrupt::*;
 
 use log::{debug, info};
@@ -1262,19 +1263,23 @@ impl Cpu {
     // }
 
     fn check_and_pend_interrupts(&mut self) {
-        // Check for pending interrupts and pend them
-        let ready_interrupts: Vec<_> = self
+        let mut interrupt_list: Vec<_> = self
             .interrupt_list
             .lock()
             .unwrap()
-            .iter()
-            .filter(|delayed_interrupt| self.cycle >= delayed_interrupt.cycle)
-            .map(|delayed_interrupt| &delayed_interrupt.interrupt)
-            .cloned() // Clone the filtered interrupts if necessary
-            .collect();
+            .to_vec();
 
-        for interrupt in ready_interrupts {
-            self.set_pending_interrupt(interrupt);
+        // Pend interrupts with cycle == 0 and add them to the pending list
+        interrupt_list.retain(|delayed_interrupt| 
+            if delayed_interrupt.cycle > 0 {
+                true
+            } else {
+                self.set_pending_interrupt(delayed_interrupt.interrupt);
+                false
+            }
+        );
+        for delayed_interrupt in interrupt_list.iter_mut() {
+            delayed_interrupt.cycle -= 1;
         }
     }
 }

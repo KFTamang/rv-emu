@@ -1263,23 +1263,33 @@ impl Cpu {
     // }
 
     fn check_and_pend_interrupts(&mut self) {
-        let mut interrupt_list: Vec<_> = self
+        let mut interrupt_list_vec = self
             .interrupt_list
             .lock()
-            .unwrap()
-            .to_vec();
+            .unwrap();
 
         // Pend interrupts with cycle == 0 and add them to the pending list
-        interrupt_list.retain(|delayed_interrupt| 
+        let mut to_pend = Vec::new();
+        interrupt_list_vec.retain(|delayed_interrupt| {
             if delayed_interrupt.cycle > 0 {
                 true
             } else {
-                self.set_pending_interrupt(delayed_interrupt.interrupt);
+                to_pend.push(delayed_interrupt.interrupt);
                 false
             }
-        );
-        for delayed_interrupt in interrupt_list.iter_mut() {
+        });
+
+        for delayed_interrupt in interrupt_list_vec.iter_mut() {
+            debug!("Delayed Interrupt: {:?} ", delayed_interrupt);
             delayed_interrupt.cycle -= 1;
         }
+
+        drop(interrupt_list_vec); // Release the lock before calling self methods
+
+        for interrupt in to_pend {
+            info!("Pend Interrupt: {:?} ", interrupt);
+            self.set_pending_interrupt(interrupt);
+        }
+        
     }
 }

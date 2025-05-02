@@ -303,12 +303,9 @@ impl Cpu {
             self.csr.store_csrs(SIP, new_xip);
         };
 
-        info!(
-            "Interrupt {:?} is set, xIP: {:b}, xIE: {:0b}",
-            interrupt,
-            new_xip,
-            self.csr.load_csrs(MIE)
-        );
+        info!("Interrupt {:?} is set", interrupt);
+        info!("xIP: {:0b}", new_xip);
+        info!("xIE: {:0b}", self.csr.load_csrs(MIE));
     }
 
     // get the takable pending interrupt with the highest priority

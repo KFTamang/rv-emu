@@ -2,8 +2,8 @@ use crate::interrupt::*;
 use log::{debug, info};
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Serialize, Deserialize)]
 pub struct CsrSnapshot {
@@ -92,7 +92,7 @@ impl Csr {
 
     pub fn from_snapshot(
         snapshot: CsrSnapshot,
-        interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>
+        interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
     ) -> Self {
         Self {
             csr: snapshot.csr,
@@ -173,7 +173,7 @@ impl Csr {
             let duration = Duration::from_millis(comptime_ms - time);
             let cycle_value = TIMER_FREQ * duration.as_millis() as u64 / 1000;
             let mut interrupt_list = self.interrupt_list.lock().unwrap();
-            interrupt_list.push(DelayedInterrupt{
+            interrupt_list.push(DelayedInterrupt {
                 interrupt: Interrupt::SupervisorTimerInterrupt,
                 cycle: cycle_value,
             });

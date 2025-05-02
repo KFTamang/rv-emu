@@ -1250,20 +1250,8 @@ impl Cpu {
         self.pc
     }
 
-    // pub fn set_deferred_interrupt(&mut self, interrupt: Interrupt, deffer_cycle: u64) {
-    //     // Set the deferred interrupt
-    //     let mut interrupt_list = self.interrupt_list.lock().unwrap();
-    //     interrupt_list.push(DelayedInterrupt {
-    //         interrupt,
-    //         deffer_cycle,
-    //     });
-    // }
-
     fn check_and_pend_interrupts(&mut self) {
-        let mut interrupt_list_vec = self
-            .interrupt_list
-            .lock()
-            .unwrap();
+        let mut interrupt_list_vec = self.interrupt_list.lock().unwrap();
 
         // Pend interrupts with cycle == 0 and add them to the pending list
         let mut to_pend = Vec::new();
@@ -1287,6 +1275,5 @@ impl Cpu {
             info!("Pend Interrupt: {:?} ", interrupt);
             self.set_pending_interrupt(interrupt);
         }
-        
     }
 }

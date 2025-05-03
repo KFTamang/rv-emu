@@ -97,7 +97,7 @@ impl Cpu {
             regs: snapshot.regs,
             pc: snapshot.pc,
             bus: Bus::from_snapshot(snapshot.bus),
-            csr: Csr::new(interrupt_list.clone()),
+            csr: Csr::from_snapshot(snapshot.csr, interrupt_list.clone()),
             dest: REG_NUM,
             src1: REG_NUM,
             src2: REG_NUM,

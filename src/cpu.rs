@@ -2,7 +2,6 @@ use crate::bus::*;
 use crate::clint::*;
 use crate::csr::*;
 use crate::dram::*;
-use crate::interrupt;
 use crate::interrupt::*;
 
 use log::{debug, info};

@@ -1,6 +1,6 @@
 use crate::cpu::*;
 use crate::csr::*;
-use log::info;
+use log::{debug, info};
 use serde::{Deserialize, Serialize};
 use std::process::exit;
 
@@ -117,6 +117,10 @@ impl Interrupt {
             S_MODE
         };
 
+        debug!("mideleg is 0x{:x}", mideleg);
+        debug!("bit_i is 0x{:x}", bit_i);
+        debug!("destined_mode is 0x{:x}", destined_mode);
+
         match destined_mode {
             M_MODE => {
                 let mstatus = cpu.csr.load_csrs(MSTATUS);
@@ -131,6 +135,7 @@ impl Interrupt {
             }
             S_MODE => {
                 let sstatus = cpu.csr.load_csrs(SSTATUS);
+                debug!("sstatus is 0x{:x}", sstatus);
                 if !(((cpu.mode == S_MODE) && (sstatus & MASK_SIE != 0)) || (cpu.mode < S_MODE)) {
                     return Err(());
                 }

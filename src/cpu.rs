@@ -4,7 +4,7 @@ use crate::csr::*;
 use crate::dram::*;
 use crate::interrupt::*;
 
-use log::{debug, info};
+use log::{debug, info, error};
 
 use serde::{Deserialize, Serialize};
 use std::cmp;
@@ -1175,7 +1175,7 @@ impl Cpu {
         }
     }
 
-    pub fn dump_registers(&mut self) {
+    pub fn dump_registers(&mut self) -> String {
         let abi = [
             "zero", " ra ", " sp ", " gp ", " tp ", " t0 ", " t1 ", " t2 ", " s0 ", " s1 ", " a0 ",
             " a1 ", " a2 ", " a3 ", " a4 ", " a5 ", " a6 ", " a7 ", " s2 ", " s3 ", " s4 ", " s5 ",
@@ -1210,8 +1210,7 @@ impl Cpu {
                 )
             )
         }
-        info!("{}", output);
-        info!("----\n");
+        output
     }
 
     pub fn step_run(&mut self) -> u64 {
@@ -1231,9 +1230,16 @@ impl Cpu {
             Err(_) => return 0x0,
         };
 
-        self.execute(inst as u32)
-            .map_err(|mut e| e.take_trap(self))
-            .expect("Execution failed!\n");
+        let result = self.execute(inst as u32)
+            .map_err(|mut e| e.take_trap(self));
+        if let Err(e) = result {
+            error!("Execution failed!");
+            error!("Exception: {:?}", e);
+            error!("pc=0x{:x}", self.pc);
+            error!("inst:{:b}", inst);
+            error!("{}", self.dump_registers());
+            error!("{}", self.csr.dump());
+        }
         self.regs[0] = 0;
 
         self.pc = self.pc.wrapping_add(4);
@@ -1246,7 +1252,7 @@ impl Cpu {
         }
 
         if self.pc == 0 {
-            self.dump_registers();
+            info!("{}", self.dump_registers());
             info!("Program finished!");
             std::process::exit(0);
         }

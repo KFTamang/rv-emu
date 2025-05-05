@@ -1,6 +1,6 @@
 use crate::cpu::*;
 use crate::csr::*;
-use log::{debug, info};
+use log::{debug, info, error};
 use serde::{Deserialize, Serialize};
 use std::process::exit;
 
@@ -225,7 +225,7 @@ impl Exception {
                     }
                     0x1 => {}
                     _ => {
-                        info!("Exception Error, this should not be reached!");
+                        error!("Exception Error, this should not be reached!");
                         exit(1);
                     }
                 }
@@ -248,7 +248,7 @@ impl Exception {
                     }
                     0x1 => {}
                     _ => {
-                        info!("Exception Error, this should not be reached!");
+                        error!("Exception Error, this should not be reached!");
                         exit(1);
                     }
                 }

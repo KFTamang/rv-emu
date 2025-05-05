@@ -115,7 +115,7 @@ impl Csr {
     }
 
     pub fn store_csrs(&mut self, addr: usize, val: u64) {
-        debug!("store: addr:{:#x}, val:{:#x}", addr, val);
+        info!("store: addr:{:#x}, val:{:#x}", addr, val);
         match addr {
             SSTATUS => {
                 self.csr[MSTATUS] = val & SSTATUS_MASK;

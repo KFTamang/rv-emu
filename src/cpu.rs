@@ -305,6 +305,7 @@ impl Cpu {
         info!("Interrupt {:?} is set", interrupt);
         info!("xIP: {:0b}", new_xip);
         info!("xIE: {:0b}", self.csr.load_csrs(MIE));
+        info!("{}", self.csr.dump());
     }
 
     // get the takable pending interrupt with the highest priority
@@ -393,6 +394,9 @@ impl Cpu {
                 panic!("m/sret from U_MODE\n");
             }
         }
+        info!("return from trap");
+        info!("csr dump");
+        info!("{}", self.csr.dump());
     }
 
     pub fn execute(&mut self, inst: u32) -> Result<(), Exception> {

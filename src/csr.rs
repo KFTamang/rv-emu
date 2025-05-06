@@ -22,6 +22,7 @@ pub const SIE: usize = 0x104;
 pub const STVEC: usize = 0x105;
 pub const SEPC: usize = 0x141;
 pub const SCAUSE: usize = 0x142;
+pub const STVAL: usize = 0x143;
 pub const SIP: usize = 0x144;
 // Sstc extension for supervisor timer registers
 pub const STIMECMP: usize = 0x14D;
@@ -35,6 +36,7 @@ pub const MIE: usize = 0x304;
 pub const MTVEC: usize = 0x305;
 pub const MEPC: usize = 0x341;
 pub const MCAUSE: usize = 0x342;
+pub const MTVAL: usize = 0x343;
 pub const MIP: usize = 0x344;
 
 pub const TIME: usize = 0xc01;

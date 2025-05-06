@@ -258,13 +258,22 @@ impl Cpu {
                 let _u = bit(pte, 4);
                 let _g = bit(pte, 5);
                 if (v == 0) || ((r == 0) && (w == 1)) {
-                    return Err(Exception::LoadPageFault(va as u32));
+                    return match acc_mode {
+                        AccessMode::Load => Err(Exception::LoadPageFault(va as u32)),
+                        AccessMode::Store => Err(Exception::StoreAMOPageFault(va as u32)),
+                    };
                 }
                 if (r == 1) || (x == 1) {
                     break;
                 }
                 ppn = (pte >> 10) & 0xfff_ffff_ffff;
                 i = i - 1;
+                if i < 0 {
+                    return match acc_mode {
+                        AccessMode::Load => Err(Exception::LoadPageFault(va as u32)),
+                        AccessMode::Store => Err(Exception::StoreAMOPageFault(va as u32)),
+                    };
+                }
             } else {
                 return Err(Exception::LoadPageFault(va as u32));
             }

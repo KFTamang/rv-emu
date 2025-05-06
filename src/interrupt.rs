@@ -206,6 +206,12 @@ impl Exception {
     pub fn take_trap(&mut self, cpu: &mut Cpu) {
         let exception_code = self.code();
         let target_mode = self.get_target_mode(cpu);
+        let xtval = match self {
+            Exception::InstructionPageFault(v) => *v,
+            Exception::LoadPageFault(v) => *v,
+            Exception::StoreAMOPageFault(v) => *v,
+            _ => 0,
+        } as u64;
         match target_mode {
             M_MODE => {
                 cpu.csr.store_csrs(MEPC, cpu.pc);
@@ -215,6 +221,7 @@ impl Exception {
                 cpu.csr
                     .set_mstatus_bit(if mie > 0 { 1 } else { 0 }, MASK_MPIE, BIT_MPIE);
                 cpu.csr.set_mstatus_bit(0, MASK_MIE, MASK_MIE);
+                cpu.csr.store_csrs(MTVAL, xtval);
 
                 let mtvec = cpu.csr.load_csrs(MTVEC);
                 info!("mtvec is {}\n", mtvec);
@@ -238,6 +245,7 @@ impl Exception {
                 cpu.csr
                     .set_sstatus_bit(if sie > 0 { 1 } else { 0 }, MASK_SPIE, BIT_SPIE);
                 cpu.csr.set_sstatus_bit(0, MASK_SIE, BIT_SIE);
+                cpu.csr.store_csrs(STVAL, xtval);
 
                 let stvec = cpu.csr.load_csrs(STVEC);
                 info!("stvec is 0x{:x}", stvec);

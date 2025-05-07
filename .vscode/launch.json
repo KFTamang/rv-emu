@@ -31,6 +31,42 @@
                 "log/output_kernel.log"
             ],
             "cwd": "${workspaceFolder}",
+            "env": {
+                "RUST_LOG": "info"
+            },
+            "initCommands": [
+                "settings set target.disable-aslr false"
+            ]
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "XV6 snapshot",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=rv-emu",
+                    "--package=rv-emu"
+                ],
+                "filter": {
+                    "name": "rv-emu",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "apps/xv6-riscv/kernel/kernel",
+                "--elf",
+                "--base-addr",
+                "2147483648",
+                "--loop-on",
+                "-c",
+                "100000",
+                "-o",
+                "log/output_kernel.log",
+                "--snapshot",
+                "log/snapshot_1000000.bin"
+            ],
+            "cwd": "${workspaceFolder}",
             "initCommands": [
                 "settings set target.disable-aslr false"
             ]

@@ -331,7 +331,7 @@ impl Cpu {
         for interrupt in Interrupt::PRIORITY_ORDER.iter() {
             if let Ok(destined_mode) = interrupt.get_trap_mode(self) {
                 info!(
-                    "interrupt: {:?}, destined mode{}, current mode: {}",
+                    "interrupt: {:?}, destined mode: {}, current mode: {}",
                     interrupt, destined_mode, self.mode
                 );
                 if destined_mode >= self.mode {

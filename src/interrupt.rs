@@ -40,12 +40,12 @@ impl Interrupt {
         INTERRUPT_BIT | (1 << self.code())
     }
     pub fn take_trap(&mut self, cpu: &mut Cpu) {
-        let exception_code = self.bit_code();
+        let cause = INTERRUPT_BIT | self.code();
         let target_mode = self.get_trap_mode(cpu);
         match target_mode {
             Ok(M_MODE) => {
                 cpu.csr.store_csrs(MEPC, cpu.pc);
-                cpu.csr.store_csrs(MCAUSE, exception_code);
+                cpu.csr.store_csrs(MCAUSE, cause);
                 cpu.csr.set_mstatus_bit(cpu.mode, MASK_MPP, BIT_MPP);
                 let mie = MASK_MIE & cpu.csr.load_csrs(MSTATUS);
                 cpu.csr
@@ -71,7 +71,7 @@ impl Interrupt {
             }
             Ok(S_MODE) => {
                 cpu.csr.store_csrs(SEPC, cpu.pc);
-                cpu.csr.store_csrs(SCAUSE, exception_code);
+                cpu.csr.store_csrs(SCAUSE, cause);
                 cpu.csr.set_sstatus_bit(cpu.mode, MASK_SPP, BIT_SPP);
                 let sie = MASK_SIE & cpu.csr.load_csrs(SSTATUS);
                 cpu.csr
@@ -214,7 +214,7 @@ impl Exception {
     }
 
     pub fn take_trap(&mut self, cpu: &mut Cpu) {
-        let exception_code = self.code();
+        let cause = self.code();
         let target_mode = self.get_target_mode(cpu);
         let xtval = match self {
             Exception::InstructionPageFault(v) => *v,
@@ -225,7 +225,7 @@ impl Exception {
         match target_mode {
             M_MODE => {
                 cpu.csr.store_csrs(MEPC, cpu.pc);
-                cpu.csr.store_csrs(MCAUSE, exception_code);
+                cpu.csr.store_csrs(MCAUSE, cause);
                 cpu.csr.set_mstatus_bit(cpu.mode, MASK_MPP, BIT_MPP);
                 let mie = MASK_MIE & cpu.csr.load_csrs(MSTATUS);
                 cpu.csr
@@ -249,7 +249,7 @@ impl Exception {
             }
             S_MODE => {
                 cpu.csr.store_csrs(SEPC, cpu.pc);
-                cpu.csr.store_csrs(SCAUSE, exception_code);
+                cpu.csr.store_csrs(SCAUSE, cause);
                 cpu.csr.set_sstatus_bit(cpu.mode, MASK_SPP, BIT_SPP);
                 let sie = MASK_SIE & cpu.csr.load_csrs(SSTATUS);
                 cpu.csr

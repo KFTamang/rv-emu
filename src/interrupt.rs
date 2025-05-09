@@ -64,7 +64,7 @@ impl Interrupt {
                     }
                     0x1 => {}
                     _ => {
-                        info!("Exception Error, this should not be reached!");
+                        info!("Interrupt Error, this should not be reached!");
                         exit(1);
                     }
                 }
@@ -90,14 +90,14 @@ impl Interrupt {
                     }
                     0x1 => {}
                     _ => {
-                        info!("Exception Error, this should not be reached!");
+                        info!("Interrupt Error, this should not be reached!");
                         exit(1);
                     }
                 }
             }
             _ => {}
         }
-        info!("Exception:{:?} occurred!", self);
+        info!("Interrupt:{:?} occurred!", self);
     }
     pub fn get_trap_mode(&self, cpu: &mut Cpu) -> Result<u64, ()> {
         // An interrupt i will be taken

@@ -122,35 +122,44 @@ impl Interrupt {
         debug!("bit_i is 0x{:x}", bit_i);
         debug!("destined_mode is 0x{:x}", destined_mode);
 
+        let current_mode = cpu.mode;
         match destined_mode {
             M_MODE => {
-                let mstatus = cpu.csr.load_csrs(MSTATUS);
-                if !(((cpu.mode == M_MODE) && (mstatus & MASK_MIE != 0)) || (cpu.mode < M_MODE)) {
-                    return Err(());
-                }
                 let mip = cpu.csr.load_csrs(MIP);
                 let mie = cpu.csr.load_csrs(MIE);
-                if !((mie & bit_i != 0) && (mip & bit_i != 0)) {
+                let mstatus = cpu.csr.load_csrs(MSTATUS);
+                if (mip & mie & bit_i) == 0 {
                     return Err(());
                 }
+                if current_mode < M_MODE {
+                    return Ok(M_MODE);
+                }
+                if mstatus & MASK_MIE != 0 {
+                    return Ok(M_MODE);
+                }
+                return Err(());
             }
             S_MODE => {
-                let sstatus = cpu.csr.load_csrs(SSTATUS);
-                debug!("sstatus is 0x{:x}", sstatus);
-                if !(((cpu.mode == S_MODE) && (sstatus & MASK_SIE != 0)) || (cpu.mode < S_MODE)) {
-                    return Err(());
-                }
                 let sip = cpu.csr.load_csrs(SIP);
                 let sie = cpu.csr.load_csrs(SIE);
-                if !((sie & bit_i != 0) && (sip & bit_i != 0)) {
+                let sstatus = cpu.csr.load_csrs(SSTATUS);
+
+                if current_mode == M_MODE {
                     return Err(());
                 }
+                if (sip & sie & bit_i) == 0 {
+                    return Err(());
+                }
+                debug!("sstatus is 0x{:x}", sstatus);
+                if (sstatus & MASK_SIE) != 0 {
+                    return Ok(S_MODE);
+                }
+                return Err(());
             }
             _ => {
                 return Err(());
             }
         }
-        Ok(destined_mode)
     }
 }
 

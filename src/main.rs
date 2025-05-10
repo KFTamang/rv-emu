@@ -70,7 +70,7 @@ fn main() -> io::Result<()> {
 
     let mut emu = if cli.snapshot.is_some() {
         let path = cli.snapshot.unwrap();
-        Emu::from_snapshot(path).unwrap()
+        Emu::load_snapshot(path).unwrap()
     } else {
         let mut emu = Emu::new(code, base_addr, reg_dump_count as u64);
         emu.set_entry_point(entry_address);

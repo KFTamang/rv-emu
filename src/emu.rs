@@ -3,6 +3,7 @@ use bincode;
 use log::info;
 use std::fs::File;
 use std::io::{Read, Write};
+use serde::{Serialize, Deserialize};
 
 pub enum ExecMode {
     Step,
@@ -25,6 +26,12 @@ pub struct Emu {
     pub breakpoints: Vec<u64>,
     pub exec_mode: ExecMode,
     pub cpu: Cpu,
+    pub cycle: u64,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct EmuSnapshot {
+    pub cpu: CpuSnapshot,
     pub cycle: u64,
 }
 
@@ -88,19 +95,36 @@ impl Emu {
         self.cpu.pc = entry_addr;
     }
 
+    pub fn to_snapshot(&self) -> EmuSnapshot {
+        EmuSnapshot {
+            cpu: self.cpu.to_snapshot(),
+            cycle: self.cycle,
+        }
+    }
+
+    pub fn from_snapshot(snapshot: EmuSnapshot) -> Self {
+        let cpu = Cpu::from_snapshot(snapshot.cpu);
+        Self {
+            breakpoints: vec![0; 32 as usize],
+            exec_mode: ExecMode::Continue,
+            cpu: cpu,
+            cycle: snapshot.cycle,
+        }
+    }
+
     pub fn save_snapshot(&self, path: std::path::PathBuf) {
         let config = bincode::config::standard()
             .with_little_endian()
             .with_fixed_int_encoding();
         let mut file = File::create(path).expect("Unable to create file");
-        let snapshot = self.cpu.to_snapshot();
+        let snapshot = self.to_snapshot();
         let data =
             bincode::serde::encode_to_vec(snapshot, config).expect("Unable to serialize snapshot");
         file.write_all(&data).expect("Unable to write data");
         // info!("Snapshot saved to {}", path);
     }
 
-    pub fn from_snapshot(path: std::path::PathBuf) -> Result<Emu, std::io::Error> {
+    pub fn load_snapshot(path: std::path::PathBuf) -> Result<Emu, std::io::Error> {
         let config = bincode::config::standard()
             .with_little_endian()
             .with_fixed_int_encoding();
@@ -108,16 +132,10 @@ impl Emu {
         let mut data = Vec::new();
         file.read_to_end(&mut data)
             .expect("Unable to read snapshot data");
-        let snapshot: CpuSnapshot = bincode::serde::decode_from_slice(&data, config)
+        let snapshot: EmuSnapshot = bincode::serde::decode_from_slice(&data, config)
             .expect("Unable to deserialize snapshot")
             .0;
-        let cpu = Cpu::from_snapshot(snapshot);
-        info!("Snapshot loaded from {}", path.display());
-        Ok(Self {
-            breakpoints: vec![0; 32 as usize],
-            exec_mode: ExecMode::Continue,
-            cpu: cpu,
-            cycle: 0,
-        })
+        let emu = Emu::from_snapshot(snapshot);
+        Ok(emu)
     }
 }

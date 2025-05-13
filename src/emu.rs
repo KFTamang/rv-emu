@@ -27,6 +27,7 @@ pub struct Emu {
     pub exec_mode: ExecMode,
     pub cpu: Cpu,
     pub cycle: u64,
+    pub snapshot_interval: u64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -36,12 +37,13 @@ pub struct EmuSnapshot {
 }
 
 impl Emu {
-    pub fn new(binary: Vec<u8>, base_addr: u64, _dump_count: u64) -> Self {
+    pub fn new(binary: Vec<u8>, base_addr: u64, _dump_count: u64, _snapshot_interval: u64) -> Self {
         Self {
             breakpoints: vec![0; 32 as usize],
             exec_mode: ExecMode::Continue,
             cpu: Cpu::new(binary, base_addr, _dump_count as u64),
             cycle: 0,
+            snapshot_interval: _snapshot_interval,
         }
     }
 
@@ -50,7 +52,7 @@ impl Emu {
         let pc = self.cpu.step_run();
 
         self.cycle += 1;
-        if self.cycle % 100000000 == 0 {
+        if self.cycle % self.snapshot_interval == 0 {
             let path = std::path::PathBuf::from(format!("log/snapshot_{}.bin", self.cycle));
             self.save_snapshot(path.clone());
             info!("Snapshot saved to {}", path.clone().display());
@@ -81,7 +83,7 @@ impl Emu {
                         break RunEvent::Event(event);
                     };
 
-                    if cycles % 1000000 == 0 {
+                    if cycles % self.snapshot_interval == 0 {
                         let path = std::path::PathBuf::from(format!("log/snapshot_{}.bin", cycles));
                         self.save_snapshot(path.clone());
                         info!("Snapshot saved to {}", path.clone().display());
@@ -109,6 +111,7 @@ impl Emu {
             exec_mode: ExecMode::Continue,
             cpu: cpu,
             cycle: snapshot.cycle,
+            snapshot_interval: 100000000,
         }
     }
 

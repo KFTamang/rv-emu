@@ -47,6 +47,8 @@ struct Cli {
     gdb: bool,
     #[clap(long)]
     snapshot: Option<std::path::PathBuf>,
+    #[clap(long, default_value_t = 100000000)]
+    snapshot_interval: u64,
 }
 
 fn main() -> io::Result<()> {
@@ -70,9 +72,11 @@ fn main() -> io::Result<()> {
 
     let mut emu = if cli.snapshot.is_some() {
         let path = cli.snapshot.unwrap();
-        Emu::load_snapshot(path).unwrap()
+        let mut emu = Emu::load_snapshot(path).unwrap();
+        emu.snapshot_interval = cli.snapshot_interval;
+        emu
     } else {
-        let mut emu = Emu::new(code, base_addr, reg_dump_count as u64);
+        let mut emu = Emu::new(code, base_addr, reg_dump_count as u64, cli.snapshot_interval);
         emu.set_entry_point(entry_address);
         emu
     };

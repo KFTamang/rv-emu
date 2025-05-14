@@ -234,8 +234,8 @@ impl Exception {
                 cpu.csr.store_csrs(MTVAL, xtval);
 
                 let mtvec = cpu.csr.load_csrs(MTVEC);
-                info!("mtvec is {}\n", mtvec);
-                info!("enter M mode\n");
+                info!("mtvec is 0x{:x}", mtvec);
+                info!("enter M mode");
                 match mtvec & 0x3 {
                     0x0 => {
                         cpu.pc = (mtvec & 0xfffffffc).wrapping_sub(4);

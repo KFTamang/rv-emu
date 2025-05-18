@@ -147,11 +147,17 @@ impl Breakpoints for Emu {
 
 impl SwBreakpoint for Emu {
     fn add_sw_breakpoint(&mut self, _addr: u64, _kind: usize) -> TargetResult<bool, Self> {
-        todo!()
+        self.breakpoints.push(_addr);
+        Ok(true)
     }
 
     fn remove_sw_breakpoint(&mut self, _addr: u64, _kind: usize) -> TargetResult<bool, Self> {
-        todo!()
+        match self.breakpoints.iter().position(|x| *x == _addr) {
+            None => return Ok(false),
+            Some(pos) => self.breakpoints.remove(pos),
+        };
+
+        Ok(true)
     }
 }
 

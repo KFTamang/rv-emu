@@ -86,7 +86,7 @@ impl Interrupt {
                 info!("enter S mode");
                 match stvec & 0x3 {
                     0x0 => {
-                        cpu.pc = (stvec & 0xfffffffc);
+                        cpu.pc = stvec & 0xfffffffc;
                     }
                     0x1 => {}
                     _ => {

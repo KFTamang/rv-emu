@@ -129,3 +129,10 @@ WSLだとディスクIOが遅くてログが使いにくい。
 
 # 2025/05/13
 どうもexceptionのときstvec-4のアドレスにジャンプしているように見える。
+
+# 2025/05/18
+パフォーマンスプロファイルのためにperfとflamegraphを導入した。
+echo 0 | sudo tee /proc/sys/kernel/perf_event_paranoid
+を設定した。
+実行コマンド：`cargo flamegraph --  apps/xv6-riscv/kernel/kernel --elf --base-addr 2147483648 --loop-on -c 100000`
+`rv_emu::interrupt::Interrupt::get_trap_mode` と `rv_emu::csr::Csr::load_csrs` がかなりの時間を占めている。

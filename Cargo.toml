@@ -21,3 +21,6 @@ serde-big-array = "=0.5.1"
 [profile.release-with-debug]
 inherits = "release"
 debug = true
+
+[profile.release]
+debug = 1

@@ -6,3 +6,5 @@ Cargo.lock
 .bash_history
 log/*
 venv/*
+flamegraph.svg
+perf.data*

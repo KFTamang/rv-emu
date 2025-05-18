@@ -328,6 +328,22 @@ impl Cpu {
         // (c)If bit i in mideleg is set, however, interrupts are considered to be globally enabled
         // if the hart’s current privilege mode equals the delegated privilege mode and that mode’s interrupt enable bit (xIE in mstatus for mode x) is set,
         // or if the current privilege mode is less than the delegated privilege mode.
+
+        // early return if no interrupt is set
+        let xip = if self.mode == M_MODE {
+            self.csr.load_csrs(MIP)
+        } else {
+            self.csr.load_csrs(SIP)
+        };
+        let xie = if self.mode == M_MODE {
+            self.csr.load_csrs(MIE)
+        } else {
+            self.csr.load_csrs(SIE)
+        };
+        if xip & xie == 0 {
+            return None;
+        }
+
         for interrupt in Interrupt::PRIORITY_ORDER.iter() {
             if let Ok(destined_mode) = interrupt.get_trap_mode(self) {
                 info!(

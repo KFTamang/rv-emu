@@ -6,7 +6,6 @@ mod debugger;
 mod dram;
 mod emu;
 mod interrupt;
-mod logger;
 mod plic;
 mod uart;
 mod virtio;

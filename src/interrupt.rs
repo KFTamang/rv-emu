@@ -53,18 +53,18 @@ impl Interrupt {
                 cpu.csr.set_mstatus_bit(0, MASK_MIE, MASK_MIE);
 
                 let mtvec = cpu.csr.load_csrs(MTVEC);
-                info!("MEPC is 0x{:x}", cpu.csr.load_csrs(MEPC));
-                info!("MCAUSE is 0x{:x}", cpu.csr.load_csrs(MCAUSE));
-                info!("MSTATUS is 0x{:x}", cpu.csr.load_csrs(MSTATUS));
-                info!("MTVEC is 0x{:x}", mtvec);
-                info!("enter M mode");
+                debug!("MEPC is 0x{:x}", cpu.csr.load_csrs(MEPC));
+                debug!("MCAUSE is 0x{:x}", cpu.csr.load_csrs(MCAUSE));
+                debug!("MSTATUS is 0x{:x}", cpu.csr.load_csrs(MSTATUS));
+                debug!("MTVEC is 0x{:x}", mtvec);
+                debug!("enter M mode");
                 match mtvec & 0x3 {
                     0x0 => {
                         cpu.pc = (mtvec & 0xfffffffc).wrapping_sub(4);
                     }
                     0x1 => {}
                     _ => {
-                        info!("Interrupt Error, this should not be reached!");
+                        error!("Interrupt Error, this should not be reached!");
                         exit(1);
                     }
                 }
@@ -79,25 +79,25 @@ impl Interrupt {
                 cpu.csr.set_sstatus_bit(0, MASK_SIE, BIT_SIE);
 
                 let stvec = cpu.csr.load_csrs(STVEC);
-                info!("SEPC is 0x{:x}", cpu.csr.load_csrs(SEPC));
-                info!("SCAUSE is 0x{:x}", cpu.csr.load_csrs(SCAUSE));
-                info!("SSTATUS is 0x{:x}", cpu.csr.load_csrs(SSTATUS));
-                info!("STVEC is 0x{:x}", stvec);
-                info!("enter S mode");
+                debug!("SEPC is 0x{:x}", cpu.csr.load_csrs(SEPC));
+                debug!("SCAUSE is 0x{:x}", cpu.csr.load_csrs(SCAUSE));
+                debug!("SSTATUS is 0x{:x}", cpu.csr.load_csrs(SSTATUS));
+                debug!("STVEC is 0x{:x}", stvec);
+                debug!("enter S mode");
                 match stvec & 0x3 {
                     0x0 => {
                         cpu.pc = stvec & 0xfffffffc;
                     }
                     0x1 => {}
                     _ => {
-                        info!("Interrupt Error, this should not be reached!");
+                        error!("Interrupt Error, this should not be reached!");
                         exit(1);
                     }
                 }
             }
             _ => {}
         }
-        info!("Interrupt:{:?} occurred!", self);
+        debug!("Interrupt:{:?} occurred!", self);
     }
     pub fn get_trap_mode(&self, cpu: &mut Cpu) -> Result<u64, ()> {
         // An interrupt i will be taken
@@ -234,8 +234,8 @@ impl Exception {
                 cpu.csr.store_csrs(MTVAL, xtval);
 
                 let mtvec = cpu.csr.load_csrs(MTVEC);
-                info!("mtvec is 0x{:x}", mtvec);
-                info!("enter M mode");
+                debug!("mtvec is 0x{:x}", mtvec);
+                debug!("enter M mode");
                 match mtvec & 0x3 {
                     0x0 => {
                         cpu.pc = (mtvec & 0xfffffffc).wrapping_sub(4);
@@ -258,8 +258,8 @@ impl Exception {
                 cpu.csr.store_csrs(STVAL, xtval);
 
                 let stvec = cpu.csr.load_csrs(STVEC);
-                info!("stvec is 0x{:x}", stvec);
-                info!("enter S mode");
+                debug!("stvec is 0x{:x}", stvec);
+                debug!("enter S mode");
                 match stvec & 0x3 {
                     0x0 => {
                         cpu.pc = (stvec & 0xfffffffc).wrapping_sub(4);

@@ -311,10 +311,10 @@ impl Cpu {
             self.csr.store_csrs(SIP, new_xip);
         };
 
-        info!("Interrupt {:?} is set", interrupt);
-        info!("xIP: {:0b}", new_xip);
-        info!("xIE: {:0b}", self.csr.load_csrs(MIE));
-        info!("{}", self.csr.dump());
+        debug!("Interrupt {:?} is set", interrupt);
+        debug!("xIP: {:0b}", new_xip);
+        debug!("xIE: {:0b}", self.csr.load_csrs(MIE));
+        debug!("{}", self.csr.dump());
     }
 
     // get the takable pending interrupt with the highest priority
@@ -402,7 +402,7 @@ impl Cpu {
                 self.csr.set_mstatus_bit(U_MODE, MASK_MPP, BIT_MPP);
                 self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
                 self.mode = pp;
-                info!("back to privilege {} from machine mode", pp);
+                debug!("back to privilege {} from machine mode", pp);
             }
             S_MODE => {
                 let pp = self.csr.get_sstatus_bit(MASK_SPP, BIT_SPP);
@@ -413,15 +413,15 @@ impl Cpu {
                 self.csr.set_sstatus_bit(U_MODE, MASK_SPP, BIT_SPP);
                 self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
                 self.mode = pp;
-                info!("back to privilege {} from supervisor mode", pp);
+                debug!("back to privilege {} from supervisor mode", pp);
             }
             _ => {
                 panic!("m/sret from U_MODE\n");
             }
         }
-        info!("return from trap");
-        info!("csr dump");
-        info!("{}", self.csr.dump());
+        debug!("return from trap");
+        debug!("csr dump");
+        debug!("{}", self.csr.dump());
     }
 
     pub fn execute(&mut self, inst: u32) -> Result<(), Exception> {
@@ -518,7 +518,7 @@ impl Cpu {
                         self.regs[rd] = ((self.regs[rs1] as i64) % (self.regs[rs2] as i64)) as u64;
                     }
                     (_, _) => {
-                        info!("This should not be reached!");
+                        error!("This should not be reached!");
                         info!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));
                     }
@@ -584,8 +584,8 @@ impl Cpu {
                         }
                     }
                     _ => {
-                        info!("This should not be reached!");
-                        info!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        error!("This should not be reached!");
+                        error!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -635,8 +635,8 @@ impl Cpu {
                         self.regs[rd] = val;
                     }
                     _ => {
-                        info!("This should not be reached!");
-                        info!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        error!("This should not be reached!");
+                        error!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -656,7 +656,7 @@ impl Cpu {
                     0x2 => self.store(addr, 32, self.regs[rs2])?,
                     0x3 => self.store(addr, 64, self.regs[rs2])?,
                     _ => {
-                        info!("This should not be reached!");
+                        error!("This should not be reached!");
                         info!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));
                     }
@@ -689,8 +689,8 @@ impl Cpu {
                         self.pc = next_pc;
                     }
                     _ => {
-                        info!("This should not be reached!");
-                        info!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        error!("This should not be reached!");
+                        error!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -737,8 +737,8 @@ impl Cpu {
                         self.regs[rd] = val as i64 as u64;
                     }
                     _ => {
-                        info!("This should not be reached!");
-                        info!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        error!("This should not be reached!");
+                        error!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -790,8 +790,8 @@ impl Cpu {
                         }
                     }
                     _ => {
-                        info!("This should not be reached!");
-                        info!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        error!("This should not be reached!");
+                        error!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -852,7 +852,7 @@ impl Cpu {
                         self.regs[rd] = rem as u64;
                     }
                     _ => {
-                        info!("This should not be reached!");
+                        error!("This should not be reached!");
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -949,8 +949,8 @@ impl Cpu {
                         self.print_inst_r("sfence.vma", rd, rs1, rs2);
                     }
                     (_, _, _) => {
-                        info!("Unsupported CSR instruction!");
-                        info!("pc = 0x{:x}, funct3:{}, funct7:{}", self.pc, funct3, funct7);
+                        error!("Unsupported CSR instruction!");
+                        error!("pc = 0x{:x}, funct3:{}, funct7:{}", self.pc, funct3, funct7);
                         return Err(Exception::IllegalInstruction(inst));
                     }
                 }
@@ -1192,9 +1192,9 @@ impl Cpu {
                 Ok(())
             }
             _ => {
-                info!("not implemented yet!");
-                info!("pc=0x{:x}", self.pc);
-                info!("inst:{inst:b}");
+                error!("not implemented yet!");
+                error!("pc=0x{:x}", self.pc);
+                error!("inst:{inst:b}");
                 return Err(Exception::IllegalInstruction(inst));
             }
         }
@@ -1246,8 +1246,8 @@ impl Cpu {
         self.check_and_pend_interrupts();
 
         if let Some(mut interrupt) = self.get_interrupt_to_take() {
-            info!("Interrupt: {:?} taken", interrupt);
-            info!("{}", self.csr.dump());
+            debug!("Interrupt: {:?} taken", interrupt);
+            debug!("{}", self.csr.dump());
             interrupt.take_trap(self);
         }
 
@@ -1274,6 +1274,7 @@ impl Cpu {
             self.dump_count -= 1;
             if self.dump_count == 0 {
                 self.dump_count = self.dump_interval;
+                info!("{}", self.dump_registers());
             }
         }
 

@@ -119,6 +119,33 @@
             },
             "args": [],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "cppdbg",
+            "request": "launch",
+            "name": "Make XV6 GDB",
+            "program": "/projects/target/release/rv-emu",
+            "args": [
+                "apps/xv6-riscv/kernel/kernel",
+                "--elf",
+                "--base-addr",
+                "2147483648",
+                "--loop-on",
+                "-c",
+                "100000",
+                "-o",
+                "log/output_kernel.log",
+                "--gdb"
+            ],
+            "cwd": "${workspaceFolder}",
+            "miDebuggerPath": "/opt/riscv/bin/riscv64-unknown-elf-gdb",
+            "miDebuggerArgs": "-q",
+            "setupCommands": [
+                {
+                    "text": "target remote 0.0.0.0:9001",
+                    "description": "Connect to the remote target"
+                }
+            ]
         }
     ]
 }

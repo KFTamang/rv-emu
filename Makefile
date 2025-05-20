@@ -22,6 +22,9 @@ exception:apps/exception.s ${src}
 xv6:apps/xv6-riscv/kernel/kernel ${src}
 	cargo run --release apps/xv6-riscv/kernel/kernel --elf --base-addr 2147483648 --loop-on --dump 100000000
 
+xv6-gdb:apps/xv6-riscv/kernel/kernel ${src}
+	RUST_LOG=info cargo run --release apps/xv6-riscv/kernel/kernel --elf --base-addr 2147483648 --loop-on --dump 100000000 --gdb
+
 run:apps/test.bin apps/fib.bin ${src}
 	RUST_LOG=debug cargo run apps/test.bin -c 1000 -d 100 -o log/output_test.log
 	RUST_LOG=debug cargo run apps/fib.bin -c 1000 -d 100 -o log/output_fib.log

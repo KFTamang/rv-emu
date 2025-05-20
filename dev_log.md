@@ -136,3 +136,10 @@ echo 0 | sudo tee /proc/sys/kernel/perf_event_paranoid
 を設定した。
 実行コマンド：`cargo flamegraph --  apps/xv6-riscv/kernel/kernel --elf --base-addr 2147483648 --loop-on -c 100000`
 `rv_emu::interrupt::Interrupt::get_trap_mode` と `rv_emu::csr::Csr::load_csrs` がかなりの時間を占めている。
+
+# 2025/05/20
+方向性
+1. VSCodeでxv6をデバッグできるようにする
+2. パフォーマンス向上
+3. ctrl-cで止めたときにダンプするようにする
+4. ログローテーションを導入して大きなログを追いやすくする

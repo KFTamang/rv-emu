@@ -143,3 +143,6 @@ echo 0 | sudo tee /proc/sys/kernel/perf_event_paranoid
 2. パフォーマンス向上
 3. ctrl-cで止めたときにダンプするようにする
 4. ログローテーションを導入して大きなログを追いやすくする
+
+# 2025/05/21
+GDBはリモート接続モードで動かす。

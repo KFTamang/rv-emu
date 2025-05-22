@@ -121,7 +121,7 @@
             "cwd": "${workspaceFolder}"
         },
         {
-            "type": "cppdbg",
+            "type": "lldb",
             "request": "launch",
             "name": "Make XV6 GDB",
             "program": "/projects/target/release/rv-emu",
@@ -139,11 +139,26 @@
             ],
             "cwd": "${workspaceFolder}",
             "miDebuggerPath": "/opt/riscv/bin/riscv64-unknown-elf-gdb",
-            "miDebuggerArgs": "-q",
+            "miDebuggerServerAddress": "0.0.0.0:9001",
+            "initCommands":["settings set target.disable-aslr false"]
+        },
+        {
+            "type": "lldb",
+            "request": "attach",
+            "name": "Make XV6 GDB attach",
+            "program": "/projects/apps/xv6-riscv/kernel/kernel",
+            "miDebuggerPath": "/opt/riscv/bin/riscv64-unknown-elf-gdb",
+            "miDebuggerServerAddress": "0.0.0.0:9001",
             "setupCommands": [
                 {
-                    "text": "target remote 0.0.0.0:9001",
-                    "description": "Connect to the remote target"
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Relace absolute path of source code",
+                    "ignoreFailures": false,
+                    "text": "set substitute-path /home/katsuhiro/share/falcon z:/"
                 }
             ]
         }

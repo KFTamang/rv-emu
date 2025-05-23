@@ -162,7 +162,7 @@ impl SwBreakpoint for Emu {
 }
 
 pub fn wait_for_gdb_connection(port: u16) -> io::Result<TcpStream> {
-    let sockaddr = format!("0.0.0.0:{}", port);
+    let sockaddr = format!("localhost:{}", port);
     info!("Waiting for a GDB connection on {:?}...", sockaddr);
     let sock = TcpListener::bind(sockaddr)?;
     let (stream, addr) = sock.accept()?;

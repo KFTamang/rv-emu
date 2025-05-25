@@ -4,7 +4,7 @@ use log::{debug, info, error};
 use serde::{Deserialize, Serialize};
 use std::process::exit;
 
-const INTERRUPT_BIT: u64 = 1 << 63;
+pub const INTERRUPT_BIT: u64 = 1 << 63;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Interrupt {

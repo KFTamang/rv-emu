@@ -74,7 +74,7 @@ const SSTATUS_MASK: u64 = !(MASK_SXL
     | MASK_MPIE
     | MASK_MIE);
 
-pub const TIMER_FREQ: u64 = 100000000; // 100 MHz
+pub const TIMER_FREQ: u64 = 10000000; // 10 MHz
 
 impl Csr {
     pub fn new(interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>) -> Self {
@@ -168,8 +168,8 @@ impl Csr {
         let time = self.get_time_ms();
         let comptime_ms = 1000 * comp_value / TIMER_FREQ;
         info!(
-            "set_timer_interrupt: compvalue_ms:{}, current_time:{}",
-            comptime_ms, time
+            "set_timer_interrupt: compvalue: {}, compvalue_ms:{}, current_time:{}",
+            comp_value, comptime_ms, time
         );
         if comptime_ms >= time {
             let duration = Duration::from_millis(comptime_ms - time);

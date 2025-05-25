@@ -129,6 +129,7 @@
             "miDebuggerPath": "/opt/riscv/bin/riscv64-unknown-elf-gdb",
             "miDebuggerServerAddress": "localhost:9001",
             "MIMode": "gdb",
+            "stopAtConnect": true,
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

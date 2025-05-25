@@ -1243,7 +1243,7 @@ impl Cpu {
         self.cycle += 1;
 
         // check and pend all the delayed interrupts
-        self.check_and_pend_interrupts();
+        self.update_pending_interrupts();
 
         if let Some(mut interrupt) = self.get_interrupt_to_take() {
             debug!("Interrupt: {:?} taken", interrupt);
@@ -1286,7 +1286,7 @@ impl Cpu {
         self.pc
     }
 
-    fn check_and_pend_interrupts(&mut self) {
+    fn update_pending_interrupts(&mut self) {
         let mut interrupt_list_vec = self.interrupt_list.lock().unwrap();
 
         // Pend interrupts with cycle == 0 and add them to the pending list
@@ -1310,6 +1310,17 @@ impl Cpu {
         for interrupt in to_pend {
             info!("Pend Interrupt: {:?} ", interrupt);
             self.set_pending_interrupt(interrupt);
+        }
+
+        // stop pending timer interrupt if counter is greater than compare value
+        let mut sip = self.csr.load_csrs(SIP);
+        if sip & Interrupt::SupervisorTimerInterrupt.bit_code() & !INTERRUPT_BIT != 0 && self.csr.load_csrs(STIMECMP) > self.csr.load_csrs(TIME) {
+            sip &= !Interrupt::SupervisorTimerInterrupt.bit_code() | INTERRUPT_BIT;
+            if sip == INTERRUPT_BIT {
+                sip = 0;
+            }
+            self.csr.store_csrs(SIP, sip);
+            info!("Clear STIP: SIP={:b}", sip);
         }
     }
 }

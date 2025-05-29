@@ -1,10 +1,19 @@
+use std::vec;
+
 use crate::interrupt::*;
 use serde::{Deserialize, Serialize};
+
+const INTERRUPT_SOURCE_PRIORITIES: u64 = 0x000000;
+const INTERRUPT_PENDING_BITS: u64 = 0x001000;
+const INTERRUPT_ENABLES: u64 = 0x002000;
+const PRIORITY_THRESHOLDS: u64 = 0x200000;
+const CLAIM_COMPLETE: u64 = 0x200004;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Plic {
     start_addr: u64,
     size: u64,
+    regs: Vec<u64>,
 }
 
 impl Plic {
@@ -12,6 +21,7 @@ impl Plic {
         Self {
             start_addr: _start_addr,
             size: _size,
+            regs: vec![0; _size as usize / 8],
         }
     }
 

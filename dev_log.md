@@ -146,3 +146,6 @@ echo 0 | sudo tee /proc/sys/kernel/perf_event_paranoid
 
 # 2025/05/21
 GDBはリモート接続モードで動かす。
+
+# 2025/05/30
+高速化アイディア：TLB（論物変換キャッシュ）

@@ -96,7 +96,7 @@ impl Cpu {
         let mut cpu = Self {
             regs: snapshot.regs,
             pc: snapshot.pc,
-            bus: Bus::from_snapshot(snapshot.bus),
+            bus: Bus::from_snapshot(snapshot.bus, interrupt_list.clone()),
             csr: Csr::from_snapshot(snapshot.csr, interrupt_list.clone()),
             dest: REG_NUM,
             src1: REG_NUM,

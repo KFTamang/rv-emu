@@ -13,7 +13,7 @@ use std::sync::{Arc, Mutex};
 pub struct BusSnapshot {
     pub dram: Dram,
     pub uart: Uart,
-    pub plic: Plic,
+    pub plic: PlicSnapshot,
     pub virtio: Virtio,
 }
 
@@ -29,7 +29,7 @@ impl Bus {
         Self {
             dram: Dram::new(code, base_addr),
             uart: Uart::new(0x10000000),
-            plic: Plic::new(0xc000000),
+            plic: Plic::new(0xc000000, interrupt_list.clone()),
             virtio: Virtio::new(0x10001000),
         }
     }
@@ -113,15 +113,15 @@ impl Bus {
         BusSnapshot {
             dram: self.dram.clone(),
             uart: self.uart.clone(),
-            plic: self.plic.clone(),
+            plic: self.plic.to_snapshot(),
             virtio: self.virtio.clone(),
         }
     }
-    pub fn from_snapshot(snapshot: BusSnapshot) -> Self {
+    pub fn from_snapshot(snapshot: BusSnapshot, interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>) -> Self {
         Self {
             dram: snapshot.dram,
             uart: snapshot.uart,
-            plic: snapshot.plic,
+            plic: Plic::from_snapshot(snapshot.plic, interrupt_list.clone()),
             virtio: snapshot.virtio,
         }
     }

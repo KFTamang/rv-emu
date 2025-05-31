@@ -63,7 +63,7 @@ impl Cpu {
         Self {
             regs,
             pc: base_addr,
-            bus: Bus::new(binary, base_addr),
+            bus: Bus::new(binary, base_addr, interrupt_list.clone()),
             csr: Csr::new(interrupt_list.clone()),
             dest: REG_NUM,
             src1: REG_NUM,

@@ -1,10 +1,13 @@
 use crate::interrupt::*;
 use serde::{Deserialize, Serialize};
+use std::sync::{Arc, Mutex};
+
+const UART_SIZE: u64 = 0x100; // size of the UART memory-mapped region
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Uart {
     start_addr: u64,
-    size: u64,
+    // interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
 }
 
 #[allow(unused)]
@@ -39,15 +42,14 @@ const TRANSMIT_EMPTY: u64 = 1 << 6;
 const FIFO_ERROR: u64 = 1 << 7;
 
 impl Uart {
-    pub fn new(_start_addr: u64, _size: u64) -> Uart {
+    pub fn new(_start_addr: u64) -> Uart {
         Self {
             start_addr: _start_addr,
-            size: _size,
         }
     }
 
     pub fn is_accessible(&self, addr: u64) -> bool {
-        (addr >= self.start_addr) && (addr < self.start_addr + self.size)
+        (addr >= self.start_addr) && (addr < self.start_addr + UART_SIZE)
     }
 
     pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
@@ -60,7 +62,7 @@ impl Uart {
                 // returns TRANSMIT_EMPTY | TRANSMIT_HOLDING_EMPTY,
                 // assuming infinitely fast UART, with FIFO being always empty
                 Ok(TRANSMIT_EMPTY | TRANSMIT_HOLDING_EMPTY)
-            }
+    }
             _ => Ok(0x0),
         }
     }

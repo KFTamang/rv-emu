@@ -3,6 +3,8 @@ use std::vec;
 use crate::interrupt::*;
 use serde::{Deserialize, Serialize};
 
+const PLIC_SIZE: u64 = 0x4000000;
+
 const INTERRUPT_SOURCE_PRIORITIES: u64 = 0x000000;
 const INTERRUPT_PENDING_BITS: u64 = 0x001000;
 const INTERRUPT_ENABLES: u64 = 0x002000;
@@ -12,21 +14,19 @@ const CLAIM_COMPLETE: u64 = 0x200004;
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Plic {
     start_addr: u64,
-    size: u64,
     regs: Vec<u64>,
 }
 
 impl Plic {
-    pub fn new(_start_addr: u64, _size: u64) -> Plic {
+    pub fn new(_start_addr: u64) -> Plic {
         Self {
             start_addr: _start_addr,
-            size: _size,
-            regs: vec![0; _size as usize / 8],
+            regs: vec![0; PLIC_SIZE as usize / 8],
         }
     }
 
     pub fn is_accessible(&self, addr: u64) -> bool {
-        (addr >= self.start_addr) && (addr < self.start_addr + self.size)
+        (addr >= self.start_addr) && (addr < self.start_addr + PLIC_SIZE)
     }
 
     pub fn load(&self, _addr: u64, _size: u64) -> Result<u64, Exception> {

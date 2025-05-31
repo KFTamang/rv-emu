@@ -2,6 +2,8 @@ use crate::interrupt::*;
 use log::{debug, info};
 use serde::{Deserialize, Serialize};
 
+const VIRTIO_SIZE: u64 = 0x1000; // size of virtio mmio device
+
 // virtio mmio control registers, mapped starting at 0x10001000.
 // from qemu virtio_mmio.h
 #[allow(dead_code)]
@@ -42,13 +44,12 @@ const VIRTIO_MMIO_STATUS: usize = 0x070; // read/write
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Virtio {
     start_addr: u64,
-    size: u64,
     registers: Vec<u8>,
 }
 
 impl Virtio {
-    pub fn new(_start_addr: u64, _size: u64) -> Virtio {
-        let mut _registers = vec![0; _size as usize];
+    pub fn new(_start_addr: u64) -> Virtio {
+        let mut _registers = vec![0; VIRTIO_SIZE as usize];
 
         _registers[VIRTIO_MMIO_MAGIC_VALUE + 0] = 0x76;
         _registers[VIRTIO_MMIO_MAGIC_VALUE + 1] = 0x69;
@@ -64,13 +65,12 @@ impl Virtio {
 
         Self {
             start_addr: _start_addr,
-            size: _size,
             registers: _registers,
         }
     }
 
     pub fn is_accessible(&self, addr: u64) -> bool {
-        (addr >= self.start_addr) && (addr < self.start_addr + self.size)
+        (addr >= self.start_addr) && (addr < self.start_addr + VIRTIO_SIZE)
     }
 
     pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {

@@ -1,4 +1,5 @@
 use crate::dram::*;
+use crate::interrupt;
 use crate::interrupt::*;
 use crate::plic::*;
 use crate::uart::*;
@@ -6,6 +7,7 @@ use crate::virtio::*;
 use log::debug;
 use log::info;
 use serde::{Deserialize, Serialize};
+use std::sync::{Arc, Mutex};
 
 #[derive(Serialize, Deserialize)]
 pub struct BusSnapshot {
@@ -23,12 +25,12 @@ pub struct Bus {
 }
 
 impl Bus {
-    pub fn new(code: Vec<u8>, base_addr: u64) -> Bus {
+    pub fn new(code: Vec<u8>, base_addr: u64, interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>) -> Bus {
         Self {
             dram: Dram::new(code, base_addr),
-            uart: Uart::new(0x10000000, 0x100),
-            plic: Plic::new(0xc000000, 0x4000000),
-            virtio: Virtio::new(0x10001000, 0x1000),
+            uart: Uart::new(0x10000000),
+            plic: Plic::new(0xc000000),
+            virtio: Virtio::new(0x10001000),
         }
     }
 

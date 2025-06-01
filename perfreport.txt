@@ -1,0 +1,572 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 5620
+#
+# Samples: 67K of event 'cycles:Pu'
+# Event count (approx.): 295372949162
+#
+# Overhead  Command  Shared Object         Symbol                                                                                                
+# ........  .......  ....................  ......................................................................................................
+#
+    26.41%  rv-emu   rv-emu                [.] rv_emu::cpu::Cpu::step_run
+            |          
+            |--11.99%--rv_emu::cpu::Cpu::execute (inlined)
+            |          rv_emu::cpu::Cpu::step_run
+            |          rv_emu::emu::Emu::step
+            |          rv_emu::main
+            |          
+            |--2.94%--rv_emu::cpu::Cpu::step_run
+            |          rv_emu::emu::Emu::step
+            |          rv_emu::main
+            |          
+            |--2.48%--std::sys::sync::mutex::futex::Mutex::lock (inlined)
+            |          std::sync::poison::mutex::Mutex<T>::lock (inlined)
+            |          rv_emu::cpu::Cpu::update_pending_interrupts (inlined)
+            |          rv_emu::cpu::Cpu::step_run
+            |          rv_emu::emu::Emu::step
+            |          rv_emu::main
+            |          
+            |--1.57%--rv_emu::cpu::Cpu::update_pending_interrupts (inlined)
+            |          rv_emu::cpu::Cpu::step_run
+            |          rv_emu::emu::Emu::step
+            |          rv_emu::main
+            |          
+            |--1.48%--rv_emu::cpu::Cpu::get_interrupt_to_take (inlined)
+            |          rv_emu::cpu::Cpu::step_run
+            |          rv_emu::emu::Emu::step
+            |          rv_emu::main
+            |          
+            |--0.94%--std::sys::sync::mutex::futex::Mutex::unlock (inlined)
+            |          <std::sync::poison::mutex::MutexGuard<T> as core::ops::drop::Drop>::drop (inlined)
+            |          core::ptr::drop_in_place<std::sync::poison::mutex::MutexGuard<alloc::vec::Vec<rv_emu::interrupt::DelayedInterrupt>>> (inlined)
+            |          core::mem::drop (inlined)
+            |          rv_emu::cpu::Cpu::update_pending_interrupts (inlined)
+            |          rv_emu::cpu::Cpu::step_run
+            |          rv_emu::emu::Emu::step
+            |          rv_emu::main
+            |          
+            |--0.92%--std::panicking::panic_count::count_is_zero (inlined)
+            |          std::panicking::panicking (inlined)
+            |          std::thread::panicking (inlined)
+            |          |          
+            |           --0.52%--std::sync::poison::Flag::done (inlined)
+            |                     <std::sync::poison::mutex::MutexGuard<T> as core::ops::drop::Drop>::drop (inlined)
+            |                     core::ptr::drop_in_place<std::sync::poison::mutex::MutexGuard<alloc::vec::Vec<rv_emu::interrupt::DelayedInterrupt>>> (inlined)
+            |                     core::mem::drop (inlined)
+            |                     rv_emu::cpu::Cpu::update_pending_interrupts (inlined)
+            |                     rv_emu::cpu::Cpu::step_run
+            |                     rv_emu::emu::Emu::step
+            |                     rv_emu::main
+            |          
+             --0.69%--core::num::<impl u64>::wrapping_add (inlined)
+                       |          
+                        --0.55%--rv_emu::cpu::Cpu::execute (inlined)
+                                  rv_emu::cpu::Cpu::step_run
+                                  rv_emu::emu::Emu::step
+                                  rv_emu::main
+
+    13.66%  rv-emu   rv-emu                [.] rv_emu::dram::Dram::load
+            |          
+            |--7.52%--rv_emu::dram::Dram::load
+            |          rv_emu::bus::Bus::load
+            |          |          
+            |          |--5.07%--rv_emu::cpu::Cpu::translate
+            |          |          |          
+            |          |          |--4.47%--rv_emu::cpu::Cpu::load
+            |          |          |          |          
+            |          |          |          |--3.79%--rv_emu::cpu::Cpu::fetch (inlined)
+            |          |          |          |          rv_emu::cpu::Cpu::step_run
+            |          |          |          |          rv_emu::emu::Emu::step
+            |          |          |          |          rv_emu::main
+            |          |          |          |          
+            |          |          |           --0.69%--rv_emu::cpu::Cpu::execute (inlined)
+            |          |          |                     rv_emu::cpu::Cpu::step_run
+            |          |          |                     rv_emu::emu::Emu::step
+            |          |          |                     rv_emu::main
+            |          |          |          
+            |          |           --0.60%--rv_emu::cpu::Cpu::store
+            |          |                     rv_emu::cpu::Cpu::execute (inlined)
+            |          |                     rv_emu::cpu::Cpu::step_run
+            |          |                     rv_emu::emu::Emu::step
+            |          |                     rv_emu::main
+            |          |          
+            |           --2.45%--rv_emu::cpu::Cpu::load
+            |                     |          
+            |                      --2.10%--rv_emu::cpu::Cpu::fetch (inlined)
+            |                                rv_emu::cpu::Cpu::step_run
+            |                                rv_emu::emu::Emu::step
+            |                                rv_emu::main
+            |          
+            |--4.59%--<usize as core::slice::index::SliceIndex<[T]>>::index (inlined)
+            |          core::slice::index::<impl core::ops::index::Index<I> for [T]>::index (inlined)
+            |          <alloc::vec::Vec<T,A> as core::ops::index::Index<I>>::index (inlined)
+            |          |          
+            |          |--3.95%--rv_emu::dram::Dram::load64 (inlined)
+            |          |          rv_emu::dram::Dram::load
+            |          |          rv_emu::bus::Bus::load
+            |          |          |          
+            |          |           --3.77%--rv_emu::cpu::Cpu::translate
+            |          |                     |          
+            |          |                     |--3.17%--rv_emu::cpu::Cpu::load
+            |          |                     |          |          
+            |          |                     |          |--2.44%--rv_emu::cpu::Cpu::fetch (inlined)
+            |          |                     |          |          rv_emu::cpu::Cpu::step_run
+            |          |                     |          |          rv_emu::emu::Emu::step
+            |          |                     |          |          rv_emu::main
+            |          |                     |          |          
+            |          |                     |           --0.74%--rv_emu::cpu::Cpu::execute (inlined)
+            |          |                     |                     rv_emu::cpu::Cpu::step_run
+            |          |                     |                     rv_emu::emu::Emu::step
+            |          |                     |                     rv_emu::main
+            |          |                     |          
+            |          |                      --0.60%--rv_emu::cpu::Cpu::store
+            |          |                                rv_emu::cpu::Cpu::execute (inlined)
+            |          |                                rv_emu::cpu::Cpu::step_run
+            |          |                                rv_emu::emu::Emu::step
+            |          |                                rv_emu::main
+            |          |          
+            |           --0.64%--rv_emu::dram::Dram::load32 (inlined)
+            |                     rv_emu::dram::Dram::load
+            |                     rv_emu::bus::Bus::load
+            |                     rv_emu::cpu::Cpu::load
+            |                     |          
+            |                      --0.60%--rv_emu::cpu::Cpu::fetch (inlined)
+            |                                rv_emu::cpu::Cpu::step_run
+            |                                rv_emu::emu::Emu::step
+            |                                rv_emu::main
+            |          
+             --0.89%--rv_emu::dram::Dram::load64 (inlined)
+                       rv_emu::dram::Dram::load
+                       rv_emu::bus::Bus::load
+                       |          
+                        --0.88%--rv_emu::cpu::Cpu::translate
+                                  |          
+                                   --0.73%--rv_emu::cpu::Cpu::load
+                                             |          
+                                              --0.60%--rv_emu::cpu::Cpu::fetch (inlined)
+                                                        rv_emu::cpu::Cpu::step_run
+                                                        rv_emu::emu::Emu::step
+                                                        rv_emu::main
+
+    13.15%  rv-emu   rv-emu                [.] rv_emu::emu::Emu::step
+            |          
+            |--7.07%--rv_emu::emu::Emu::step
+            |          rv_emu::main
+            |          
+            |--4.55%--<u64 as core::slice::cmp::SliceContains>::slice_contains (inlined)
+            |          core::slice::<impl [T]>::contains (inlined)
+            |          rv_emu::emu::Emu::step
+            |          rv_emu::main
+            |          
+             --1.16%--<core::slice::iter::ChunksExact<T> as core::iter::traits::iterator::Iterator>::next (inlined)
+                       <&mut I as core::iter::traits::iterator::Iterator>::next (inlined)
+                       <u64 as core::slice::cmp::SliceContains>::slice_contains (inlined)
+                       core::slice::<impl [T]>::contains (inlined)
+                       rv_emu::emu::Emu::step
+                       rv_emu::main
+
+    10.43%  rv-emu   rv-emu                [.] rv_emu::bus::Bus::load
+            |
+            ---rv_emu::bus::Bus::load
+               |          
+               |--8.27%--rv_emu::cpu::Cpu::translate
+               |          |          
+               |          |--7.13%--rv_emu::cpu::Cpu::load
+               |          |          |          
+               |          |          |--5.83%--rv_emu::cpu::Cpu::fetch (inlined)
+               |          |          |          rv_emu::cpu::Cpu::step_run
+               |          |          |          rv_emu::emu::Emu::step
+               |          |          |          rv_emu::main
+               |          |          |          
+               |          |           --1.31%--rv_emu::cpu::Cpu::execute (inlined)
+               |          |                     rv_emu::cpu::Cpu::step_run
+               |          |                     rv_emu::emu::Emu::step
+               |          |                     rv_emu::main
+               |          |          
+               |           --1.14%--rv_emu::cpu::Cpu::store
+               |                     rv_emu::cpu::Cpu::execute (inlined)
+               |                     rv_emu::cpu::Cpu::step_run
+               |                     rv_emu::emu::Emu::step
+               |                     rv_emu::main
+               |          
+                --2.15%--rv_emu::cpu::Cpu::load
+                          |          
+                           --1.75%--rv_emu::cpu::Cpu::fetch (inlined)
+                                     rv_emu::cpu::Cpu::step_run
+                                     rv_emu::emu::Emu::step
+                                     rv_emu::main
+
+     9.16%  rv-emu   rv-emu                [.] rv_emu::cpu::Cpu::translate
+            |          
+             --9.16%--rv_emu::cpu::Cpu::translate
+                       |          
+                       |--7.79%--rv_emu::cpu::Cpu::load
+                       |          |          
+                       |          |--6.78%--rv_emu::cpu::Cpu::fetch (inlined)
+                       |          |          rv_emu::cpu::Cpu::step_run
+                       |          |          rv_emu::emu::Emu::step
+                       |          |          rv_emu::main
+                       |          |          
+                       |           --1.01%--rv_emu::cpu::Cpu::execute (inlined)
+                       |                     rv_emu::cpu::Cpu::step_run
+                       |                     rv_emu::emu::Emu::step
+                       |                     rv_emu::main
+                       |          
+                        --1.37%--rv_emu::cpu::Cpu::store
+                                  rv_emu::cpu::Cpu::execute (inlined)
+                                  rv_emu::cpu::Cpu::step_run
+                                  rv_emu::emu::Emu::step
+                                  rv_emu::main
+
+     7.77%  rv-emu   rv-emu                [.] rv_emu::csr::Csr::load_csrs
+            |          
+            |--6.74%--rv_emu::csr::Csr::load_csrs
+            |          |          
+            |          |--3.79%--rv_emu::cpu::Cpu::get_interrupt_to_take (inlined)
+            |          |          rv_emu::cpu::Cpu::step_run
+            |          |          rv_emu::emu::Emu::step
+            |          |          rv_emu::main
+            |          |          
+            |          |--2.07%--rv_emu::cpu::Cpu::translate
+            |          |          |          
+            |          |           --1.63%--rv_emu::cpu::Cpu::load
+            |          |                     |          
+            |          |                      --1.49%--rv_emu::cpu::Cpu::fetch (inlined)
+            |          |                                rv_emu::cpu::Cpu::step_run
+            |          |                                rv_emu::emu::Emu::step
+            |          |                                rv_emu::main
+            |          |          
+            |           --0.85%--rv_emu::cpu::Cpu::update_pending_interrupts (inlined)
+            |                     rv_emu::cpu::Cpu::step_run
+            |                     rv_emu::emu::Emu::step
+            |                     rv_emu::main
+            |          
+             --0.61%--core::sync::atomic::atomic_load (inlined)
+                       core::sync::atomic::AtomicUsize::load (inlined)
+                       log::max_level (inlined)
+                       rv_emu::csr::Csr::load_csrs
+
+     4.88%  rv-emu   rv-emu                [.] rv_emu::cpu::Cpu::load
+            |          
+            |--3.87%--rv_emu::cpu::Cpu::load
+            |          |          
+            |           --3.46%--rv_emu::cpu::Cpu::fetch (inlined)
+            |                     rv_emu::cpu::Cpu::step_run
+            |                     rv_emu::emu::Emu::step
+            |                     rv_emu::main
+            |          
+             --0.58%--core::cmp::PartialOrd::le (inlined)
+                       rv_emu::cpu::Cpu::load
+
+     3.85%  rv-emu   rv-emu                [.] alloc::vec::Vec<T,A>::retain
+            |          
+            |--3.05%--alloc::vec::Vec<T,A>::retain
+            |          rv_emu::cpu::Cpu::update_pending_interrupts (inlined)
+            |          rv_emu::cpu::Cpu::step_run
+            |          rv_emu::emu::Emu::step
+            |          rv_emu::main
+            |          
+             --0.73%--alloc::vec::Vec<T,A>::len (inlined)
+                       alloc::vec::Vec<T,A>::retain_mut (inlined)
+                       alloc::vec::Vec<T,A>::retain
+                       rv_emu::cpu::Cpu::update_pending_interrupts (inlined)
+                       rv_emu::cpu::Cpu::step_run
+                       rv_emu::emu::Emu::step
+                       rv_emu::main
+
+     2.41%  rv-emu   rv-emu                [.] <bincode::features::serde::ser::SerdeEncoder<ENC> as serde::ser::SerializeStruct>::serialize_field
+            |          
+            |--0.76%--alloc::vec::Vec<T,A>::append_elements (inlined)
+            |          <alloc::vec::Vec<T,A> as alloc::vec::spec_extend::SpecExtend<&T,core::slice::iter::Iter<T>>>::spec_extend (inlined)
+            |          alloc::vec::Vec<T,A>::extend_from_slice (inlined)
+            |          <bincode::features::impl_alloc::VecWriter as bincode::enc::write::Writer>::write (inlined)
+            |          bincode::enc::impls::<impl bincode::enc::Encode for u8>::encode (inlined)
+            |          <bincode::features::serde::ser::SerdeEncoder<ENC> as serde::ser::Serializer>::serialize_u8 (inlined)
+            |          serde::ser::impls::<impl serde::ser::Serialize for u8>::serialize (inlined)
+            |          serde::ser::impls::<impl serde::ser::Serialize for &T>::serialize (inlined)
+            |          <bincode::features::serde::ser::SerdeEncoder<ENC> as serde::ser::SerializeSeq>::serialize_element (inlined)
+            |          serde::ser::Serializer::collect_seq::_$u7b$$u7b$closure$u7d$$u7d$::h794fa55fc8aa228e (inlined)
+            |          core::iter::traits::iterator::Iterator::try_for_each::call::_$u7b$$u7b$closure$u7d$$u7d$::h944215b33a9d6f4e (inlined)
+            |          core::iter::traits::iterator::Iterator::try_fold (inlined)
+            |          core::iter::traits::iterator::Iterator::try_for_each (inlined)
+            |          serde::ser::Serializer::collect_seq (inlined)
+            |          serde::ser::impls::<impl serde::ser::Serialize for alloc::vec::Vec<T>>::serialize (inlined)
+            |          <bincode::features::serde::ser::SerdeEncoder<ENC> as serde::ser::SerializeStruct>::serialize_field
+            |          rv_emu::dram::_::<impl serde::ser::Serialize for rv_emu::dram::Dram>::serialize (inlined)
+            |          <bincode::features::serde::ser::SerdeEncoder<ENC> as serde::ser::SerializeStruct>::serialize_field (inlined)
+            |          rv_emu::bus::_::<impl serde::ser::Serialize for rv_emu::bus::BusSnapshot>::serialize
+            |          <bincode::features::serde::ser::SerdeEncoder<ENC> as serde::ser::SerializeStruct>::serialize_field (inlined)
+            |          rv_emu::cpu::_::<impl serde::ser::Serialize for rv_emu::cpu::CpuSnapshot>::serialize
+            |          <bincode::features::serde::ser::SerdeEncoder<ENC> as serde::ser::SerializeStruct>::serialize_field (inlined)
+            |          rv_emu::emu::_::<impl serde::ser::Serialize for rv_emu::emu::EmuSnapshot>::serialize (inlined)
+            |          bincode::features::serde::ser::encode_to_vec
+            |          rv_emu::emu::Emu::save_snapshot
+            |          rv_emu::emu::Emu::step
+            |          rv_emu::main
+            |          
+             --0.51%--alloc::raw_vec::RawVecInner<A>::reserve (inlined)
+                       alloc::raw_vec::RawVec<T,A>::reserve (inlined)
+                       alloc::vec::Vec<T,A>::reserve (inlined)
+                       alloc::vec::Vec<T,A>::append_elements (inlined)
+                       <alloc::vec::Vec<T,A> as alloc::vec::spec_extend::SpecExtend<&T,core::slice::iter::Iter<T>>>::spec_extend (inlined)
+                       alloc::vec::Vec<T,A>::extend_from_slice (inlined)
+                       <bincode::features::impl_alloc::VecWriter as bincode::enc::write::Writer>::write (inlined)
+                       bincode::enc::impls::<impl bincode::enc::Encode for u8>::encode (inlined)
+                       <bincode::features::serde::ser::SerdeEncoder<ENC> as serde::ser::Serializer>::serialize_u8 (inlined)
+                       serde::ser::impls::<impl serde::ser::Serialize for u8>::serialize (inlined)
+                       serde::ser::impls::<impl serde::ser::Serialize for &T>::serialize (inlined)
+                       <bincode::features::serde::ser::SerdeEncoder<ENC> as serde::ser::SerializeSeq>::serialize_element (inlined)
+                       serde::ser::Serializer::collect_seq::_$u7b$$u7b$closure$u7d$$u7d$::h794fa55fc8aa228e (inlined)
+                       core::iter::traits::iterator::Iterator::try_for_each::call::_$u7b$$u7b$closure$u7d$$u7d$::h944215b33a9d6f4e (inlined)
+                       core::iter::traits::iterator::Iterator::try_fold (inlined)
+                       core::iter::traits::iterator::Iterator::try_for_each (inlined)
+                       serde::ser::Serializer::collect_seq (inlined)
+                       serde::ser::impls::<impl serde::ser::Serialize for alloc::vec::Vec<T>>::serialize (inlined)
+                       <bincode::features::serde::ser::SerdeEncoder<ENC> as serde::ser::SerializeStruct>::serialize_field
+                       rv_emu::dram::_::<impl serde::ser::Serialize for rv_emu::dram::Dram>::serialize (inlined)
+                       <bincode::features::serde::ser::SerdeEncoder<ENC> as serde::ser::SerializeStruct>::serialize_field (inlined)
+                       rv_emu::bus::_::<impl serde::ser::Serialize for rv_emu::bus::BusSnapshot>::serialize
+                       <bincode::features::serde::ser::SerdeEncoder<ENC> as serde::ser::SerializeStruct>::serialize_field (inlined)
+                       rv_emu::cpu::_::<impl serde::ser::Serialize for rv_emu::cpu::CpuSnapshot>::serialize
+                       <bincode::features::serde::ser::SerdeEncoder<ENC> as serde::ser::SerializeStruct>::serialize_field (inlined)
+                       rv_emu::emu::_::<impl serde::ser::Serialize for rv_emu::emu::EmuSnapshot>::serialize (inlined)
+                       bincode::features::serde::ser::encode_to_vec
+                       rv_emu::emu::Emu::save_snapshot
+                       rv_emu::emu::Emu::step
+                       rv_emu::main
+
+     1.64%  rv-emu   rv-emu                [.] rv_emu::dram::Dram::store
+            |          
+            |--0.69%--rv_emu::dram::Dram::store
+            |          rv_emu::bus::Bus::store
+            |          
+             --0.59%--rv_emu::dram::Dram::store64 (inlined)
+                       rv_emu::dram::Dram::store
+                       rv_emu::bus::Bus::store
+
+     1.62%  rv-emu   rv-emu                [.] rv_emu::main
+            |          
+             --1.18%--rv_emu::main
+
+     1.40%  rv-emu   rv-emu                [.] rv_emu::cpu::Cpu::print_inst_i
+            |
+            ---rv_emu::cpu::Cpu::print_inst_i
+               rv_emu::cpu::Cpu::execute (inlined)
+               rv_emu::cpu::Cpu::step_run
+               rv_emu::emu::Emu::step
+               rv_emu::main
+
+     1.02%  rv-emu   rv-emu                [.] rv_emu::cpu::Cpu::store
+            |          
+             --0.85%--rv_emu::cpu::Cpu::store
+                       rv_emu::cpu::Cpu::execute (inlined)
+                       rv_emu::cpu::Cpu::step_run
+                       rv_emu::emu::Emu::step
+                       rv_emu::main
+
+     0.47%  rv-emu   rv-emu                [.] rv_emu::bus::Bus::store
+     0.29%  rv-emu   rv-emu                [.] rv_emu::cpu::Cpu::print_inst_b
+     0.24%  rv-emu   rv-emu                [.] rv_emu::cpu::Cpu::print_inst_j
+     0.19%  rv-emu   rv-emu                [.] rv_emu::cpu::Cpu::print_inst_r
+     0.12%  rv-emu   rv-emu                [.] core::fmt::write
+     0.12%  rv-emu   [unknown]             [k] 0xffffffffb6000be0
+     0.11%  rv-emu   rv-emu                [.] alloc::fmt::format::format_inner
+     0.11%  rv-emu   rv-emu                [.] core::fmt::num::<impl core::fmt::LowerHex for isize>::fmt
+     0.09%  rv-emu   libc.so.6             [.] malloc
+     0.08%  rv-emu   rv-emu                [.] <alloc::string::String as core::fmt::Write>::write_str
+     0.07%  rv-emu   rv-emu                [.] rv_emu::cpu::Cpu::print_inst_csr
+     0.06%  rv-emu   rv-emu                [.] core::fmt::Formatter::pad_integral
+     0.05%  rv-emu   libc.so.6             [.] 0x0000000000188df8
+     0.05%  rv-emu   [unknown]             [k] 0xffffffffb58a8187
+     0.04%  rv-emu   rv-emu                [.] core::fmt::Formatter::pad_integral::write_prefix
+     0.03%  rv-emu   libc.so.6             [.] 0x0000000000188970
+     0.03%  rv-emu   rv-emu                [.] rv_emu::csr::Csr::store_csrs
+     0.03%  rv-emu   [unknown]             [k] 0xffffffffb6000f30
+     0.03%  rv-emu   libc.so.6             [.] cfree
+     0.03%  rv-emu   libc.so.6             [.] 0x0000000000188de8
+     0.01%  rv-emu   libc.so.6             [.] 0x0000000000188dcd
+     0.01%  rv-emu   rv-emu                [.] __rdl_dealloc
+     0.01%  rv-emu   rv-emu                [.] __rdl_alloc
+     0.01%  rv-emu   libc.so.6             [.] 0x0000000000188dd1
+     0.01%  rv-emu   [unknown]             [k] 0xffffffffb6000be3
+     0.01%  rv-emu   libc.so.6             [.] 0x0000000000188974
+     0.01%  rv-emu   [unknown]             [k] 0xffffffffb6104104
+     0.01%  rv-emu   [unknown]             [k] 0xffffffffb50e58f2
+     0.01%  rv-emu   libc.so.6             [.] 0x0000000000188ddb
+     0.01%  rv-emu   libc.so.6             [.] 0x0000000000188a76
+     0.01%  rv-emu   libc.so.6             [.] 0x0000000000188a90
+     0.01%  rv-emu   rv-emu                [.] __rust_dealloc
+     0.01%  rv-emu   libc.so.6             [.] 0x0000000000188a5f
+     0.01%  rv-emu   libc.so.6             [.] 0x00000000000ab1fc
+     0.01%  rv-emu   libc.so.6             [.] 0x0000000000188e2f
+     0.00%  rv-emu   libc.so.6             [.] 0x0000000000188e1f
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab170
+     0.00%  rv-emu   libc.so.6             [.] 0x0000000000188df0
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5843c5e
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb6000bec
+     0.00%  rv-emu   rv-emu                [.] __rust_alloc
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab365
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab1f1
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5f25a72
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb50e5a32
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c1f6d
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5f2556d
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5315de5
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5f240c7
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb50e5a1c
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5315df2
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5f240ab
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5177885
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52bb7b5
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab2a6
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab1d2
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab371
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab1db
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c7095
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c3336
+     0.00%  rv-emu   libc.so.6             [.] 0x0000000000188de0
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c2067
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5f25542
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52db235
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c331d
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5843c23
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5f25551
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5315e21
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c32d5
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c201b
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c21b6
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb62050c0
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c3347
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb6000005
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c2542
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c200c
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb50e59c7
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52b3e41
+     0.00%  rv-emu   rv-emu                [.] rv_emu::cpu::Cpu::wait_for_interrupt
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab202
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab17b
+     0.00%  rv-emu   libc.so.6             [.] 0x0000000000188e27
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab19e
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab18e
+     0.00%  rv-emu   libc.so.6             [.] 0x0000000000188a8b
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab191
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab1c8
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5f328f0
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab352
+     0.00%  rv-emu   libc.so.6             [.] 0x0000000000188a6c
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab2a1
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab180
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52e0867
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52bde15
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab194
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52b3e35
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5f259b0
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5108de5
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab18b
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb50e5964
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab178
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab1c5
+     0.00%  rv-emu   libc.so.6             [.] 0x0000000000188a88
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb6001250
+     0.00%  rv-emu   libc.so.6             [.] 0x0000000000188a85
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5843c4d
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab171
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab1e9
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab34f
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5b39f97
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c1f32
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000ab1c1
+     0.00%  rv-emu   libc.so.6             [.] 0x0000000000188a66
+     0.00%  rv-emu   libc.so.6             [.] 0x0000000000188a59
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5f25a65
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52e079d
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb50e59c1
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5f25a75
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52df15b
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c280c
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52df2b5
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52deb52
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c70a6
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5160002
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5843c55
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c70af
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c249b
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c1f5b
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb6000be9
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb50e5c46
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52b3e7a
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c3302
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb6000bf4
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c3423
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5319af5
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb6000000
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c332f
+     0.00%  rv-emu   libc.so.6             [.] 0x0000000000188db8
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52df0ee
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb51b5338
+     0.00%  rv-emu   libc.so.6             [.] 0x0000000000188dd6
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c7096
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52deb03
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c2155
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb6104109
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52df0ec
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5f2556a
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5160013
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52deb21
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb53111e1
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52db258
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb50e5a55
+     0.00%  rv-emu   libc.so.6             [.] 0x0000000000188e12
+     0.00%  rv-emu   libc.so.6             [.] 0x0000000000188daa
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52deb80
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5177880
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52dd80a
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb58a8185
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5315dfd
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c1fe6
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c1f70
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52deb95
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52db5a1
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c70b0
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c346a
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c335f
+     0.00%  rv-emu   rv-emu                [.] <alloc::vec::splice::Splice<I,A> as core::ops::drop::Drop>::drop
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb50e5917
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52e08b4
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb6001256
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5f240a3
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52dd97d
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5f25a79
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5f240b2
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52df0b4
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb50e590c
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb515fff5
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52deae2
+     0.00%  rv-emu   libc.so.6             [.] 0x0000000000188e17
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52deaf0
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c202e
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb50e5a44
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52c7090
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52b3e85
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb60012d7
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5f259c7
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb6000002
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5160025
+     0.00%  rv-emu   libc.so.6             [.] __close
+     0.00%  rv-emu   rv-emu                [.] rv_emu::emu::Emu::save_snapshot
+     0.00%  rv-emu   ld-linux-x86-64.so.2  [.] 0x000000000001e228
+     0.00%  rv-emu   libc.so.6             [.] 0x00000000000a941a
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb50b43ca
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb50b43d3
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb52179e7
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb50bbfc0
+     0.00%  rv-emu   [unknown]             [k] 0xffffffffb5108dfd
+     0.00%  rv-emu   rv-emu                [.] <std::os::unix::net::stream::UnixStream as std::io::Write>::write
+     0.00%  rv-emu   rv-emu                [.] std::io::Write::write_all
+     0.00%  rv-emu   ld-linux-x86-64.so.2  [.] 0x000000000001f543
+
+
+#
+# (Tip: Print event counts in CSV format with: perf stat -x,)
+#

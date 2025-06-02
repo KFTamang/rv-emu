@@ -25,7 +25,11 @@ pub struct Bus {
 }
 
 impl Bus {
-    pub fn new(code: Vec<u8>, base_addr: u64, interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>) -> Bus {
+    pub fn new(
+        code: Vec<u8>,
+        base_addr: u64,
+        interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
+    ) -> Bus {
         Self {
             dram: Dram::new(code, base_addr),
             uart: Uart::new(0x10000000),
@@ -117,7 +121,10 @@ impl Bus {
             virtio: self.virtio.clone(),
         }
     }
-    pub fn from_snapshot(snapshot: BusSnapshot, interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>) -> Self {
+    pub fn from_snapshot(
+        snapshot: BusSnapshot,
+        interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
+    ) -> Self {
         Self {
             dram: snapshot.dram,
             uart: snapshot.uart,

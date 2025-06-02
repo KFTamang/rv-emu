@@ -1,6 +1,6 @@
 use crate::cpu::*;
 use crate::csr::*;
-use log::{debug, info, error};
+use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use std::process::exit;
 
@@ -107,7 +107,7 @@ impl Interrupt {
         // (b-1)if the hart’s current privilege mode is less than M,
         // (b-2)or if the current privilege mode is M and the MIE bit in the mstatus register is set.
         // (c)If bit i in mideleg is set, however, interrupts are considered to be globally enabled
-        // if the hart’s current privilege mode equals the delegated privilege mode and that mode’s 
+        // if the hart’s current privilege mode equals the delegated privilege mode and that mode’s
         // interrupt enable bit (xIE in mstatus for mode x) is set,
         // or if the current privilege mode is less than the delegated privilege mode.
         let bit_i = self.bit_code();

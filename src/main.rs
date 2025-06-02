@@ -75,7 +75,12 @@ fn main() -> io::Result<()> {
         emu.snapshot_interval = cli.snapshot_interval;
         emu
     } else {
-        let mut emu = Emu::new(code, base_addr, reg_dump_count as u64, cli.snapshot_interval);
+        let mut emu = Emu::new(
+            code,
+            base_addr,
+            reg_dump_count as u64,
+            cli.snapshot_interval,
+        );
         emu.set_entry_point(entry_address);
         emu
     };

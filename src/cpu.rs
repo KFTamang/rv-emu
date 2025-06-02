@@ -4,7 +4,7 @@ use crate::csr::*;
 use crate::dram::*;
 use crate::interrupt::*;
 
-use log::{debug, info, error};
+use log::{debug, error, info};
 
 use serde::{Deserialize, Serialize};
 use std::cmp;
@@ -1256,8 +1256,7 @@ impl Cpu {
             Err(_) => return 0x0,
         };
 
-        let result = self.execute(inst as u32)
-            .map_err(|mut e| e.take_trap(self));
+        let result = self.execute(inst as u32).map_err(|mut e| e.take_trap(self));
         if let Err(e) = result {
             error!("Execution failed!");
             error!("Exception: {:?}", e);
@@ -1314,7 +1313,9 @@ impl Cpu {
 
         // stop pending timer interrupt if counter is greater than compare value
         let mut sip = self.csr.load_csrs(SIP);
-        if sip & Interrupt::SupervisorTimerInterrupt.bit_code() & !INTERRUPT_BIT != 0 && self.csr.load_csrs(STIMECMP) > self.csr.load_csrs(TIME) {
+        if sip & Interrupt::SupervisorTimerInterrupt.bit_code() & !INTERRUPT_BIT != 0
+            && self.csr.load_csrs(STIMECMP) > self.csr.load_csrs(TIME)
+        {
             sip &= !Interrupt::SupervisorTimerInterrupt.bit_code() | INTERRUPT_BIT;
             if sip == INTERRUPT_BIT {
                 sip = 0;

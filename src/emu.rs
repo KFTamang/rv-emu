@@ -1,9 +1,9 @@
 use crate::cpu::*;
 use bincode;
 use log::info;
+use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{Read, Write};
-use serde::{Serialize, Deserialize};
 
 pub enum ExecMode {
     Step,

@@ -1,6 +1,6 @@
-use std::vec;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
+use std::vec;
 
 use crate::interrupt::*;
 use serde::{Deserialize, Serialize};
@@ -70,15 +70,18 @@ impl Plic {
         Ok(())
     }
 
-    
-    pub fn from_snapshot(snapshot: PlicSnapshot, interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>) -> Plic {
+    pub fn from_snapshot(
+        snapshot: PlicSnapshot,
+        interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
+    ) -> Plic {
         let (sender, receiver) = channel();
         Plic {
             start_addr: snapshot.start_addr,
             regs: snapshot.regs,
             interrupt_list,
             receiver: receiver,
-            sender: sender,        }
+            sender: sender,
+        }
     }
 
     pub fn to_snapshot(&self) -> PlicSnapshot {

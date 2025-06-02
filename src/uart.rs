@@ -62,7 +62,7 @@ impl Uart {
                 // returns TRANSMIT_EMPTY | TRANSMIT_HOLDING_EMPTY,
                 // assuming infinitely fast UART, with FIFO being always empty
                 Ok(TRANSMIT_EMPTY | TRANSMIT_HOLDING_EMPTY)
-    }
+            }
             _ => Ok(0x0),
         }
     }

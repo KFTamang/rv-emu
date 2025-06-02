@@ -1,5 +1,4 @@
 use crate::dram::*;
-use crate::interrupt;
 use crate::interrupt::*;
 use crate::plic::*;
 use crate::uart::*;
@@ -9,19 +8,21 @@ use log::info;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 
+const INTERRUPT_ID_UART: u64 = 10;
+
 #[derive(Serialize, Deserialize)]
 pub struct BusSnapshot {
     pub dram: Dram,
-    pub uart: Uart,
+    pub uart: UartSnapshot,
     pub plic: PlicSnapshot,
     pub virtio: Virtio,
 }
 
 pub struct Bus {
-    dram: Dram,
-    uart: Uart,
-    plic: Plic,
-    virtio: Virtio,
+    pub dram: Dram,
+    pub uart: Uart,
+    pub plic: Plic,
+    pub virtio: Virtio,
 }
 
 impl Bus {
@@ -30,10 +31,12 @@ impl Bus {
         base_addr: u64,
         interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
     ) -> Bus {
+        let plic = Plic::new(0xc000000, interrupt_list.clone());
+        let uart_notificator = plic.get_interrupt_notificator(INTERRUPT_ID_UART);
         Self {
+            plic,
             dram: Dram::new(code, base_addr),
-            uart: Uart::new(0x10000000),
-            plic: Plic::new(0xc000000, interrupt_list.clone()),
+            uart: Uart::new(0x10000000, uart_notificator),
             virtio: Virtio::new(0x10001000),
         }
     }
@@ -116,7 +119,7 @@ impl Bus {
     pub fn to_snapshot(&self) -> BusSnapshot {
         BusSnapshot {
             dram: self.dram.clone(),
-            uart: self.uart.clone(),
+            uart: self.uart.to_snapshot(),
             plic: self.plic.to_snapshot(),
             virtio: self.virtio.clone(),
         }
@@ -125,10 +128,11 @@ impl Bus {
         snapshot: BusSnapshot,
         interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
     ) -> Self {
+        let plic = Plic::from_snapshot(snapshot.plic, interrupt_list.clone());
         Self {
             dram: snapshot.dram,
-            uart: snapshot.uart,
-            plic: Plic::from_snapshot(snapshot.plic, interrupt_list.clone()),
+            uart: Uart::from_snapshot(snapshot.uart, plic.get_interrupt_notificator(INTERRUPT_ID_UART)),
+            plic,
             virtio: snapshot.virtio,
         }
     }

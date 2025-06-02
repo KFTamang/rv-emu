@@ -2,10 +2,10 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::vec;
 
-use crate::interrupt::*;
+use crate::interrupt::{self, *};
 use serde::{Deserialize, Serialize};
 
-use log::info;
+use log::{info, error};
 
 const PLIC_SIZE: u64 = 0x4000000;
 
@@ -37,24 +37,29 @@ impl Plic {
             regs: vec![0; PLIC_SIZE as usize / 8],
             sender: sender,
             receiver: receiver,
-            interrupt_list,
-        }
+            interrupt_list: interrupt_list,}
     }
 
-    pub fn get_interrupt_notificator(&self, id: usize) -> impl Fn() + Send {
+    pub fn get_interrupt_notificator(&self, id: u64) -> Box<dyn Fn() + Send> {
         // This function should return a closure that notifies the PLIC of an interrupt of ID `id`.
         let sender_clone = self.sender.clone();
-        let interrupt_list_clone = self.interrupt_list.clone();
-        move || {
-            let mut interrupt_list = interrupt_list_clone.lock().unwrap();
-            if let Some(interrupt) = interrupt_list.iter_mut().find(|i| i.id == id) {
-                interrupt.pending = true;
-                if let Err(e) = sender_clone.send(id as u64) {
-                    info!("Failed to send interrupt notification: {}", e);
-                }
-            } else {
-                info!("Interrupt ID {} not found in the list", id);
+        Box::new(move || {
+            info!("Notifying PLIC of interrupt ID: {}", id);
+            if let Err(e) = sender_clone.send(id as u64) {
+                error!("Failed to send interrupt notification: {}", e);
             }
+        })
+    }
+
+    pub fn process_pending_interrupts(&mut self) {
+        while let Ok(interrupt_id) = self.receiver.try_recv() {
+            info!("Processing interrupt ID: {}", interrupt_id);
+            self.interrupt_list.lock().unwrap().push(DelayedInterrupt {
+                interrupt: Interrupt::MachineExternalInterrupt,
+                cycle: 0
+            });
+            self.regs[INTERRUPT_PENDING_BITS as usize / 4] |= 1 << interrupt_id;
+            info!("Updated pending bits for interrupt ID: {}", interrupt_id);
         }
     }
 

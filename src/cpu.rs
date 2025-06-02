@@ -1242,6 +1242,9 @@ impl Cpu {
         debug!("pc={:>#18x}", self.pc);
         self.cycle += 1;
 
+        // check for interrupts
+        self.bus.plic.process_pending_interrupts();
+
         // check and pend all the delayed interrupts
         self.update_pending_interrupts();
 

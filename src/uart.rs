@@ -5,9 +5,13 @@ use std::sync::{Arc, Mutex};
 const UART_SIZE: u64 = 0x100; // size of the UART memory-mapped region
 
 #[derive(Clone, Serialize, Deserialize)]
+pub struct UartSnapshot {
+    start_addr: u64,
+}
+
 pub struct Uart {
     start_addr: u64,
-    // interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
+    interrupt_notifier: Box<dyn Fn() + Send>,
 }
 
 #[allow(unused)]
@@ -42,9 +46,10 @@ const TRANSMIT_EMPTY: u64 = 1 << 6;
 const FIFO_ERROR: u64 = 1 << 7;
 
 impl Uart {
-    pub fn new(_start_addr: u64) -> Uart {
+    pub fn new(_start_addr: u64, interrupt_notifier: Box<dyn Fn() + Send>) -> Uart {
         Self {
             start_addr: _start_addr,
+            interrupt_notifier,
         }
     }
 
@@ -78,6 +83,19 @@ impl Uart {
                 Ok(())
             }
             _ => Ok(()),
+        }
+    }
+
+    pub fn from_snapshot(snapshot: UartSnapshot, interrupt_notifier: Box<dyn Fn() + Send + 'static>) -> Self {
+        Self {
+            start_addr: snapshot.start_addr,
+            interrupt_notifier,
+        }
+    }
+
+    pub fn to_snapshot(&self) -> UartSnapshot {
+        UartSnapshot {
+            start_addr: self.start_addr,
         }
     }
 }

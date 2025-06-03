@@ -1,6 +1,8 @@
 use crate::interrupt::*;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
+use std::thread;
+use log::debug;
 
 const UART_SIZE: u64 = 0x100; // size of the UART memory-mapped region
 
@@ -12,6 +14,8 @@ pub struct UartSnapshot {
 pub struct Uart {
     start_addr: u64,
     interrupt_notifier: Box<dyn Fn() + Send>,
+    // The input_thread is an optional thread that can be used to read input from the user.
+    input_thread: std::thread::JoinHandle<()>,
 }
 
 #[allow(unused)]
@@ -50,6 +54,18 @@ impl Uart {
         Self {
             start_addr: _start_addr,
             interrupt_notifier,
+            input_thread: thread::spawn(move || {
+                loop {
+                    let mut input = String::new();
+                    if std::io::stdin().read_line(&mut input).is_ok() {
+                        if let Some(ch) = input.chars().next() {
+                            // Call the interrupt notifier with the character read
+                            (interrupt_notifier)();
+                            debug!("input: {}", ch);
+                        }
+                    }
+                }
+            }),
         }
     }
 

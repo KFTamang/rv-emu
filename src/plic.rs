@@ -40,7 +40,7 @@ impl Plic {
             interrupt_list: interrupt_list,}
     }
 
-    pub fn get_interrupt_notificator(&self, id: u64) -> Box<dyn Fn() + Send> {
+    pub fn get_interrupt_notificator(&self, id: u64) -> Box<dyn Fn() + Send + Sync> {
         // This function should return a closure that notifies the PLIC of an interrupt of ID `id`.
         let sender_clone = self.sender.clone();
         Box::new(move || {

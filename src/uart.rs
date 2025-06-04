@@ -2,7 +2,7 @@ use crate::interrupt::*;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use log::debug;
+use log::info;
 
 const UART_SIZE: u64 = 0x100; // size of the UART memory-mapped region
 
@@ -13,7 +13,7 @@ pub struct UartSnapshot {
 
 pub struct Uart {
     start_addr: u64,
-    interrupt_notifier: Box<dyn Fn() + Send>,
+    interrupt_notifier: Arc<Box<dyn Fn() + Send + Sync>>,
     // The input_thread is an optional thread that can be used to read input from the user.
     input_thread: std::thread::JoinHandle<()>,
 }
@@ -50,18 +50,24 @@ const TRANSMIT_EMPTY: u64 = 1 << 6;
 const FIFO_ERROR: u64 = 1 << 7;
 
 impl Uart {
-    pub fn new(_start_addr: u64, interrupt_notifier: Box<dyn Fn() + Send>) -> Uart {
+    pub fn new(_start_addr: u64, interrupt_notifier: Box<dyn Fn() + Send + Sync>) -> Uart {
+        let interrupt_notifier = Arc::new(interrupt_notifier);
+        let interrupt_notifier_clone = Arc::clone(&interrupt_notifier);
+
         Self {
             start_addr: _start_addr,
             interrupt_notifier,
             input_thread: thread::spawn(move || {
+                info!("Thread to take input...");
                 loop {
                     let mut input = String::new();
-                    if std::io::stdin().read_line(&mut input).is_ok() {
+                    // poll stdin for input without blocking
+                    if 
+
                         if let Some(ch) = input.chars().next() {
                             // Call the interrupt notifier with the character read
-                            (interrupt_notifier)();
-                            debug!("input: {}", ch);
+                            // (interrupt_notifier_clone)();
+                            info!("input: {}", ch);
                         }
                     }
                 }
@@ -102,10 +108,25 @@ impl Uart {
         }
     }
 
-    pub fn from_snapshot(snapshot: UartSnapshot, interrupt_notifier: Box<dyn Fn() + Send + 'static>) -> Self {
+    pub fn from_snapshot(snapshot: UartSnapshot, interrupt_notifier: Box<dyn Fn() + Send + Sync + 'static>) -> Self {
+        let interrupt_notifier = Arc::new(interrupt_notifier);
+        let interrupt_notifier_clone = Arc::clone(&interrupt_notifier);
+
         Self {
             start_addr: snapshot.start_addr,
             interrupt_notifier,
+            input_thread: thread::spawn(move || {
+                loop {
+                    let mut input = String::new();
+                    if std::io::stdin().read_line(&mut input).is_ok() {
+                        if let Some(ch) = input.chars().next() {
+                            // Call the interrupt notifier with the character read
+                            (interrupt_notifier_clone)();
+                            info!("input: {}", ch);
+                        }
+                    }
+                }
+            }),
         }
     }
 

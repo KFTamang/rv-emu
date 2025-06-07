@@ -35,6 +35,7 @@ pub struct CpuSnapshot {
     pub cycle: u64,
     pub clint: Clint,
     pub interrupt_list: Vec<DelayedInterrupt>,
+    pub address_translation_cache: std::collections::HashMap<u64, u64>,
 }
 
 pub struct Cpu {
@@ -52,6 +53,7 @@ pub struct Cpu {
     pub cycle: u64,
     clint: Clint,
     interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
+    address_translation_cache: std::collections::HashMap<u64, u64>,
 }
 
 impl Cpu {
@@ -75,6 +77,7 @@ impl Cpu {
             clint: Clint::new(0x200_0000, 0x10000),
             cycle: 0,
             interrupt_list: interrupt_list,
+            address_translation_cache: std::collections::HashMap::new(),
         }
     }
 
@@ -88,6 +91,7 @@ impl Cpu {
             cycle: self.cycle,
             clint: self.clint.clone(),
             interrupt_list: self.interrupt_list.lock().unwrap().to_vec(),
+            address_translation_cache: self.address_translation_cache.clone(),
         }
     }
 
@@ -108,6 +112,7 @@ impl Cpu {
             clint: snapshot.clint,
             cycle: snapshot.cycle,
             interrupt_list: interrupt_list,
+            address_translation_cache: snapshot.address_translation_cache,
         };
         cpu.clear_reg_marks();
         cpu
@@ -242,6 +247,12 @@ impl Cpu {
         if mode == 0 {
             return Ok(va);
         }
+        // store address translation cache by a unit of 4kB
+        let va_cache_entry = va >> 12; // 4kB aligned
+        if self.address_translation_cache.contains_key(&va_cache_entry) {
+            let pa_base = *self.address_translation_cache.get(&va_cache_entry).unwrap() << 12;
+            return Ok(pa_base | (va & 0xfff));
+        }
         let vpn = [(va >> 12) & 0x1ff, (va >> 21) & 0x1ff, (va >> 30) & 0x1ff];
         let mut pt_addr = 0;
         let mut i = (LEVEL - 1) as i64;
@@ -283,12 +294,14 @@ impl Cpu {
         if (a == 0) || ((d == 0) && (acc_mode == AccessMode::Store)) {
             self.bus.store(pt_addr, 64, pte | (1 << 6))?;
         }
-        match i {
-            0 => Ok(((pte << 2) & 0xfffffffffff000) | (va & 0x00000fff)),
-            1 => Ok(((pte << 2) & 0xffffffffe00000) | (va & 0x001fffff)),
-            2 => Ok(((pte << 2) & 0xffffffc0000000) | (va & 0x3fffffff)),
+        let pa = match i {
+            0 => ((pte << 2) & 0xfffffffffff000) | (va & 0x00000fff),
+            1 => ((pte << 2) & 0xffffffffe00000) | (va & 0x001fffff),
+            2 => ((pte << 2) & 0xffffffc0000000) | (va & 0x3fffffff),
             _ => panic!("something goes wrong at MMU! va: 0x{:x}, Level: {}", va, i),
-        }
+        };
+        self.address_translation_cache.insert(va >> 12, pa >> 12); // store 4kB aligned
+        Ok(pa)
     }
 
     fn wait_for_interrupt(&mut self) {
@@ -947,6 +960,7 @@ impl Cpu {
                     }
                     (0x0, 0x9, _) => {
                         self.print_inst_r("sfence.vma", rd, rs1, rs2);
+                        self.address_translation_cache.clear();
                     }
                     (_, _, _) => {
                         error!("Unsupported CSR instruction!");

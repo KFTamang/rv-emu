@@ -126,69 +126,6 @@ impl Cpu {
         }
     }
 
-    fn print_inst_r(&mut self, name: &str, rd: usize, rs1: usize, rs2: usize) {
-        if self.dump_count > 0 {
-            self.inst_string = format!(
-                "{:>#x} : {}, dest:{}, rs1:{}, rs2:{}\n",
-                self.pc, name, rd, rs1, rs2
-            );
-        }
-    }
-
-    fn print_inst_i(&mut self, name: &str, rd: usize, rs1: usize, imm: u64) {
-        if self.dump_count > 0 {
-            self.inst_string = format!(
-                "{:>#x} : {}, rd:{}, rs1:{}, imm:{}({:>#x})\n",
-                self.pc, name, rd, rs1, imm as i32, imm as i32
-            );
-        }
-    }
-
-    fn print_inst_s(&mut self, name: &str, rs1: usize, rs2: usize, imm: u64) {
-        if self.dump_count > 0 {
-            self.inst_string = format!(
-                "{:>#x} : {}, offset:{}, base:{}, src:{}\n",
-                self.pc, name, imm as i64, rs1, rs2
-            );
-        }
-    }
-
-    fn print_inst_b(&mut self, name: &str, rs1: usize, rs2: usize, imm: u64) {
-        if self.dump_count > 0 {
-            self.inst_string = format!(
-                "{:>#x} : {}, rs1:{}, rs2:{}, offset:{}\n",
-                self.pc, name, rs1, rs2, imm as i64
-            );
-        }
-    }
-
-    fn print_inst_j(&mut self, name: &str, rd: usize, imm: u64) {
-        if self.dump_count > 0 {
-            self.inst_string = format!(
-                "{:>#x} : {}, dest:{}, offset:{}({:>#x})\n",
-                self.pc, name, rd, imm as i64, imm as i64
-            );
-        }
-    }
-
-    fn print_inst_csr(&mut self, name: &str, rd: usize, rs1: usize, csr: u64) {
-        if self.dump_count > 0 {
-            self.inst_string = format!(
-                "{:>#x} : {}, dest:{}, rs1:{}, csr:{}({:>#x})\n",
-                self.pc, name, rd, rs1, csr, csr
-            );
-        }
-    }
-
-    fn print_inst_csri(&mut self, name: &str, rd: usize, csr: u64, uimm: u64) {
-        if self.dump_count > 0 {
-            self.inst_string = format!(
-                "{:>#x} : {}, dest:{}, csr:{}({:>#x}), uimm:{}({:>#x})\n",
-                self.pc, name, rd, csr, csr, uimm, uimm
-            );
-        }
-    }
-
     fn mark_as_dest(&mut self, reg: usize) {
         self.dest = reg;
     }
@@ -451,83 +388,83 @@ impl Cpu {
             0x33 => {
                 match (funct3, funct7) {
                     (0x0, 0x0) => {
-                        self.print_inst_r("add", rd, rs1, rs2);
+                        // "add"
                         self.regs[rd] = self.regs[rs1].wrapping_add(self.regs[rs2]);
                     }
                     (0x0, 0x20) => {
-                        self.print_inst_r("sub", rd, rs1, rs2);
+                        // "sub"
                         self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
                     }
                     (0x1, 0x0) => {
-                        self.print_inst_r("sll", rd, rs1, rs2);
+                        // "sll"
                         let shamt = self.regs[rs2] & 0x1f;
                         self.regs[rd] = (self.regs[rs1] as u64) << shamt;
                     }
                     (0x2, 0x0) => {
-                        self.print_inst_r("slt", rd, rs1, rs2);
+                        // "slt"
                         self.regs[rd] = if (rs1 as i64) < (rs2 as i64) { 1 } else { 0 }
                     }
                     (0x3, 0x0) => {
-                        self.print_inst_r("sltu", rd, rs1, rs2);
+                        // "sltu"
                         self.regs[rd] = if (rs1 as u64) < (rs2 as u64) { 1 } else { 0 }
                     }
                     (0x4, 0x0) => {
-                        self.print_inst_r("xor", rd, rs1, rs2);
+                        // "xor"
                         self.regs[rd] = self.regs[rs1] ^ self.regs[rs2];
                     }
                     (0x5, 0x0) => {
-                        self.print_inst_r("srl", rd, rs1, rs2);
+                        // "srl"
                         let shamt = self.regs[rs2] & 0x1f;
                         self.regs[rd] = self.regs[rs1] as u64 >> shamt;
                     }
                     (0x5, 0x20) => {
-                        self.print_inst_r("sra", rd, rs1, rs2);
+                        // "sra"
                         let shamt = self.regs[rs2] & 0x1f;
                         self.regs[rd] = (self.regs[rs1] as i64 as u64) >> shamt;
                     }
                     (0x6, 0x0) => {
-                        self.print_inst_r("or", rd, rs1, rs2);
+                        // "or"
                         self.regs[rd] = self.regs[rs1] | self.regs[rs2];
                     }
                     (0x7, 0x0) => {
-                        self.print_inst_r("and", rd, rs1, rs2);
+                        // "and"
                         self.regs[rd] = self.regs[rs1] & self.regs[rs2];
                     }
                     (0x0, 0x1) => {
-                        self.print_inst_r("mul", rd, rs1, rs2);
+                        // "mul"
                         self.regs[rd] = self.regs[rs1].wrapping_mul(self.regs[rs2]);
                     }
                     (0x1, 0x1) => {
-                        self.print_inst_r("mulh", rd, rs1, rs2);
+                        // "mulh"
                         let mul = (self.regs[rs1] as i64 as i128)
                             .wrapping_mul(self.regs[rs2] as i64 as i128);
                         self.regs[rd] = (mul >> 64) as u64;
                     }
                     (0x2, 0x1) => {
-                        self.print_inst_r("mulhsu", rd, rs1, rs2);
+                        // "mulhsu"
                         let mul = (self.regs[rs1] as i64 as i128)
                             .wrapping_mul(self.regs[rs2] as u128 as i128);
                         self.regs[rd] = (mul >> 64) as u64;
                     }
                     (0x3, 0x1) => {
-                        self.print_inst_r("mulhu", rd, rs1, rs2);
+                        // "mulhu"
                         let mul = (self.regs[rs1] as u128).wrapping_mul(self.regs[rs2] as u128);
                         self.regs[rd] = (mul >> 64) as u64;
                     }
                     (0x4, 0x1) => {
-                        self.print_inst_r("div", rd, rs1, rs2);
+                        // "div"
                         self.regs[rd] = self.regs[rs1] / self.regs[rs2];
                     }
                     (0x5, 0x1) => {
-                        self.print_inst_r("divu", rd, rs1, rs2);
+                        // "divu"
                         self.regs[rd] = ((self.regs[rs1] as i64) / (self.regs[rs2] as i64)) as u64;
                     }
                     (0x6, 0x1) => {
-                        self.print_inst_r("rem", rd, rs1, rs2);
+                        // "rem"
                         self.regs[rd] = self.regs[rs1] % self.regs[rs2];
                     }
                     (0x7, 0x1) => {
-                        self.print_inst_r("remu", rd, rs1, rs2);
+                        // "remu"
                         self.regs[rd] = ((self.regs[rs1] as i64) % (self.regs[rs2] as i64)) as u64;
                     }
                     (_, _) => {
@@ -545,11 +482,11 @@ impl Cpu {
                 let imm = (inst as i32 as i64 >> 20) as u64;
                 match funct3 {
                     0x0 => {
-                        self.print_inst_i("addi", rd, rs1, imm);
+                        // "addi"
                         self.regs[rd] = self.regs[rs1].wrapping_add(imm);
                     }
                     0x2 => {
-                        self.print_inst_i("slti", rd, rs1, imm);
+                        // "slti"
                         let result = if (self.regs[rs1] as i32 as i64) < (imm as i64) {
                             1
                         } else {
@@ -558,7 +495,7 @@ impl Cpu {
                         self.regs[rd] = result;
                     }
                     0x3 => {
-                        self.print_inst_i("sltiu", rd, rs1, imm);
+                        // "sltiu"
                         let result = if (self.regs[rs1] as i32 as i64 as u64) < imm {
                             1
                         } else {
@@ -567,27 +504,27 @@ impl Cpu {
                         self.regs[rd] = result;
                     }
                     0x4 => {
-                        self.print_inst_i("xori", rd, rs1, imm);
+                        // "xori"
                         let val = ((self.regs[rs1] as i32) ^ (imm as i32)) as u64;
                         self.regs[rd] = val;
                     }
                     0x6 => {
-                        self.print_inst_i("ori", rd, rs1, imm);
+                        // "ori"
                         let val = ((self.regs[rs1] as i32) | (imm as i32)) as u64;
                         self.regs[rd] = val;
                     }
                     0x7 => {
-                        self.print_inst_i("andi", rd, rs1, imm);
+                        // "andi"
                         let val = ((self.regs[rs1] as i32) & (imm as i32)) as u64;
                         self.regs[rd] = val;
                     }
                     0x1 => {
-                        self.print_inst_i("slli", rd, rs1, imm);
+                        // "slli"
                         let shamt = (imm & 0x3f) as u64;
                         self.regs[rd] = (self.regs[rs1] as u64) << shamt;
                     }
                     0x5 => {
-                        self.print_inst_i("srli/srai", rd, rs1, imm);
+                        // "srli/
                         let shamt = (imm & 0x3f) as u64;
                         let logical_shift = imm >> 5;
                         if logical_shift == 0 {
@@ -613,37 +550,37 @@ impl Cpu {
                 let addr = self.regs[rs1].wrapping_add(imm);
                 match funct3 {
                     0x0 => {
-                        self.print_inst_i("lb", rd, rs1, imm);
+                        // "lb"
                         let val = self.load(addr, 8)?;
                         self.regs[rd] = val as i8 as i64 as u64;
                     }
                     0x1 => {
-                        self.print_inst_i("lh", rd, rs1, imm);
+                        // "lh"
                         let val = self.load(addr, 16)?;
                         self.regs[rd] = val as i16 as i64 as u64;
                     }
                     0x2 => {
-                        self.print_inst_i("lw", rd, rs1, imm);
+                        // "lw"
                         let val = self.load(addr, 32)?;
                         self.regs[rd] = val as i32 as i64 as u64;
                     }
                     0x3 => {
-                        self.print_inst_i("ld", rd, rs1, imm);
+                        // "ld"
                         let val = self.load(addr, 64)?;
                         self.regs[rd] = val;
                     }
                     0x4 => {
-                        self.print_inst_i("lbu", rd, rs1, imm);
+                        // "lbu"
                         let val = self.load(addr, 8)?;
                         self.regs[rd] = val;
                     }
                     0x5 => {
-                        self.print_inst_i("lhu", rd, rs1, imm);
+                        // "lhu"
                         let val = self.load(addr, 16)?;
                         self.regs[rd] = val;
                     }
                     0x6 => {
-                        self.print_inst_i("lwu", rd, rs1, imm);
+                        // "lwu"
                         let val = self.load(addr, 32)?;
                         self.regs[rd] = val;
                     }
@@ -662,7 +599,7 @@ impl Cpu {
                 let imm = (((inst & 0xfe000000) as i32 as i64 >> 20) as u64)
                     | ((inst >> 7) & 0x1f) as u64;
                 let addr = self.regs[rs1].wrapping_add(imm);
-                self.print_inst_s("s?", rs1, rs2, imm);
+                // "s?", 
                 match funct3 {
                     0x0 => self.store(addr, 8, self.regs[rs2])?,
                     0x1 => self.store(addr, 16, self.regs[rs2])?,
@@ -684,7 +621,7 @@ impl Cpu {
                     | ((inst & 0x7fe00000) as u64) >> 20
                     | ((inst & 0x100000) as u64) >> 9
                     | ((inst & 0xff000) as u64);
-                self.print_inst_j("jal", rd, imm);
+                // "jal"
                 self.regs[rd] = self.pc.wrapping_add(4);
                 self.pc = self.pc.wrapping_add(imm).wrapping_sub(4); // subtract 4 because 4 will be added
                 self.mark_as_dest(rd);
@@ -694,7 +631,7 @@ impl Cpu {
                 match funct3 {
                     0x0 => {
                         let imm = ((inst as i32 as i64) >> 20) as u64;
-                        self.print_inst_i("jalr", rd, rs1, imm);
+                        // "jalr"
                         let return_addr = self.pc.wrapping_add(4);
                         let next_pc = self.regs[rs1].wrapping_add(imm).wrapping_sub(4);
                         // subtract 4 because 4 will be added
@@ -717,7 +654,7 @@ impl Cpu {
                         // addiw
                         // I-type format
                         let imm = (inst as i32) >> 20;
-                        self.print_inst_i("addiw", rd, rs1, imm as u32 as u64);
+                        // "addiw"
                         let src = self.regs[rs1] as i32;
                         let val = src.wrapping_add(imm);
                         self.regs[rd] = val as i64 as u64;
@@ -726,7 +663,7 @@ impl Cpu {
                         // slliw
                         // I-type format
                         let shamt = ((inst as u32) >> 20) & 0x1f;
-                        self.print_inst_i("slliw", rd, rs1, shamt as u64);
+                        // "slliw"
                         let src = self.regs[rs1] as u32;
                         let val = src << shamt;
                         self.regs[rd] = val as i32 as i64 as u64;
@@ -735,7 +672,7 @@ impl Cpu {
                         // srliw
                         // I-type format
                         let shamt = ((inst as u32) >> 20) & 0x1f;
-                        self.print_inst_i("srliw", rd, rs1, shamt as u64);
+                        // "srliw"
                         let src = self.regs[rs1] as u32;
                         let val = src >> shamt;
                         self.regs[rd] = val as i32 as i64 as u64;
@@ -744,7 +681,7 @@ impl Cpu {
                         // sraiw
                         // I-type format
                         let shamt = ((inst as u32) >> 20) & 0x1f;
-                        self.print_inst_i("sraiw", rd, rs1, shamt as u64);
+                        // "sraiw"
                         let src = self.regs[rs1] as i32;
                         let val = src >> shamt;
                         self.regs[rd] = val as i64 as u64;
@@ -767,37 +704,37 @@ impl Cpu {
                     | ((inst & 0x80) as u64) << 4;
                 match funct3 {
                     0x0 => {
-                        self.print_inst_b("beq", rs1, rs2, imm);
+                        // "beq"
                         if self.regs[rs1] == self.regs[rs2] {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x1 => {
-                        self.print_inst_b("bne", rs1, rs2, imm);
+                        // "bne"
                         if self.regs[rs1] != self.regs[rs2] {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x4 => {
-                        self.print_inst_b("blt", rs1, rs2, imm);
+                        // "blt"
                         if (self.regs[rs1] as i64) < (self.regs[rs2] as i64) {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x5 => {
-                        self.print_inst_b("bge", rs1, rs2, imm);
+                        // "bge"
                         if (self.regs[rs1] as i64) >= (self.regs[rs2] as i64) {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x6 => {
-                        self.print_inst_b("bltu", rs1, rs2, imm);
+                        // "bltu"
                         if self.regs[rs1] < self.regs[rs2] {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
                     }
                     0x7 => {
-                        self.print_inst_b("bgeu", rs1, rs2, imm);
+                        // "bgeu"
                         if self.regs[rs1] >= self.regs[rs2] {
                             self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
                         }
@@ -815,52 +752,52 @@ impl Cpu {
             0x3b => {
                 match (funct3, funct7) {
                     (0x0, 0x0) => {
-                        self.print_inst_r("addw", rd, rs1, rs2);
+                        // "addw"
                         let add_val = (self.regs[rs1] as i32).wrapping_add(self.regs[rs2] as i32);
                         self.regs[rd] = add_val as i64 as u64;
                     }
                     (0x0, 0x20) => {
-                        self.print_inst_r("subw", rd, rs1, rs2);
+                        // "subw"
                         let add_val = (self.regs[rs1] as i32).wrapping_sub(self.regs[rs2] as i32);
                         self.regs[rd] = add_val as i64 as u64;
                     }
                     (0x1, 0x0) => {
-                        self.print_inst_r("sllw", rd, rs1, rs2);
+                        // "sllw"
                         let shamt = (self.regs[rs2] as u64) & 0x1f;
                         self.regs[rd] = ((self.regs[rs1] as u32) << shamt) as u64;
                     }
                     (0x5, 0x0) => {
-                        self.print_inst_r("srlw", rd, rs1, rs2);
+                        // "srlw"
                         let shamt = (self.regs[rs2] as u64) & 0x1f;
                         self.regs[rd] = ((self.regs[rs1] as u32) >> shamt) as u64;
                     }
                     (0x5, 0x20) => {
-                        self.print_inst_r("sraw", rd, rs1, rs2);
+                        // "sraw"
                         let shamt = (self.regs[rs2] as u64) & 0x1f;
                         self.regs[rd] = ((self.regs[rs1] as i32) >> shamt) as i64 as u64;
                     }
                     (0x0, 0x1) => {
-                        self.print_inst_r("mulw", rd, rs1, rs2);
+                        // "mulw"
                         let mul = (self.regs[rs2] as u32) * (self.regs[rs2] as u32);
                         self.regs[rd] = mul as i32 as i64 as u64;
                     }
                     (0x4, 0x1) => {
-                        self.print_inst_r("divw", rd, rs1, rs2);
+                        // "divw"
                         let rem = (self.regs[rs2] as u32) / (self.regs[rs2] as u32);
                         self.regs[rd] = rem as u64;
                     }
                     (0x5, 0x1) => {
-                        self.print_inst_r("divuw", rd, rs1, rs2);
+                        // "divuw"
                         let rem = (self.regs[rs2] as i32) / (self.regs[rs2] as i32);
                         self.regs[rd] = rem as i64 as u64;
                     }
                     (0x6, 0x1) => {
-                        self.print_inst_r("remw", rd, rs1, rs2);
+                        // "remw"
                         let rem = (self.regs[rs2] as i32) % (self.regs[rs2] as i32);
                         self.regs[rd] = rem as i64 as u64;
                     }
                     (0x7, 0x1) => {
-                        self.print_inst_r("remuw", rd, rs1, rs2);
+                        // "remuw"
                         let rem = (self.regs[rs2] as u32) % (self.regs[rs2] as u32);
                         self.regs[rd] = rem as u64;
                     }
@@ -876,14 +813,14 @@ impl Cpu {
             }
             0x37 => {
                 let imm = (inst & 0xfffff000) as i32 as i64 as u64;
-                self.print_inst_j("lui", rd, imm);
+                // "lui"
                 self.regs[rd] = imm;
                 self.mark_as_dest(rd);
                 Ok(())
             }
             0x17 => {
                 let imm = inst & 0xfffff000;
-                self.print_inst_j("auipc", rd, imm as u64);
+                // "auipc"
                 self.regs[rd] = imm.wrapping_add(self.pc as u32) as u64;
                 self.mark_as_dest(rd);
                 Ok(())
@@ -894,33 +831,33 @@ impl Cpu {
                 let imm = (inst as i32 as i64 >> 20) as u64;
                 match (funct3, funct7, rs2) {
                     (0x0, 0x0, 0x0) => {
-                        self.print_inst_i("ecall", rd, rs1, imm);
+                        // "ecall"
                         Exception::EnvironmentalCallFromMMode.take_trap(self);
                     }
                     (0x0, 0x0, 0x1) => {
-                        self.print_inst_i("ebreak", rd, rs1, imm);
+                        // "ebreak"
                     }
                     (0x0, 0x8, 0x2) => {
-                        self.print_inst_i("sret", rd, rs1, imm);
+                        // "sret"
                         self.return_from_trap();
                     }
                     (0x0, 0x8, 0x5) => {
-                        self.print_inst_i("wfi", rd, rs1, imm);
+                        // "wfi"
                         self.wait_for_interrupt();
                     }
                     (0x0, 0x18, 0x2) => {
-                        self.print_inst_i("mret", rd, rs1, imm);
+                        // "mret"
                         self.return_from_trap();
                     }
                     (0x1, _, _) => {
-                        self.print_inst_csr("csrrw", rd, rs1, csr as u64);
+                        // "csrrw"
                         if rd != 0 {
                             self.regs[rd] = self.csr.load_csrs(csr) as u64;
                         }
                         self.csr.store_csrs(csr, self.regs[rs1]);
                     }
                     (0x2, _, _) => {
-                        self.print_inst_csr("csrrs", rd, rs1, csr as u64);
+                        // "csrrs"
                         let old_val = self.csr.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
                         if rs1 != 0 {
@@ -928,7 +865,7 @@ impl Cpu {
                         }
                     }
                     (0x3, _, _) => {
-                        self.print_inst_csr("csrrc", rd, rs1, csr as u64);
+                        // "csrrc"
                         let old_val = self.csr.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
                         if rs1 != 0 {
@@ -936,14 +873,14 @@ impl Cpu {
                         }
                     }
                     (0x5, _, _) => {
-                        self.print_inst_csri("csrrwi", rd, csr as u64, uimm as u64);
+                        // "csrrwi"
                         if rd != 0 {
                             self.regs[rd] = self.csr.load_csrs(csr);
                         }
                         self.csr.store_csrs(csr, uimm as u64);
                     }
                     (0x6, _, _) => {
-                        self.print_inst_csri("csrrsi", rd, csr as u64, uimm as u64);
+                        // "csrrsi"
                         let old_val = self.csr.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
                         if rs1 != 0 {
@@ -951,7 +888,7 @@ impl Cpu {
                         }
                     }
                     (0x7, _, _) => {
-                        self.print_inst_csri("csrrci", rd, csr as u64, uimm as u64);
+                        // "csrrci"
                         let old_val = self.csr.load_csrs(csr) as u64;
                         self.regs[rd] = old_val;
                         if rs1 != 0 {
@@ -959,7 +896,7 @@ impl Cpu {
                         }
                     }
                     (0x0, 0x9, _) => {
-                        self.print_inst_r("sfence.vma", rd, rs1, rs2);
+                        // "sfence.
                         self.address_translation_cache.clear();
                     }
                     (_, _, _) => {
@@ -982,7 +919,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 match (funct3, funct5) {
                     (0x2, 0x1) => {
-                        self.print_inst_r("amoswap.w", rd, rs1, rs2);
+                        // "amoswap.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
@@ -995,7 +932,7 @@ impl Cpu {
                         self.store(addr, 32, result)?;
                     }
                     (0x0, 0x1) => {
-                        self.print_inst_r("amoadd.w", rd, rs1, rs2);
+                        // "amoadd.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
@@ -1007,7 +944,7 @@ impl Cpu {
                         self.store(addr, 32, result)?;
                     }
                     (0x4, 0x1) => {
-                        self.print_inst_r("amoxor.w", rd, rs1, rs2);
+                        // "amoxor.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
@@ -1019,7 +956,7 @@ impl Cpu {
                         self.store(addr, 32, result)?;
                     }
                     (0xc, 0x1) => {
-                        self.print_inst_r("amoand.w", rd, rs1, rs2);
+                        // "amoand.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
@@ -1031,7 +968,7 @@ impl Cpu {
                         self.store(addr, 32, result)?;
                     }
                     (0x8, 0x1) => {
-                        self.print_inst_r("amoor.w", rd, rs1, rs2);
+                        // "amoor.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
@@ -1043,7 +980,7 @@ impl Cpu {
                         self.store(addr, 32, result)?;
                     }
                     (0x10, 0x1) => {
-                        self.print_inst_r("amomin.w", rd, rs1, rs2);
+                        // "amomin.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
@@ -1055,7 +992,7 @@ impl Cpu {
                         self.store(addr, 32, result)?;
                     }
                     (0x14, 0x1) => {
-                        self.print_inst_r("amomax.w", rd, rs1, rs2);
+                        // "amomax.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
@@ -1067,7 +1004,7 @@ impl Cpu {
                         self.store(addr, 32, result)?;
                     }
                     (0x18, 0x1) => {
-                        self.print_inst_r("amominu.w", rd, rs1, rs2);
+                        // "amominu.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
@@ -1079,7 +1016,7 @@ impl Cpu {
                         self.store(addr, 32, result)?;
                     }
                     (0x1c, 0x1) => {
-                        self.print_inst_r("amomaxu.w", rd, rs1, rs2);
+                        // "amomaxu.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
                         let src_value = self.regs[rs2];
@@ -1091,7 +1028,7 @@ impl Cpu {
                         self.store(addr, 32, result)?;
                     }
                     (0x2, 0x3) => {
-                        self.print_inst_r("amoswap.d", rd, rs1, rs2);
+                        // "amoswap.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
@@ -1104,7 +1041,7 @@ impl Cpu {
                         self.store(addr, 64, result)?;
                     }
                     (0x0, 0x3) => {
-                        self.print_inst_r("amoadd.d", rd, rs1, rs2);
+                        // "amoadd.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
@@ -1116,7 +1053,7 @@ impl Cpu {
                         self.store(addr, 64, result)?;
                     }
                     (0x4, 0x3) => {
-                        self.print_inst_r("amoxor.d", rd, rs1, rs2);
+                        // "amoxor.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
@@ -1128,7 +1065,7 @@ impl Cpu {
                         self.store(addr, 64, result)?;
                     }
                     (0xc, 0x3) => {
-                        self.print_inst_r("amoand.d", rd, rs1, rs2);
+                        // "amoand.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
@@ -1140,7 +1077,7 @@ impl Cpu {
                         self.store(addr, 64, result)?;
                     }
                     (0x8, 0x3) => {
-                        self.print_inst_r("amoor.d", rd, rs1, rs2);
+                        // "amoor.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
@@ -1152,7 +1089,7 @@ impl Cpu {
                         self.store(addr, 64, result)?;
                     }
                     (0x10, 0x3) => {
-                        self.print_inst_r("amomin.d", rd, rs1, rs2);
+                        // "amomin.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
@@ -1164,7 +1101,7 @@ impl Cpu {
                         self.store(addr, 64, result)?;
                     }
                     (0x14, 0x3) => {
-                        self.print_inst_r("amomax.d", rd, rs1, rs2);
+                        // "amomax.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
@@ -1176,7 +1113,7 @@ impl Cpu {
                         self.store(addr, 64, result)?;
                     }
                     (0x18, 0x3) => {
-                        self.print_inst_r("amominu.d", rd, rs1, rs2);
+                        // "amominu.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];
@@ -1188,7 +1125,7 @@ impl Cpu {
                         self.store(addr, 64, result)?;
                     }
                     (0x1c, 0x3) => {
-                        self.print_inst_r("amomaxu.d", rd, rs1, rs2);
+                        // "amomaxu.
                         let addr = self.regs[rs1];
                         let loaded_value = self.load(addr, 64)?;
                         let src_value = self.regs[rs2];

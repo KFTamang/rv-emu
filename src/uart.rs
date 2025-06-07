@@ -59,16 +59,13 @@ impl Uart {
             interrupt_notifier,
             input_thread: thread::spawn(move || {
                 info!("Thread to take input...");
+                let mut input = String::new();
                 loop {
-                    let mut input = String::new();
-                    // poll stdin for input without blocking
-                    if 
-
-                        if let Some(ch) = input.chars().next() {
-                            // Call the interrupt notifier with the character read
-                            // (interrupt_notifier_clone)();
-                            info!("input: {}", ch);
-                        }
+                    if std::io::stdin().read_line(&mut input).is_ok() {
+                        // Call the interrupt notifier with the character read
+                        (interrupt_notifier_clone)();
+                        info!("input: {}", input.trim());
+                        input.clear(); // Clear the input buffer for the next read
                     }
                 }
             }),

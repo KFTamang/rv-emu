@@ -4,7 +4,7 @@ use crate::csr::*;
 use crate::dram::*;
 use crate::interrupt::*;
 
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 
 use serde::{Deserialize, Serialize};
 use std::cmp;
@@ -145,15 +145,12 @@ impl Cpu {
     }
 
     fn load(&mut self, va: u64, size: u64) -> Result<u64, Exception> {
-        debug!("Load access to 0x{:x}", va);
+        trace!("Load access to 0x{:x}", va);
         match self.translate(va, AccessMode::Load) {
             Ok(pa) => {
-                debug!("Physical address :0x{:x}", pa);
                 if self.clint.is_accessible(pa) {
-                    debug!("Access to CLINT");
                     self.clint.load(pa, size)
                 } else {
-                    debug!("Access to bus");
                     self.bus.load(pa, size)
                 }
             }
@@ -243,7 +240,7 @@ impl Cpu {
 
     fn wait_for_interrupt(&mut self) {
         // wait for a message that notifies an interrupt on the interrupt channel
-        info!("waiting for interrupt");
+        // info!("waiting for interrupt");
         // let interrupt = self.interrupt_receiver.recv().unwrap();
         // self.set_pending_interrupt(interrupt);
     }
@@ -1190,7 +1187,7 @@ impl Cpu {
     }
 
     pub fn step_run(&mut self) -> u64 {
-        debug!("pc={:>#18x}", self.pc);
+        trace!("pc={:>#18x}", self.pc);
         self.cycle += 1;
 
         // check for interrupts
@@ -1228,6 +1225,7 @@ impl Cpu {
             if self.dump_count == 0 {
                 self.dump_count = self.dump_interval;
                 info!("{}", self.dump_registers());
+                debug!("CSR: {}", self.csr.dump());
             }
         }
 
@@ -1254,7 +1252,7 @@ impl Cpu {
         });
 
         for delayed_interrupt in interrupt_list_vec.iter_mut() {
-            debug!("Delayed Interrupt: {:?} ", delayed_interrupt);
+            trace!("Delayed Interrupt: {:?} ", delayed_interrupt);
             delayed_interrupt.cycle -= 1;
         }
 

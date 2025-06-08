@@ -1,5 +1,5 @@
 use crate::interrupt::*;
-use log::{debug, info};
+use log::{debug, info, trace};
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use std::sync::{Arc, Mutex};
@@ -112,12 +112,12 @@ impl Csr {
             TIME => self.get_time_ms() * TIMER_FREQ / 1000,
             _ => self.csr[addr],
         };
-        debug!("load: addr:{:#x}, val:{:#x}", addr, return_value);
+        trace!("load: addr:{:#x}, val:{:#x}", addr, return_value);
         return_value
     }
 
     pub fn store_csrs(&mut self, addr: usize, val: u64) {
-        debug!("store: addr:{:#x}, val:{:#x}", addr, val);
+        trace!("store: addr:{:#x}, val:{:#x}", addr, val);
         match addr {
             SSTATUS => {
                 self.csr[MSTATUS] = val & SSTATUS_MASK;

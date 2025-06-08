@@ -82,12 +82,6 @@ impl Emu {
                     if let Some(event) = self.step() {
                         break RunEvent::Event(event);
                     };
-
-                    if cycles % self.snapshot_interval == 0 {
-                        let path = std::path::PathBuf::from(format!("log/snapshot_{}.bin", cycles));
-                        self.save_snapshot(path.clone());
-                        info!("Snapshot saved to {}", path.clone().display());
-                    }
                 }
             }
         }

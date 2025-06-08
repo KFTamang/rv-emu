@@ -8,3 +8,4 @@ log/*
 venv/*
 flamegraph.svg
 perf.data*
+test.log

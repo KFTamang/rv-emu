@@ -14,6 +14,7 @@ pub struct CsrSnapshot {
 pub struct Csr {
     csr: [u64; 4096],
     initial_time: u64,
+    cycle: Arc<u64>,
     interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
 }
 
@@ -77,10 +78,11 @@ const SSTATUS_MASK: u64 = !(MASK_SXL
 pub const TIMER_FREQ: u64 = 10000000; // 10 MHz
 
 impl Csr {
-    pub fn new(interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>) -> Self {
+    pub fn new(interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>, cycle: Arc<u64>) -> Self {
         Self {
             csr: [0; 4096],
             interrupt_list,
+            cycle,
             initial_time: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -95,10 +97,12 @@ impl Csr {
     pub fn from_snapshot(
         snapshot: CsrSnapshot,
         interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
+        cycle: Arc<u64>,
     ) -> Self {
         Self {
             csr: snapshot.csr,
             interrupt_list,
+            cycle,
             initial_time: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -165,26 +169,26 @@ impl Csr {
     }
 
     fn set_timer_interrupt(&self, comp_value: u64) {
-        let time = self.get_time_ms();
-        let comptime_ms = 1000 * comp_value / TIMER_FREQ;
-        info!(
-            "set_timer_interrupt: compvalue: {}, compvalue_ms:{}, current_time:{}",
-            comp_value, comptime_ms, time
-        );
-        if comptime_ms >= time {
-            let duration = Duration::from_millis(comptime_ms - time);
-            let cycle_value = TIMER_FREQ * duration.as_millis() as u64 / 1000;
-            let mut interrupt_list = self.interrupt_list.lock().unwrap();
-            interrupt_list.push(DelayedInterrupt {
-                interrupt: Interrupt::SupervisorTimerInterrupt,
-                cycle: cycle_value,
-            });
-            info!(
-                "set_timer_interrupt: send timer interrupt duration {} ms, cycle_value {}",
-                comptime_ms - time,
-                cycle_value
-            );
-        }
+        // let time = self.get_time_ms();
+        // let comptime_ms = 1000 * comp_value / TIMER_FREQ;
+        // info!(
+        //     "set_timer_interrupt: compvalue: {}, compvalue_ms:{}, current_time:{}",
+        //     comp_value, comptime_ms, time
+        // );
+        // if comptime_ms >= time {
+        //     let duration = Duration::from_millis(comptime_ms - time);
+        //     let cycle_value = TIMER_FREQ * duration.as_millis() as u64 / 1000;
+        //     let mut interrupt_list = self.interrupt_list.lock().unwrap();
+        //     interrupt_list.push(DelayedInterrupt {
+        //         interrupt: Interrupt::SupervisorTimerInterrupt,
+        //         cycle: cycle_value,
+        //     });
+        //     info!(
+        //         "set_timer_interrupt: send timer interrupt duration {} ms, cycle_value {}",
+        //         comptime_ms - time,
+        //         cycle_value
+        //     );
+        // }
     }
 
     pub fn dump(&self) -> String {

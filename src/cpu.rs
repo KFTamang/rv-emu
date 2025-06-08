@@ -15,6 +15,8 @@ pub const M_MODE: u64 = 0b11;
 pub const S_MODE: u64 = 0b01;
 pub const U_MODE: u64 = 0b00;
 
+pub const CPU_FREQUENCY: u64 = 500_000; // 500kHz
+
 #[derive(PartialEq)]
 enum AccessMode {
     Load,
@@ -61,12 +63,14 @@ impl Cpu {
         let mut regs = [0; 32];
         regs[2] = DRAM_SIZE;
         let interrupt_list = Arc::new(Mutex::new(Vec::new()));
-
+        let bus = Bus::new(binary, base_addr, interrupt_list.clone());
+        let cycle = 0;
+        let csr = Csr::new(interrupt_list.clone(), Arc::new(cycle));
         Self {
             regs,
             pc: base_addr,
-            bus: Bus::new(binary, base_addr, interrupt_list.clone()),
-            csr: Csr::new(interrupt_list.clone()),
+            bus,
+            csr,
             dest: REG_NUM,
             src1: REG_NUM,
             src2: REG_NUM,
@@ -75,8 +79,8 @@ impl Cpu {
             dump_interval: _dump_count,
             inst_string: String::from(""),
             clint: Clint::new(0x200_0000, 0x10000),
-            cycle: 0,
-            interrupt_list: interrupt_list,
+            cycle,
+            interrupt_list,
             address_translation_cache: std::collections::HashMap::new(),
         }
     }
@@ -240,9 +244,30 @@ impl Cpu {
 
     fn wait_for_interrupt(&mut self) {
         // wait for a message that notifies an interrupt on the interrupt channel
-        // info!("waiting for interrupt");
-        // let interrupt = self.interrupt_receiver.recv().unwrap();
-        // self.set_pending_interrupt(interrupt);
+        debug!("waiting for interrupt");
+        debug!("registers dump:");
+        debug!("{}", self.dump_registers());
+        debug!("CSR dump:");
+        debug!("{}", self.csr.dump());
+
+        loop {
+            // check for interrupts
+            self.bus.plic.process_pending_interrupts();
+
+            // check and pend all the delayed interrupts
+            self.update_pending_interrupts();
+
+            if let Some(mut interrupt) = self.get_interrupt_to_take() {
+                info!("wake up from waiting for interrupt");
+                debug!("Interrupt: {:?} taken", interrupt);
+                debug!("{}", self.csr.dump());
+                interrupt.take_trap(self);
+            }
+
+            // sleep for a while to avoid busy waiting
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+
     }
 
     fn set_pending_interrupt(&mut self, interrupt: Interrupt) {
@@ -1263,17 +1288,33 @@ impl Cpu {
             self.set_pending_interrupt(interrupt);
         }
 
-        // stop pending timer interrupt if counter is greater than compare value
-        let mut sip = self.csr.load_csrs(SIP);
-        if sip & Interrupt::SupervisorTimerInterrupt.bit_code() & !INTERRUPT_BIT != 0
-            && self.csr.load_csrs(STIMECMP) > self.csr.load_csrs(TIME)
-        {
-            sip &= !Interrupt::SupervisorTimerInterrupt.bit_code() | INTERRUPT_BIT;
-            if sip == INTERRUPT_BIT {
-                sip = 0;
+        // Update Supervisor Timer Interrupt pending status
+        // If the current time count is greater than STIMECMP, set the pending status
+        // Otherwise, clear the pending status
+        let stimecmp = self.csr.load_csrs(STIMECMP) * 1000 / TIMER_FREQ;
+        let current_counter = self.cycle * 1000 / CPU_FREQUENCY;
+        let mut xip = self.csr.load_csrs(MIP);
+        let sti_bit = Interrupt::SupervisorTimerInterrupt.bit_code() & !INTERRUPT_BIT;
+        debug!("stimecmp: {}, current_counter: {}, xip: {:b}", stimecmp, current_counter, xip);
+        if (stimecmp > 0) && (current_counter >= stimecmp) {
+            if xip & sti_bit == 0 {
+
+                debug!("Setting Supervisor Timer Interrupt pending: stimecmp:{}, current_counter:{}", stimecmp, current_counter);
+                xip |= Interrupt::SupervisorTimerInterrupt.bit_code();
+                self.csr.store_csrs(MIP, xip);
             }
-            self.csr.store_csrs(SIP, sip);
-            info!("Clear STIP: SIP={:b}", sip);
+        } else{
+            if xip & sti_bit != 0 {
+                debug!("Clearing Supervisor Timer Interrupt pending");
+                if xip & sti_bit & !INTERRUPT_BIT != 0 {
+                    // There are other pending interrupts, so we need to restore other pending bits
+                    xip &= !sti_bit;
+                } else {
+                    // No other pending interrupts, clear the MIP register
+                    xip = 0;
+                }
+                self.csr.store_csrs(MIP, xip);
+            }
         }
     }
 }

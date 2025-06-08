@@ -31,7 +31,7 @@ pub const SATP: usize = 0x180;
 
 pub const MSTATUS: usize = 0x300;
 pub const MEDELEG: usize = 0x302;
-pub const MIDELEG: usize = 0x302;
+pub const MIDELEG: usize = 0x303;
 pub const MIE: usize = 0x304;
 pub const MTVEC: usize = 0x305;
 pub const MEPC: usize = 0x341;

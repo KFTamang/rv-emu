@@ -14,7 +14,7 @@ pub struct CsrSnapshot {
 pub struct Csr {
     csr: [u64; 4096],
     initial_time: u64,
-    cycle: Arc<u64>,
+    cycle: Arc<Box<u64>>,
     interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
 }
 
@@ -78,7 +78,7 @@ const SSTATUS_MASK: u64 = !(MASK_SXL
 pub const TIMER_FREQ: u64 = 10000000; // 10 MHz
 
 impl Csr {
-    pub fn new(interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>, cycle: Arc<u64>) -> Self {
+    pub fn new(interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>, cycle: Arc<Box<u64>>) -> Self {
         Self {
             csr: [0; 4096],
             interrupt_list,
@@ -97,7 +97,7 @@ impl Csr {
     pub fn from_snapshot(
         snapshot: CsrSnapshot,
         interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
-        cycle: Arc<u64>,
+        cycle: Arc<Box<u64>>,
     ) -> Self {
         Self {
             csr: snapshot.csr,

@@ -42,7 +42,12 @@ impl Interrupt {
     pub fn take_trap(&mut self, cpu: &mut Cpu) {
         let cause = INTERRUPT_BIT | self.code();
         let target_mode = self.get_trap_mode(cpu);
-        debug!("Taking trap for interrupt: {:?}, cause: 0x{:x}, target mode: {}", self, cause, target_mode.unwrap());
+        debug!(
+            "Taking trap for interrupt: {:?}, cause: 0x{:x}, target mode: {}",
+            self,
+            cause,
+            target_mode.unwrap()
+        );
         match target_mode {
             Ok(M_MODE) => {
                 cpu.csr.store_csrs(MEPC, cpu.pc);

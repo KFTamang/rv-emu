@@ -268,7 +268,6 @@ impl Cpu {
             // sleep for a while to avoid busy waiting
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
-
     }
 
     fn set_pending_interrupt(&mut self, interrupt: Interrupt) {
@@ -622,7 +621,7 @@ impl Cpu {
                 let imm = (((inst & 0xfe000000) as i32 as i64 >> 20) as u64)
                     | ((inst >> 7) & 0x1f) as u64;
                 let addr = self.regs[rs1].wrapping_add(imm);
-                // "s?", 
+                // "s?",
                 match funct3 {
                     0x0 => self.store(addr, 8, self.regs[rs2])?,
                     0x1 => self.store(addr, 16, self.regs[rs2])?,
@@ -1296,15 +1295,20 @@ impl Cpu {
         let current_counter = self.cycle * 1000 / CPU_FREQUENCY;
         let mut xip = self.csr.load_csrs(MIP);
         let sti_bit = Interrupt::SupervisorTimerInterrupt.bit_code() & !INTERRUPT_BIT;
-        debug!("stimecmp: {}, current_counter: {}, xip: {:b}", stimecmp, current_counter, xip);
+        debug!(
+            "stimecmp: {}, current_counter: {}, xip: {:b}",
+            stimecmp, current_counter, xip
+        );
         if (stimecmp > 0) && (current_counter >= stimecmp) {
             if xip & sti_bit == 0 {
-
-                debug!("Setting Supervisor Timer Interrupt pending: stimecmp:{}, current_counter:{}", stimecmp, current_counter);
+                debug!(
+                    "Setting Supervisor Timer Interrupt pending: stimecmp:{}, current_counter:{}",
+                    stimecmp, current_counter
+                );
                 xip |= Interrupt::SupervisorTimerInterrupt.bit_code();
                 self.csr.store_csrs(MIP, xip);
             }
-        } else{
+        } else {
             if xip & sti_bit != 0 {
                 debug!("Clearing Supervisor Timer Interrupt pending");
                 if xip & sti_bit & !INTERRUPT_BIT != 0 {

@@ -5,7 +5,7 @@ use std::vec;
 use crate::interrupt::{self, *};
 use serde::{Deserialize, Serialize};
 
-use log::{info, error};
+use log::{error, info};
 
 const PLIC_SIZE: u64 = 0x4000000;
 
@@ -37,7 +37,8 @@ impl Plic {
             regs: vec![0; PLIC_SIZE as usize / 8],
             sender: sender,
             receiver: receiver,
-            interrupt_list: interrupt_list,}
+            interrupt_list: interrupt_list,
+        }
     }
 
     pub fn get_interrupt_notificator(&self, id: u64) -> Box<dyn Fn() + Send + Sync> {
@@ -56,7 +57,7 @@ impl Plic {
             info!("Processing interrupt ID: {}", interrupt_id);
             self.interrupt_list.lock().unwrap().push(DelayedInterrupt {
                 interrupt: Interrupt::MachineExternalInterrupt,
-                cycle: 0
+                cycle: 0,
             });
             self.regs[INTERRUPT_PENDING_BITS as usize / 4] |= 1 << interrupt_id;
             info!("Updated pending bits for interrupt ID: {}", interrupt_id);

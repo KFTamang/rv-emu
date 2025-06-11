@@ -131,7 +131,10 @@ impl Bus {
         let plic = Plic::from_snapshot(snapshot.plic, interrupt_list.clone());
         Self {
             dram: snapshot.dram,
-            uart: Uart::from_snapshot(snapshot.uart, plic.get_interrupt_notificator(INTERRUPT_ID_UART)),
+            uart: Uart::from_snapshot(
+                snapshot.uart,
+                plic.get_interrupt_notificator(INTERRUPT_ID_UART),
+            ),
             plic,
             virtio: snapshot.virtio,
         }

@@ -1,8 +1,8 @@
 use crate::interrupt::*;
+use log::info;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use log::info;
 
 const UART_SIZE: u64 = 0x100; // size of the UART memory-mapped region
 
@@ -105,7 +105,10 @@ impl Uart {
         }
     }
 
-    pub fn from_snapshot(snapshot: UartSnapshot, interrupt_notifier: Box<dyn Fn() + Send + Sync + 'static>) -> Self {
+    pub fn from_snapshot(
+        snapshot: UartSnapshot,
+        interrupt_notifier: Box<dyn Fn() + Send + Sync + 'static>,
+    ) -> Self {
         let interrupt_notifier = Arc::new(interrupt_notifier);
         let interrupt_notifier_clone = Arc::clone(&interrupt_notifier);
 

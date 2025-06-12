@@ -8,7 +8,9 @@ use log::{debug, error, info, trace};
 
 use serde::{Deserialize, Serialize};
 use std::cmp;
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
+use std::cell::RefCell;
 
 const REG_NUM: usize = 32;
 pub const M_MODE: u64 = 0b11;
@@ -52,7 +54,7 @@ pub struct Cpu {
     dump_count: u64,
     dump_interval: u64,
     inst_string: String,
-    pub cycle: Arc<Box<u64>>,
+    pub cycle: Rc<RefCell<u64>>,
     clint: Clint,
     interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
     address_translation_cache: std::collections::HashMap<u64, u64>,
@@ -64,7 +66,7 @@ impl Cpu {
         regs[2] = DRAM_SIZE;
         let interrupt_list = Arc::new(Mutex::new(Vec::new()));
         let bus = Bus::new(binary, base_addr, interrupt_list.clone());
-        let cycle = Arc::new(Box::new(0u64));
+        let cycle = Rc::new(RefCell::new(0u64));
         let csr = Csr::new(interrupt_list.clone(), cycle.clone());
         Self {
             regs,
@@ -92,7 +94,7 @@ impl Cpu {
             bus: self.bus.to_snapshot(),
             csr: self.csr.to_snapshot(),
             mode: self.mode,
-            cycle: **self.cycle,
+            cycle: *self.cycle.borrow(),
             clint: self.clint.clone(),
             interrupt_list: self.interrupt_list.lock().unwrap().to_vec(),
             address_translation_cache: self.address_translation_cache.clone(),
@@ -101,7 +103,7 @@ impl Cpu {
 
     pub fn from_snapshot(snapshot: CpuSnapshot) -> Self {
         let interrupt_list = Arc::new(Mutex::new(snapshot.interrupt_list));
-        let cycle = Arc::new(Box::new(snapshot.cycle));
+        let cycle = Rc::new(RefCell::new(snapshot.cycle));
         let mut cpu = Self {
             regs: snapshot.regs,
             pc: snapshot.pc,
@@ -1213,7 +1215,7 @@ impl Cpu {
 
     pub fn step_run(&mut self) -> u64 {
         trace!("pc={:>#18x}", self.pc);
-        **self.cycle += 1;
+        *self.cycle.borrow_mut() += 1;
 
         // check for interrupts
         self.bus.plic.process_pending_interrupts();
@@ -1292,7 +1294,7 @@ impl Cpu {
         // If the current time count is greater than STIMECMP, set the pending status
         // Otherwise, clear the pending status
         let stimecmp = self.csr.load_csrs(STIMECMP) * 1000 / TIMER_FREQ;
-        let current_counter = self.cycle * 1000 / CPU_FREQUENCY;
+        let current_counter = *self.cycle.borrow() * 1000 / CPU_FREQUENCY;
         let mut xip = self.csr.load_csrs(MIP);
         let sti_bit = Interrupt::SupervisorTimerInterrupt.bit_code() & !INTERRUPT_BIT;
         debug!(

@@ -163,34 +163,30 @@ impl Csr {
     }
 
     fn get_time_ms(&self) -> u64 {
-        let current_time = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as u64;
-        current_time - self.initial_time
+        *self.cycle.borrow() * 1000 / 1000000
     }
 
     fn set_timer_interrupt(&self, comp_value: u64) {
-        // let time = self.get_time_ms();
-        // let comptime_ms = 1000 * comp_value / TIMER_FREQ;
-        // info!(
-        //     "set_timer_interrupt: compvalue: {}, compvalue_ms:{}, current_time:{}",
-        //     comp_value, comptime_ms, time
-        // );
-        // if comptime_ms >= time {
-        //     let duration = Duration::from_millis(comptime_ms - time);
-        //     let cycle_value = TIMER_FREQ * duration.as_millis() as u64 / 1000;
-        //     let mut interrupt_list = self.interrupt_list.lock().unwrap();
-        //     interrupt_list.push(DelayedInterrupt {
-        //         interrupt: Interrupt::SupervisorTimerInterrupt,
-        //         cycle: cycle_value,
-        //     });
-        //     info!(
-        //         "set_timer_interrupt: send timer interrupt duration {} ms, cycle_value {}",
-        //         comptime_ms - time,
-        //         cycle_value
-        //     );
-        // }
+        let time = self.get_time_ms();
+        let comptime_ms = 1000 * comp_value / TIMER_FREQ;
+        info!(
+            "set_timer_interrupt: compvalue: {}, compvalue_ms:{}, current_time:{}",
+            comp_value, comptime_ms, time
+        );
+        if comptime_ms >= time {
+            let duration = Duration::from_millis(comptime_ms - time);
+            let cycle_value = TIMER_FREQ * duration.as_millis() as u64 / 1000;
+            let mut interrupt_list = self.interrupt_list.lock().unwrap();
+            interrupt_list.push(DelayedInterrupt {
+                interrupt: Interrupt::SupervisorTimerInterrupt,
+                cycle: cycle_value,
+            });
+            info!(
+                "set_timer_interrupt: send timer interrupt duration {} ms, cycle_value {}",
+                comptime_ms - time,
+                cycle_value
+            );
+        }
     }
 
     pub fn dump(&self) -> String {

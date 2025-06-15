@@ -113,13 +113,11 @@ impl Csr {
     }
 
     pub fn load_csrs(&self, addr: usize) -> u64 {
-        let return_value = match addr {
+        match addr {
             SSTATUS => self.csr[MSTATUS] & SSTATUS_MASK,
             TIME => self.get_time_ms() * TIMER_FREQ / 1000,
             _ => self.csr[addr],
-        };
-        trace!("load: addr:{:#x}, val:{:#x}", addr, return_value);
-        return_value
+        }
     }
 
     pub fn store_csrs(&mut self, addr: usize, val: u64) {

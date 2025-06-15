@@ -124,10 +124,6 @@ impl Interrupt {
             S_MODE
         };
 
-        debug!("mideleg is 0x{:x}", mideleg);
-        debug!("bit_i is 0x{:x}", bit_i);
-        debug!("destined_mode is 0x{:x}", destined_mode);
-
         let current_mode = cpu.mode;
         match destined_mode {
             M_MODE => {
@@ -156,7 +152,6 @@ impl Interrupt {
                 if (sip & sie & bit_i) == 0 {
                     return Err(());
                 }
-                debug!("sstatus is 0x{:x}", sstatus);
                 if (sstatus & MASK_SIE) != 0 {
                     return Ok(S_MODE);
                 }

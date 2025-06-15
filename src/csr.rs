@@ -128,7 +128,7 @@ impl Csr {
             }
             STIMECMP => {
                 self.csr[STIMECMP] = val;
-                self.set_timer_interrupt(val);
+                // self.set_timer_interrupt(val);
             }
             _ => {
                 self.csr[addr] = val;
@@ -161,7 +161,7 @@ impl Csr {
     }
 
     fn get_time_ms(&self) -> u64 {
-        *self.cycle.borrow() * 1000 / 1000000
+        *self.cycle.borrow() * 1000 / 10000000000
     }
 
     fn set_timer_interrupt(&self, comp_value: u64) {

@@ -17,7 +17,7 @@ pub const M_MODE: u64 = 0b11;
 pub const S_MODE: u64 = 0b01;
 pub const U_MODE: u64 = 0b00;
 
-pub const CPU_FREQUENCY: u64 = 500_000; // 500kHz
+pub const CPU_FREQUENCY: u64 = 20_000_000; // 20MHz
 
 #[derive(PartialEq)]
 enum AccessMode {
@@ -247,11 +247,11 @@ impl Cpu {
 
     fn wait_for_interrupt(&mut self) {
         // wait for a message that notifies an interrupt on the interrupt channel
-        debug!("waiting for interrupt");
-        debug!("registers dump:");
-        debug!("{}", self.dump_registers());
-        debug!("CSR dump:");
-        debug!("{}", self.csr.dump());
+        info!("waiting for interrupt");
+        info!("registers dump:");
+        info!("{}", self.dump_registers());
+        info!("CSR dump:");
+        info!("{}", self.csr.dump());
 
         loop {
             // check for interrupts
@@ -1293,14 +1293,14 @@ impl Cpu {
         // Update Supervisor Timer Interrupt pending status
         // If the current time count is greater than STIMECMP, set the pending status
         // Otherwise, clear the pending status
-        let stimecmp = self.csr.load_csrs(STIMECMP) * 1000 / TIMER_FREQ;
-        let current_counter = *self.cycle.borrow() * 1000 / CPU_FREQUENCY;
+        let stimecmp = self.csr.load_csrs(STIMECMP);
+        let current_counter = *self.cycle.borrow() * TIMER_FREQ / CPU_FREQUENCY;
         let mut xip = self.csr.load_csrs(MIP);
         let sti_bit = Interrupt::SupervisorTimerInterrupt.bit_code() & !INTERRUPT_BIT;
-        debug!(
-            "stimecmp: {}, current_counter: {}, xip: {:b}",
-            stimecmp, current_counter, xip
-        );
+        // info!(
+        //     "stimecmp: {}, current_counter: {}, xip: {:b}",
+        //     stimecmp, current_counter, xip
+        // );
         if (stimecmp > 0) && (current_counter >= stimecmp) {
             if xip & sti_bit == 0 {
                 debug!(

@@ -64,7 +64,7 @@
                 "-o",
                 "log/output_kernel.log",
                 "--snapshot",
-                "log/snapshot_1000000.bin"
+                "log/snapshot_400000000.bin"
             ],
             "cwd": "${workspaceFolder}",
             "initCommands": [

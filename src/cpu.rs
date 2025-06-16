@@ -7,10 +7,10 @@ use crate::interrupt::*;
 use log::{debug, error, info, trace};
 
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
 use std::cmp;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-use std::cell::RefCell;
 
 const REG_NUM: usize = 32;
 pub const M_MODE: u64 = 0b11;

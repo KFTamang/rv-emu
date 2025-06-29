@@ -17,7 +17,7 @@ pub const M_MODE: u64 = 0b11;
 pub const S_MODE: u64 = 0b01;
 pub const U_MODE: u64 = 0b00;
 
-pub const CPU_FREQUENCY: u64 = 20_000_000; // 20MHz
+pub const CPU_FREQUENCY: u64 = 10_000_000; // 10MHz
 
 #[derive(PartialEq)]
 enum AccessMode {
@@ -247,11 +247,11 @@ impl Cpu {
 
     fn wait_for_interrupt(&mut self) {
         // wait for a message that notifies an interrupt on the interrupt channel
-        debug!("waiting for interrupt");
-        debug!("registers dump:");
-        debug!("{}", self.dump_registers());
-        debug!("CSR dump:");
-        debug!("{}", self.csr.dump());
+        trace!("waiting for interrupt");
+        trace!("registers dump:");
+        trace!("{}", self.dump_registers());
+        trace!("CSR dump:");
+        trace!("{}", self.csr.dump());
 
         // loop {
         //     // check for interrupts
@@ -376,7 +376,7 @@ impl Cpu {
                 self.csr.set_mstatus_bit(U_MODE, MASK_MPP, BIT_MPP);
                 self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
                 self.mode = pp;
-                debug!("back to privilege {} from machine mode", pp);
+                info!("back to privilege {} from machine mode", pp);
             }
             S_MODE => {
                 let pp = self.csr.get_sstatus_bit(MASK_SPP, BIT_SPP);
@@ -387,7 +387,7 @@ impl Cpu {
                 self.csr.set_sstatus_bit(U_MODE, MASK_SPP, BIT_SPP);
                 self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
                 self.mode = pp;
-                debug!("back to privilege {} from supervisor mode", pp);
+                info!("back to privilege {} from supervisor mode", pp);
             }
             _ => {
                 panic!("m/sret from U_MODE\n");
@@ -1216,6 +1216,9 @@ impl Cpu {
     pub fn step_run(&mut self) -> u64 {
         trace!("pc={:>#18x}", self.pc);
         *self.cycle.borrow_mut() += 1;
+        if *self.cycle.borrow() % 1000000 == 0 {
+            debug!("Cycle: {}", self.cycle.borrow());
+        }
 
         // check for interrupts
         self.bus.plic.process_pending_interrupts();
@@ -1297,10 +1300,12 @@ impl Cpu {
         let current_counter = *self.cycle.borrow() * TIMER_FREQ / CPU_FREQUENCY;
         let mut xip = self.csr.load_csrs(MIP);
         let sti_bit = Interrupt::SupervisorTimerInterrupt.bit_code() & !INTERRUPT_BIT;
-        // info!(
-        //     "stimecmp: {}, current_counter: {}, xip: {:b}",
-        //     stimecmp, current_counter, xip
-        // );
+        if current_counter % 10000000 == 0 {
+            debug!(
+                "stimecmp: {}, current_counter: {}, xip: {:b}",
+                stimecmp, current_counter, xip
+            );
+        }
         if (stimecmp > 0) && (current_counter >= stimecmp) {
             if xip & sti_bit == 0 {
                 debug!(

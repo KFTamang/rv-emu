@@ -1,3 +1,4 @@
+use crate::cpu::CPU_FREQUENCY;
 use crate::interrupt::*;
 use log::{debug, info, trace};
 use serde::{Deserialize, Serialize};
@@ -169,7 +170,7 @@ impl Csr {
     }
 
     fn get_time_ms(&self) -> u64 {
-        *self.cycle.borrow() * 1000 / 10000000000
+        *self.cycle.borrow() * 1000 / CPU_FREQUENCY
     }
 
     fn set_timer_interrupt(&self, comp_value: u64) {

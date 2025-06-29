@@ -247,29 +247,29 @@ impl Cpu {
 
     fn wait_for_interrupt(&mut self) {
         // wait for a message that notifies an interrupt on the interrupt channel
-        info!("waiting for interrupt");
-        info!("registers dump:");
-        info!("{}", self.dump_registers());
-        info!("CSR dump:");
-        info!("{}", self.csr.dump());
+        debug!("waiting for interrupt");
+        debug!("registers dump:");
+        debug!("{}", self.dump_registers());
+        debug!("CSR dump:");
+        debug!("{}", self.csr.dump());
 
-        loop {
-            // check for interrupts
-            self.bus.plic.process_pending_interrupts();
+        // loop {
+        //     // check for interrupts
+        //     self.bus.plic.process_pending_interrupts();
 
-            // check and pend all the delayed interrupts
-            self.update_pending_interrupts();
+        //     // check and pend all the delayed interrupts
+        //     self.update_pending_interrupts();
 
-            if let Some(mut interrupt) = self.get_interrupt_to_take() {
-                info!("wake up from waiting for interrupt");
-                debug!("Interrupt: {:?} taken", interrupt);
-                debug!("{}", self.csr.dump());
-                interrupt.take_trap(self);
-            }
+        //     if let Some(mut interrupt) = self.get_interrupt_to_take() {
+        //         info!("wake up from waiting for interrupt");
+        //         debug!("Interrupt: {:?} taken", interrupt);
+        //         debug!("{}", self.csr.dump());
+        //         interrupt.take_trap(self);
+        //     }
 
-            // sleep for a while to avoid busy waiting
-            std::thread::sleep(std::time::Duration::from_millis(10));
-        }
+        //     // sleep for a while to avoid busy waiting
+        //     std::thread::sleep(std::time::Duration::from_millis(10));
+        // }
     }
 
     fn set_pending_interrupt(&mut self, interrupt: Interrupt) {

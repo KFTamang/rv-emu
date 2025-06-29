@@ -115,6 +115,8 @@ impl Csr {
     pub fn load_csrs(&self, addr: usize) -> u64 {
         match addr {
             SSTATUS => self.csr[MSTATUS] & SSTATUS_MASK,
+            SIE => self.csr[MIE] & self.csr[MIDELEG],
+            SIP => self.csr[MIP] & self.csr[MIDELEG],
             TIME => self.get_time_ms() * TIMER_FREQ / 1000,
             _ => self.csr[addr],
         }
@@ -125,6 +127,12 @@ impl Csr {
         match addr {
             SSTATUS => {
                 self.csr[MSTATUS] = val & SSTATUS_MASK;
+            }
+            SIE => {
+                self.csr[MIE] = val & self.csr[MIDELEG];
+            }
+            SIP => {
+                self.csr[MIP] = val & self.csr[MIDELEG];
             }
             STIMECMP => {
                 self.csr[STIMECMP] = val;

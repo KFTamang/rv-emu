@@ -56,7 +56,7 @@ impl Plic {
         while let Ok(interrupt_id) = self.receiver.try_recv() {
             info!("Processing interrupt ID: {}", interrupt_id);
             self.interrupt_list.lock().unwrap().push(DelayedInterrupt {
-                interrupt: Interrupt::MachineExternalInterrupt,
+                interrupt: Interrupt::SupervisorExternalInterrupt,
                 cycle: 0,
             });
             self.regs[INTERRUPT_PENDING_BITS as usize / 4] |= 1 << interrupt_id;

@@ -32,7 +32,7 @@ impl Bus {
         interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
     ) -> Bus {
         let plic = Plic::new(0xc000000, interrupt_list.clone());
-        let uart_notificator = plic.get_interrupt_notificator(INTERRUPT_ID_UART);
+        let uart_notificator = plic.get_interrupt_notificator(ExternalInterrupt::UartInput);
         Self {
             plic,
             dram: Dram::new(code, base_addr),
@@ -41,7 +41,7 @@ impl Bus {
         }
     }
 
-    pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
+    pub fn load(&mut self, addr: u64, size: u64) -> Result<u64, Exception> {
         if self.dram.dram_base <= addr {
             let ret_val = self.dram.load(addr, size);
             return ret_val;
@@ -133,7 +133,7 @@ impl Bus {
             dram: snapshot.dram,
             uart: Uart::from_snapshot(
                 snapshot.uart,
-                plic.get_interrupt_notificator(INTERRUPT_ID_UART),
+                plic.get_interrupt_notificator(ExternalInterrupt::UartInput),
             ),
             plic,
             virtio: snapshot.virtio,

@@ -376,7 +376,7 @@ impl Cpu {
                 self.csr.set_mstatus_bit(U_MODE, MASK_MPP, BIT_MPP);
                 self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
                 self.mode = pp;
-                info!("back to privilege {} from machine mode", pp);
+                debug!("back to privilege {} from machine mode", pp);
             }
             S_MODE => {
                 let pp = self.csr.get_sstatus_bit(MASK_SPP, BIT_SPP);
@@ -387,7 +387,7 @@ impl Cpu {
                 self.csr.set_sstatus_bit(U_MODE, MASK_SPP, BIT_SPP);
                 self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
                 self.mode = pp;
-                info!("back to privilege {} from supervisor mode", pp);
+                debug!("back to privilege {} from supervisor mode", pp);
             }
             _ => {
                 panic!("m/sret from U_MODE\n");

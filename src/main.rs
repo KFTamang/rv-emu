@@ -9,6 +9,7 @@ mod interrupt;
 mod plic;
 mod uart;
 mod virtio;
+mod instruction;
 use clap::Parser; // command-line option parser
 
 use crate::debugger::{wait_for_gdb_connection, MyGdbBlockingEventLoop};

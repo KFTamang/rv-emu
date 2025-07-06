@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::cmp;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
+use std::collections::BTreeSet;
 
 const REG_NUM: usize = 32;
 pub const M_MODE: u64 = 0b11;
@@ -38,7 +38,7 @@ pub struct CpuSnapshot {
     pub mode: u64,
     pub cycle: u64,
     pub clint: Clint,
-    pub interrupt_list: Vec<DelayedInterrupt>,
+    pub interrupt_list: BTreeSet<Interrupt>,
     pub address_translation_cache: std::collections::HashMap<u64, u64>,
 }
 
@@ -56,7 +56,7 @@ pub struct Cpu {
     inst_string: String,
     pub cycle: Rc<RefCell<u64>>,
     clint: Clint,
-    interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
+    interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>,
     address_translation_cache: std::collections::HashMap<u64, u64>,
 }
 
@@ -64,7 +64,7 @@ impl Cpu {
     pub fn new(binary: Vec<u8>, base_addr: u64, _dump_count: u64) -> Self {
         let mut regs = [0; 32];
         regs[2] = DRAM_SIZE;
-        let interrupt_list = Arc::new(Mutex::new(Vec::new()));
+        let interrupt_list = Rc::new(RefCell::new(BTreeSet::<Interrupt>::new()));
         let bus = Bus::new(binary, base_addr, interrupt_list.clone());
         let cycle = Rc::new(RefCell::new(0u64));
         let csr = Csr::new(interrupt_list.clone(), cycle.clone());
@@ -96,13 +96,13 @@ impl Cpu {
             mode: self.mode,
             cycle: *self.cycle.borrow(),
             clint: self.clint.clone(),
-            interrupt_list: self.interrupt_list.lock().unwrap().to_vec(),
+            interrupt_list: self.interrupt_list.borrow().clone(),
             address_translation_cache: self.address_translation_cache.clone(),
         }
     }
 
     pub fn from_snapshot(snapshot: CpuSnapshot) -> Self {
-        let interrupt_list = Arc::new(Mutex::new(snapshot.interrupt_list));
+        let interrupt_list = Rc::new(RefCell::new(snapshot.interrupt_list));
         let cycle = Rc::new(RefCell::new(snapshot.cycle));
         let mut cpu = Self {
             regs: snapshot.regs,
@@ -318,7 +318,8 @@ impl Cpu {
             return None;
         }
 
-        for interrupt in Interrupt::PRIORITY_ORDER.iter() {
+        let interrupt_list = self.interrupt_list.borrow(); 
+        for interrupt in interrupt_list.iter() {
             if let Ok(destined_mode) = interrupt.get_trap_mode(self) {
                 info!(
                     "interrupt: {:?}, destined mode: {}, current mode: {}",
@@ -1268,64 +1269,26 @@ impl Cpu {
     }
 
     fn update_pending_interrupts(&mut self) {
-        let mut interrupt_list_vec = self.interrupt_list.lock().unwrap();
-
-        // Pend interrupts with cycle == 0 and add them to the pending list
-        let mut to_pend = Vec::new();
-        interrupt_list_vec.retain(|delayed_interrupt| {
-            if delayed_interrupt.cycle > 0 {
-                true
-            } else {
-                to_pend.push(delayed_interrupt.interrupt);
-                false
-            }
-        });
-
-        for delayed_interrupt in interrupt_list_vec.iter_mut() {
-            trace!("Delayed Interrupt: {:?} ", delayed_interrupt);
-            delayed_interrupt.cycle -= 1;
-        }
-
-        drop(interrupt_list_vec); // Release the lock before calling self methods
-
-        for interrupt in to_pend {
-            info!("Pend Interrupt: {:?} ", interrupt);
-            self.set_pending_interrupt(interrupt);
-        }
-
         // Update Supervisor Timer Interrupt pending status
         // If the current time count is greater than STIMECMP, set the pending status
         // Otherwise, clear the pending status
         let stimecmp = self.csr.load_csrs(STIMECMP);
         let current_counter = *self.cycle.borrow() * TIMER_FREQ / CPU_FREQUENCY;
-        let mut xip = self.csr.load_csrs(MIP);
-        let sti_bit = Interrupt::SupervisorTimerInterrupt.bit_code() & !INTERRUPT_BIT;
-        if current_counter % 10000000 == 0 {
-            debug!(
-                "stimecmp: {}, current_counter: {}, xip: {:b}",
-                stimecmp, current_counter, xip
-            );
-        }
-        if (stimecmp > 0) && (current_counter >= stimecmp) {
-            if xip & sti_bit == 0 {
+        if current_counter % 10000 == 0 {
+            if current_counter % 1000000 == 0 {
                 debug!(
-                    "Setting Supervisor Timer Interrupt pending: stimecmp:{}, current_counter:{}",
+                    "stimecmp: {}, current_counter: {}",
                     stimecmp, current_counter
                 );
-                xip |= Interrupt::SupervisorTimerInterrupt.bit_code();
-                self.csr.store_csrs(MIP, xip);
             }
-        } else {
-            if xip & sti_bit != 0 {
-                debug!("Clearing Supervisor Timer Interrupt pending");
-                if xip & sti_bit & !INTERRUPT_BIT != 0 {
-                    // There are other pending interrupts, so we need to restore other pending bits
-                    xip &= !sti_bit;
-                } else {
-                    // No other pending interrupts, clear the MIP register
-                    xip = 0;
-                }
-                self.csr.store_csrs(MIP, xip);
+            if (stimecmp > 0) && (current_counter >= stimecmp) {
+                self.interrupt_list
+                    .borrow_mut()
+                    .insert(Interrupt::SupervisorTimerInterrupt);
+            } else {
+                self.interrupt_list
+                    .borrow_mut()
+                    .remove(&Interrupt::SupervisorTimerInterrupt);
             }
         }
     }

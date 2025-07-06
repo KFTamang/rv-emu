@@ -1,7 +1,7 @@
 use crate::interrupt::*;
 use log::info;
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::thread;
 
 const UART_SIZE: u64 = 0x100; // size of the UART memory-mapped region

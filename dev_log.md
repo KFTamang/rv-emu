@@ -149,3 +149,9 @@ GDBはリモート接続モードで動かす。
 
 # 2025/05/30
 高速化アイディア：TLB（論物変換キャッシュ）
+
+# 2025/07/06
+割り込みの管理をBinary Heap(=Priority Queue)にする。
+DelayedInterruptを使っていないため。
+CSRのMIP/SIPはBinary Heapから都度生成して読み込むこととする。
+こうすると割り込みの管理がシンプルになる。

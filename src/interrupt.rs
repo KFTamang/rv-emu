@@ -6,7 +6,7 @@ use std::process::exit;
 
 pub const INTERRUPT_BIT: u64 = 1 << 63;
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Interrupt {
     SupervisorSoftwareInterrupt,
     MachineSoftwareInterrupt,
@@ -14,6 +14,18 @@ pub enum Interrupt {
     MachineTimerInterrupt,
     SupervisorExternalInterrupt,
     MachineExternalInterrupt,
+}
+
+impl PartialOrd for Interrupt {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Interrupt {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.code().cmp(&other.code())
+    }
 }
 
 impl Interrupt {
@@ -105,7 +117,7 @@ impl Interrupt {
         }
         debug!("Interrupt:{:?} occurred!", self);
     }
-    pub fn get_trap_mode(&self, cpu: &mut Cpu) -> Result<u64, ()> {
+    pub fn get_trap_mode(&self, cpu: &Cpu) -> Result<u64, ()> {
         // An interrupt i will be taken
         // (a)if bit i is set in both mip and mie,
         // (b)and if interrupts are globally enabled.

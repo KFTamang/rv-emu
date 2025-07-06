@@ -6,7 +6,9 @@ use crate::virtio::*;
 use log::debug;
 use log::info;
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex};
+use std::collections::BTreeSet;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 const INTERRUPT_ID_UART: u64 = 10;
 
@@ -29,7 +31,7 @@ impl Bus {
     pub fn new(
         code: Vec<u8>,
         base_addr: u64,
-        interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
+        interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>,
     ) -> Bus {
         let plic = Plic::new(0xc000000, interrupt_list.clone());
         let uart_notificator = plic.get_interrupt_notificator(ExternalInterrupt::UartInput);
@@ -126,7 +128,7 @@ impl Bus {
     }
     pub fn from_snapshot(
         snapshot: BusSnapshot,
-        interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
+        interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>,
     ) -> Self {
         let plic = Plic::from_snapshot(snapshot.plic, interrupt_list.clone());
         Self {

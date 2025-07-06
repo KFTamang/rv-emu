@@ -1,12 +1,12 @@
 use crate::cpu::CPU_FREQUENCY;
 use crate::interrupt::*;
-use log::{debug, info, trace};
+use log::trace;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use std::cell::RefCell;
+use std::collections::BTreeSet;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Serialize, Deserialize)]
 pub struct CsrSnapshot {
@@ -18,7 +18,7 @@ pub struct Csr {
     csr: [u64; 4096],
     initial_time: u64,
     cycle: Rc<RefCell<u64>>,
-    interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
+    interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>,
 }
 
 pub const SSTATUS: usize = 0x100;
@@ -81,7 +81,7 @@ const SSTATUS_MASK: u64 = !(MASK_SXL
 pub const TIMER_FREQ: u64 = 10000000; // 10 MHz
 
 impl Csr {
-    pub fn new(interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>, cycle: Rc<RefCell<u64>>) -> Self {
+    pub fn new(interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>, cycle: Rc<RefCell<u64>>) -> Self {
         Self {
             csr: [0; 4096],
             interrupt_list,
@@ -99,7 +99,7 @@ impl Csr {
 
     pub fn from_snapshot(
         snapshot: CsrSnapshot,
-        interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
+        interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>,
         cycle: Rc<RefCell<u64>>,
     ) -> Self {
         Self {
@@ -117,8 +117,23 @@ impl Csr {
         match addr {
             SSTATUS => self.csr[MSTATUS] & SSTATUS_MASK,
             SIE => self.csr[MIE] & self.csr[MIDELEG],
-            SIP => self.csr[MIP] & self.csr[MIDELEG],
+            SIP => {
+                let mut sip = 0 as u64;
+                let interrupts = self.interrupt_list.borrow();
+                for interrupt in interrupts.iter() {
+                    sip |= interrupt.bit_code() | INTERRUPT_BIT;
+                }
+                sip & self.csr[MIDELEG]
+            },
             TIME => self.get_time_ms() * TIMER_FREQ / 1000,
+            MIP => {
+                let mut mip = 0 as u64;
+                let interrupts = self.interrupt_list.borrow();
+                for interrupt in interrupts.iter() {
+                    mip |= interrupt.bit_code() | INTERRUPT_BIT;
+                }
+                mip
+            },
             _ => self.csr[addr],
         }
     }
@@ -171,29 +186,6 @@ impl Csr {
 
     fn get_time_ms(&self) -> u64 {
         *self.cycle.borrow() * 1000 / CPU_FREQUENCY
-    }
-
-    fn set_timer_interrupt(&self, comp_value: u64) {
-        let time = self.get_time_ms();
-        let comptime_ms = 1000 * comp_value / TIMER_FREQ;
-        info!(
-            "set_timer_interrupt: compvalue: {}, compvalue_ms:{}, current_time:{}",
-            comp_value, comptime_ms, time
-        );
-        if comptime_ms >= time {
-            let duration = Duration::from_millis(comptime_ms - time);
-            let cycle_value = TIMER_FREQ * duration.as_millis() as u64 / 1000;
-            let mut interrupt_list = self.interrupt_list.lock().unwrap();
-            interrupt_list.push(DelayedInterrupt {
-                interrupt: Interrupt::SupervisorTimerInterrupt,
-                cycle: cycle_value,
-            });
-            info!(
-                "set_timer_interrupt: send timer interrupt duration {} ms, cycle_value {}",
-                comptime_ms - time,
-                cycle_value
-            );
-        }
     }
 
     pub fn dump(&self) -> String {

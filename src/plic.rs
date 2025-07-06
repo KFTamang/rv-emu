@@ -1,9 +1,10 @@
 use std::collections::BTreeSet;
 use std::sync::mpsc::{channel, Receiver, Sender};
-use std::sync::{Arc, Mutex};
+use std::rc::Rc;
+use std::cell::RefCell;
 use std::vec;
 
-use crate::interrupt::{DelayedInterrupt, Interrupt, Exception};
+use crate::interrupt::{Interrupt, Exception};
 use serde::{Deserialize, Serialize};
 
 use log::{error, info};
@@ -41,12 +42,12 @@ pub struct Plic {
     regs: Vec<u32>,
     receiver: Receiver<ExternalInterrupt>,
     sender: Sender<ExternalInterrupt>,
-    interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
+    interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>,
     external_interrupt_list: BTreeSet<ExternalInterrupt>,
 }
 
 impl Plic {
-    pub fn new(_start_addr: u64, interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>) -> Plic {
+    pub fn new(_start_addr: u64, interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>) -> Plic {
         let (sender, receiver) = channel();
         Self {
             start_addr: _start_addr,
@@ -72,10 +73,7 @@ impl Plic {
     pub fn process_pending_interrupts(&mut self) {
         while let Ok(interrupt) = self.receiver.try_recv() {
             info!("Processing interrupt ID: {:?}", interrupt);
-            self.interrupt_list.lock().unwrap().push(DelayedInterrupt {
-                interrupt: Interrupt::SupervisorExternalInterrupt,
-                cycle: 0,
-            });
+            self.interrupt_list.borrow_mut().insert(Interrupt::SupervisorExternalInterrupt);
             self.regs[INTERRUPT_PENDING_BITS as usize / 4] |= 1 << interrupt.id();
             info!("Updated pending bits for interrupt ID: {:?}", interrupt);
             self.external_interrupt_list.insert(interrupt.clone());
@@ -103,6 +101,8 @@ impl Plic {
                     self.regs[INTERRUPT_PENDING_BITS as usize / 4] &= !(1 << id);
                     // Remove the interrupt from the external list
                     self.external_interrupt_list.remove(&interrupt);
+                    // Clear the interrupt pending bit in the interrupt list
+                    self.interrupt_list.borrow_mut().remove(&Interrupt::SupervisorExternalInterrupt);
                     // Return the ID of the claimed interrupt
                     Ok(id as u64)
                 } else {
@@ -126,7 +126,7 @@ impl Plic {
 
     pub fn from_snapshot(
         snapshot: PlicSnapshot,
-        interrupt_list: Arc<Mutex<Vec<DelayedInterrupt>>>,
+        interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>,
     ) -> Plic {
         let (sender, receiver) = channel();
         Plic {

@@ -789,59 +789,60 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            // 0x63 => {
-            //     // branch instructions
-            //     let imm = ((inst & 0x80000000) as i32 as i64 >> 19) as u64
-            //         | ((inst & 0x7e000000) as u64) >> 20
-            //         | ((inst & 0xf00) as u64) >> 7
-            //         | ((inst & 0x80) as u64) << 4;
-            //     match funct3 {
-            //         0x0 => {
-            //             // "beq"
-            //             if self.regs[rs1] == self.regs[rs2] {
-            //                 self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
-            //             }
-            //         }
-            //         0x1 => {
-            //             // "bne"
-            //             if self.regs[rs1] != self.regs[rs2] {
-            //                 self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
-            //             }
-            //         }
-            //         0x4 => {
-            //             // "blt"
-            //             if (self.regs[rs1] as i64) < (self.regs[rs2] as i64) {
-            //                 self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
-            //             }
-            //         }
-            //         0x5 => {
-            //             // "bge"
-            //             if (self.regs[rs1] as i64) >= (self.regs[rs2] as i64) {
-            //                 self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
-            //             }
-            //         }
-            //         0x6 => {
-            //             // "bltu"
-            //             if self.regs[rs1] < self.regs[rs2] {
-            //                 self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
-            //             }
-            //         }
-            //         0x7 => {
-            //             // "bgeu"
-            //             if self.regs[rs1] >= self.regs[rs2] {
-            //                 self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
-            //             }
-            //         }
-            //         _ => {
-            //             error!("This should not be reached!");
-            //             error!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
-            //             return Err(Exception::IllegalInstruction(inst));
-            //         }
-            //     }
-            //     self.mark_as_src1(rs1);
-            //     self.mark_as_src2(rs2);
-            //     Ok(())
-            // }
+            DecodedInstr::Beq {rd, rs1, rs2, imm } => {
+                // "beq"
+                if self.regs[rs1] == self.regs[rs2] {
+                    self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                }
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Bne {rd, rs1, rs2, imm } => {
+                // "bne"
+                if self.regs[rs1] != self.regs[rs2] {
+                    self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                }
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Blt {rd, rs1, rs2, imm } => {
+                // "blt"
+                if (self.regs[rs1] as i64) < (self.regs[rs2] as i64) {
+                    self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                }
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Bge {rd, rs1, rs2, imm } => {
+                // "bge"
+                if (self.regs[rs1] as i64) >= (self.regs[rs2] as i64) {
+                    self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                }
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Bltu {rd, rs1, rs2, imm } => {
+                // "bltu"
+                if self.regs[rs1] < self.regs[rs2] {
+                    self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                }
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Bgeu {rd, rs1, rs2, imm } => {
+                // "bgeu"
+                if self.regs[rs1] >= self.regs[rs2] {
+                    self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                }
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
             // 0x3b => {
             //     match (funct3, funct7) {
             //         (0x0, 0x0) => {

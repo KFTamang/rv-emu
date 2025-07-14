@@ -566,7 +566,7 @@ impl Cpu {
             }
             DecodedInstr::Addi{rd, rs1, imm} => {
                 // "addi"
-                self.regs[rd] = self.regs[rs1].wrapping_add(imm);
+                self.regs[rd] = self.regs[rs1].wrapping_add(imm as u64);
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(())
@@ -585,7 +585,7 @@ impl Cpu {
             }
             DecodedInstr::Sltiu{rd, rs1, imm} => {
                 // "sltiu"
-                let result = if (self.regs[rs1] as i32 as i64 as u64) < imm {
+                let result = if (self.regs[rs1] as i32 as u32) < imm {
                     1
                 } else {
                     0
@@ -640,174 +640,155 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Lb => {
+            DecodedInstr::Lb {rd, rs1, imm} => {
                 // "lb"
-                let addr = self.regs[rs1].wrapping_add(imm);
+                let addr = self.regs[rs1].wrapping_add(imm as u64);
                 let val = self.load(addr, 8)?;
                 self.regs[rd] = val as i8 as i64 as u64;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(())
-                self.mark_as_dest(rd);
-                self.mark_as_src1(rs1);
-                Ok(())
             }
-            DecodedInstr::Lh => {
+            DecodedInstr::Lh {rd, rs1, imm} => {
                 // "lh"
-                let addr = self.regs[rs1].wrapping_add(imm);
+                let addr = self.regs[rs1].wrapping_add(imm as u64);
                 let val = self.load(addr, 16)?;
                 self.regs[rd] = val as i16 as i64 as u64;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Lw => {
+            DecodedInstr::Lw {rd, rs1, imm} => {
                 // "lw"
-                let addr = self.regs[rs1].wrapping_add(imm);
+                let addr = self.regs[rs1].wrapping_add(imm as u64);
                 let val = self.load(addr, 32)?;
                 self.regs[rd] = val as i32 as i64 as u64;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Ld => {
+            DecodedInstr::Ld {rd, rs1, imm} => {
                 // "ld"
-                let addr = self.regs[rs1].wrapping_add(imm);
+                let addr = self.regs[rs1].wrapping_add(imm as u64);
                 let val = self.load(addr, 64)?;
                 self.regs[rd] = val;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Lbu => {
+            DecodedInstr::Lbu {rd, rs1, imm} => {
                 // "lbu"
-                let addr = self.regs[rs1].wrapping_add(imm);
+                let addr = self.regs[rs1].wrapping_add(imm as u64);
                 let val = self.load(addr, 8)?;
                 self.regs[rd] = val;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Lhu => {
+            DecodedInstr::Lhu {rd, rs1, imm} => {
                 // "lhu"
-                let addr = self.regs[rs1].wrapping_add(imm);
+                let addr = self.regs[rs1].wrapping_add(imm as u64);
                 let val = self.load(addr, 16)?;
                 self.regs[rd] = val;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Lwu => {
+            DecodedInstr::Lwu {rd, rs1, imm} => {
                 // "lwu"
-                let addr = self.regs[rs1].wrapping_add(imm);
+                let addr = self.regs[rs1].wrapping_add(imm as u64);
                 let val = self.load(addr, 32)?;
                 self.regs[rd] = val;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            // 0x23 => {
-            //     // store instructions
-            //     let imm = (((inst & 0xfe000000) as i32 as i64 >> 20) as u64)
-            //         | ((inst >> 7) & 0x1f) as u64;
-            //     let addr = self.regs[rs1].wrapping_add(imm);
-            //     // "s?",
-            //     match funct3 {
-            //         0x0 => self.store(addr, 8, self.regs[rs2])?,
-            //         0x1 => self.store(addr, 16, self.regs[rs2])?,
-            //         0x2 => self.store(addr, 32, self.regs[rs2])?,
-            //         0x3 => self.store(addr, 64, self.regs[rs2])?,
-            //         _ => {
-            //             error!("This should not be reached!");
-            //             info!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
-            //             return Err(Exception::IllegalInstruction(inst));
-            //         }
-            //     }
-            //     self.mark_as_src1(rs1);
-            //     self.mark_as_src2(rs2);
-            //     Ok(())
-            // }
-            // 0x6f => {
-            //     // jal
-            //     let imm = ((inst & 0x80000000) as i32 as i64 >> 11) as u64
-            //         | ((inst & 0x7fe00000) as u64) >> 20
-            //         | ((inst & 0x100000) as u64) >> 9
-            //         | ((inst & 0xff000) as u64);
-            //     // "jal"
-            //     self.regs[rd] = self.pc.wrapping_add(4);
-            //     self.pc = self.pc.wrapping_add(imm).wrapping_sub(4); // subtract 4 because 4 will be added
-            //     self.mark_as_dest(rd);
-            //     Ok(())
-            // }
-            // 0x67 => {
-            //     match funct3 {
-            //         0x0 => {
-            //             let imm = ((inst as i32 as i64) >> 20) as u64;
-            //             // "jalr"
-            //             let return_addr = self.pc.wrapping_add(4);
-            //             let next_pc = self.regs[rs1].wrapping_add(imm).wrapping_sub(4);
-            //             // subtract 4 because 4 will be added
-            //             self.regs[rd] = return_addr;
-            //             self.pc = next_pc;
-            //         }
-            //         _ => {
-            //             error!("This should not be reached!");
-            //             error!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
-            //             return Err(Exception::IllegalInstruction(inst));
-            //         }
-            //     }
-            //     self.mark_as_dest(rd);
-            //     self.mark_as_src1(rs1);
-            //     Ok(())
-            // }
-            // 0x1b => {
-            //     match (funct3, funct7) {
-            //         (0x0, _) => {
-            //             // addiw
-            //             // I-type format
-            //             let imm = (inst as i32) >> 20;
-            //             // "addiw"
-            //             let src = self.regs[rs1] as i32;
-            //             let val = src.wrapping_add(imm);
-            //             self.regs[rd] = val as i64 as u64;
-            //         }
-            //         (0x1, 0x0) => {
-            //             // slliw
-            //             // I-type format
-            //             let shamt = ((inst as u32) >> 20) & 0x1f;
-            //             // "slliw"
-            //             let src = self.regs[rs1] as u32;
-            //             let val = src << shamt;
-            //             self.regs[rd] = val as i32 as i64 as u64;
-            //         }
-            //         (0x5, 0x0) => {
-            //             // srliw
-            //             // I-type format
-            //             let shamt = ((inst as u32) >> 20) & 0x1f;
-            //             // "srliw"
-            //             let src = self.regs[rs1] as u32;
-            //             let val = src >> shamt;
-            //             self.regs[rd] = val as i32 as i64 as u64;
-            //         }
-            //         (0x5, 0x20) => {
-            //             // sraiw
-            //             // I-type format
-            //             let shamt = ((inst as u32) >> 20) & 0x1f;
-            //             // "sraiw"
-            //             let src = self.regs[rs1] as i32;
-            //             let val = src >> shamt;
-            //             self.regs[rd] = val as i64 as u64;
-            //         }
-            //         _ => {
-            //             error!("This should not be reached!");
-            //             error!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
-            //             return Err(Exception::IllegalInstruction(inst));
-            //         }
-            //     }
-            //     self.mark_as_dest(rd);
-            //     self.mark_as_src1(rs1);
-            //     Ok(())
-            // }
+            DecodedInstr::Sb { rd, rs1, rs2, imm } => {
+                // store instructions
+                let addr = self.regs[rs1].wrapping_add(imm as u64);
+                self.store(addr, 8, self.regs[rs2])?;
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Sh { rd, rs1, rs2, imm } => {
+                // store instructions
+                let addr = self.regs[rs1].wrapping_add(imm as u64);
+                self.store(addr, 16, self.regs[rs2])?;
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Sw { rd, rs1, rs2, imm } => {
+                // store instructions
+                let addr = self.regs[rs1].wrapping_add(imm as u64);
+                self.store(addr, 32, self.regs[rs2])?;
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Sd { rd, rs1, rs2, imm } => {
+                // store instructions
+                let addr = self.regs[rs1].wrapping_add(imm as u64);
+                self.store(addr, 64, self.regs[rs2])?;
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Jal { rd, imm } => {
+                // jal
+                self.regs[rd] = self.pc.wrapping_add(4);
+                self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4); // subtract 4 because 4 will be added
+                self.mark_as_dest(rd);
+                Ok(())
+            }
+            DecodedInstr::Jalr {rd, rs1, imm} => {
+                // "jalr"
+                let return_addr = self.pc.wrapping_add(4);
+                let next_pc = self.regs[rs1].wrapping_add(imm as u64).wrapping_sub(4);
+                // subtract 4 because 4 will be added
+                self.regs[rd] = return_addr;
+                self.pc = next_pc;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                Ok(())
+            }
+            DecodedInstr::Addiw {rd, rs1, imm } => {
+                // addiw
+                let src = self.regs[rs1] as i32;
+                let val = src.wrapping_add(imm as i32);
+                self.regs[rd] = val as i64 as u64;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                Ok(())
+            }
+            DecodedInstr::Slliw {rd, rs1, imm } => {
+                // slliw
+                let src = self.regs[rs1] as u32;
+                let val = src << imm;
+                self.regs[rd] = val as i32 as i64 as u64;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                Ok(())
+            }
+            DecodedInstr::Srliw {rd, rs1, imm } => {
+                // srliw
+                let src = self.regs[rs1] as u32;
+                let val = src >> imm;
+                self.regs[rd] = val as i32 as i64 as u64;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                Ok(())
+            }
+            DecodedInstr::Sraiw {rd, rs1, imm } => {
+                // sraiw
+                let src = self.regs[rs1] as i32;
+                let val = src >> imm;
+                self.regs[rd] = val as i64 as u64;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                Ok(())
+            }
             // 0x63 => {
             //     // branch instructions
             //     let imm = ((inst & 0x80000000) as i32 as i64 >> 19) as u64

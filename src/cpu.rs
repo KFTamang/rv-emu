@@ -792,7 +792,7 @@ impl Cpu {
             DecodedInstr::Beq {rd, rs1, rs2, imm } => {
                 // "beq"
                 if self.regs[rs1] == self.regs[rs2] {
-                    self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                    self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
                 }
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
@@ -801,7 +801,7 @@ impl Cpu {
             DecodedInstr::Bne {rd, rs1, rs2, imm } => {
                 // "bne"
                 if self.regs[rs1] != self.regs[rs2] {
-                    self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                    self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
                 }
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
@@ -810,7 +810,7 @@ impl Cpu {
             DecodedInstr::Blt {rd, rs1, rs2, imm } => {
                 // "blt"
                 if (self.regs[rs1] as i64) < (self.regs[rs2] as i64) {
-                    self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                    self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
                 }
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
@@ -819,7 +819,7 @@ impl Cpu {
             DecodedInstr::Bge {rd, rs1, rs2, imm } => {
                 // "bge"
                 if (self.regs[rs1] as i64) >= (self.regs[rs2] as i64) {
-                    self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                    self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
                 }
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
@@ -828,7 +828,7 @@ impl Cpu {
             DecodedInstr::Bltu {rd, rs1, rs2, imm } => {
                 // "bltu"
                 if self.regs[rs1] < self.regs[rs2] {
-                    self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                    self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
                 }
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
@@ -837,7 +837,7 @@ impl Cpu {
             DecodedInstr::Bgeu {rd, rs1, rs2, imm } => {
                 // "bgeu"
                 if self.regs[rs1] >= self.regs[rs2] {
-                    self.pc = self.pc.wrapping_add(imm).wrapping_sub(4);
+                    self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
                 }
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);

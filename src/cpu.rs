@@ -843,68 +843,96 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            // 0x3b => {
-            //     match (funct3, funct7) {
-            //         (0x0, 0x0) => {
-            //             // "addw"
-            //             let add_val = (self.regs[rs1] as i32).wrapping_add(self.regs[rs2] as i32);
-            //             self.regs[rd] = add_val as i64 as u64;
-            //         }
-            //         (0x0, 0x20) => {
-            //             // "subw"
-            //             let add_val = (self.regs[rs1] as i32).wrapping_sub(self.regs[rs2] as i32);
-            //             self.regs[rd] = add_val as i64 as u64;
-            //         }
-            //         (0x1, 0x0) => {
-            //             // "sllw"
-            //             let shamt = (self.regs[rs2] as u64) & 0x1f;
-            //             self.regs[rd] = ((self.regs[rs1] as u32) << shamt) as u64;
-            //         }
-            //         (0x5, 0x0) => {
-            //             // "srlw"
-            //             let shamt = (self.regs[rs2] as u64) & 0x1f;
-            //             self.regs[rd] = ((self.regs[rs1] as u32) >> shamt) as u64;
-            //         }
-            //         (0x5, 0x20) => {
-            //             // "sraw"
-            //             let shamt = (self.regs[rs2] as u64) & 0x1f;
-            //             self.regs[rd] = ((self.regs[rs1] as i32) >> shamt) as i64 as u64;
-            //         }
-            //         (0x0, 0x1) => {
-            //             // "mulw"
-            //             let mul = (self.regs[rs2] as u32) * (self.regs[rs2] as u32);
-            //             self.regs[rd] = mul as i32 as i64 as u64;
-            //         }
-            //         (0x4, 0x1) => {
-            //             // "divw"
-            //             let rem = (self.regs[rs2] as u32) / (self.regs[rs2] as u32);
-            //             self.regs[rd] = rem as u64;
-            //         }
-            //         (0x5, 0x1) => {
-            //             // "divuw"
-            //             let rem = (self.regs[rs2] as i32) / (self.regs[rs2] as i32);
-            //             self.regs[rd] = rem as i64 as u64;
-            //         }
-            //         (0x6, 0x1) => {
-            //             // "remw"
-            //             let rem = (self.regs[rs2] as i32) % (self.regs[rs2] as i32);
-            //             self.regs[rd] = rem as i64 as u64;
-            //         }
-            //         (0x7, 0x1) => {
-            //             // "remuw"
-            //             let rem = (self.regs[rs2] as u32) % (self.regs[rs2] as u32);
-            //             self.regs[rd] = rem as u64;
-            //         }
-            //         _ => {
-            //             error!("This should not be reached!");
-            //             return Err(Exception::IllegalInstruction(inst));
-            //         }
-            //     }
-            //     self.mark_as_dest(rd);
-            //     self.mark_as_src1(rs1);
-            //     self.mark_as_src2(rs2);
-            //     Ok(())
-            // }
+            DecodedInstr::Addw {rd, rs1, rs2} => {
+                // "addw"
+                let add_val = (self.regs[rs1] as i32).wrapping_add(self.regs[rs2] as i32);
+                self.regs[rd] = add_val as i64 as u64;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Subw {rd, rs1, rs2}  => {
+                // "subw"
+                let add_val = (self.regs[rs1] as i32).wrapping_sub(self.regs[rs2] as i32);
+                self.regs[rd] = add_val as i64 as u64;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Sllw {rd, rs1, rs2} => {
+                // "sllw"
+                let shamt = (self.regs[rs2] as u64) & 0x1f;
+                self.regs[rd] = ((self.regs[rs1] as u32) << shamt) as u64;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Srlw {rd, rs1, rs2} => {
+                // "srlw"
+                let shamt = (self.regs[rs2] as u64) & 0x1f;
+                self.regs[rd] = ((self.regs[rs1] as u32) >> shamt) as u64;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Sraw {rd, rs1, rs2}  => {
+                // "sraw"
+                let shamt = (self.regs[rs2] as u64) & 0x1f;
+                self.regs[rd] = ((self.regs[rs1] as i32) >> shamt) as i64 as u64;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Mulw {rd, rs1, rs2} => {
+                // "mulw"
+                let mul = (self.regs[rs2] as u32) * (self.regs[rs2] as u32);
+                self.regs[rd] = mul as i32 as i64 as u64;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Divw {rd, rs1, rs2} => {
+                // "divw"
+                let rem = (self.regs[rs2] as u32) / (self.regs[rs2] as u32);
+                self.regs[rd] = rem as u64;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Divuw {rd, rs1, rs2} => {
+                // "divuw"
+                let rem = (self.regs[rs2] as i32) / (self.regs[rs2] as i32);
+                self.regs[rd] = rem as i64 as u64;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Remw {rd, rs1, rs2} => {
+                // "remw"
+                let rem = (self.regs[rs2] as i32) % (self.regs[rs2] as i32);
+                self.regs[rd] = rem as i64 as u64;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
+            DecodedInstr::Remuw {rd, rs1, rs2} => {
+                // "remuw"
+                let rem = (self.regs[rs2] as u32) % (self.regs[rs2] as u32);
+                self.regs[rd] = rem as u64;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(())
+            }
             // 0x37 => {
             //     let imm = (inst & 0xfffff000) as i32 as i64 as u64;
             //     // "lui"

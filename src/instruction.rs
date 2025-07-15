@@ -51,16 +51,16 @@ pub enum DecodedInstr {
     Bge { rd: usize, rs1: usize, rs2: usize, imm: u32 },
     Bltu { rd: usize, rs1: usize, rs2: usize, imm: u32 },
     Bgeu { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Addw { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Subw { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Sllw { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Srlw { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Sraw { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Mulw { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Divw { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Divuw { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Remw { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Remuw { rd: usize, rs1: usize, rs2: usize, imm: u32 },
+    Addw { rd: usize, rs1: usize, rs2: usize },
+    Subw { rd: usize, rs1: usize, rs2: usize },
+    Sllw { rd: usize, rs1: usize, rs2: usize },
+    Srlw { rd: usize, rs1: usize, rs2: usize },
+    Sraw { rd: usize, rs1: usize, rs2: usize },
+    Mulw { rd: usize, rs1: usize, rs2: usize },
+    Divw { rd: usize, rs1: usize, rs2: usize },
+    Divuw { rd: usize, rs1: usize, rs2: usize },
+    Remw { rd: usize, rs1: usize, rs2: usize },
+    Remuw { rd: usize, rs1: usize, rs2: usize },
     Lui { rd: usize, imm: u32 },
     Auipc { rd: usize, imm: u32 },
     Ecall,
@@ -306,34 +306,34 @@ impl DecodedInstr {
             0x3b => {
                 match (funct3, funct7) {
                     (0x0, 0x0) => {
-                        DecodedInstr::Addw { rd, rs1, rs2, imm: 0 }
+                        DecodedInstr::Addw { rd, rs1, rs2 }
                     }
                     (0x0, 0x20) => {
-                        DecodedInstr::Subw { rd, rs1, rs2, imm: 0 }
+                        DecodedInstr::Subw { rd, rs1, rs2 }
                     }
                     (0x1, 0x0) => {
-                        DecodedInstr::Sllw { rd, rs1, rs2, imm: 0 }
+                        DecodedInstr::Sllw { rd, rs1, rs2 }
                     }
                     (0x5, 0x0) => {
-                        DecodedInstr::Srlw { rd, rs1, rs2, imm: 0 }
+                        DecodedInstr::Srlw { rd, rs1, rs2 }
                     }
                     (0x5, 0x20) => {
-                        DecodedInstr::Sraw { rd, rs1, rs2, imm: 0 }
+                        DecodedInstr::Sraw { rd, rs1, rs2 }
                     }
                     (0x0, 0x1) => {
-                        DecodedInstr::Mulw { rd, rs1, rs2, imm: 0 }
+                        DecodedInstr::Mulw { rd, rs1, rs2 }
                     }
                     (0x4, 0x1) => {
-                        DecodedInstr::Divw { rd, rs1, rs2, imm: 0 }
+                        DecodedInstr::Divw { rd, rs1, rs2 }
                     }
                     (0x5, 0x1) => {
-                        DecodedInstr::Divuw { rd, rs1, rs2, imm: 0 }
+                        DecodedInstr::Divuw { rd, rs1, rs2 }
                     }
                     (0x6, 0x1) => {
-                        DecodedInstr::Remw { rd, rs1, rs2, imm: 0 }
+                        DecodedInstr::Remw { rd, rs1, rs2 }
                     }
                     (0x7, 0x1) => {
-                        DecodedInstr::Remuw { rd, rs1, rs2, imm: 0 }
+                        DecodedInstr::Remuw { rd, rs1, rs2 }
                     }
                     _ => {
                         error!("This should not be reached!");

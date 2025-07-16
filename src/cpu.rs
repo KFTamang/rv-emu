@@ -1026,87 +1026,120 @@ impl Cpu {
                 // 実際には no-op（または memory ordering のために記録する）
                 Ok(())
             }
-            DecodedInstr::Amoswap { rd, rs1, rs2, imm } => {
+            DecodedInstr::Amoswap { rd, rs1, rs2 } => {
                 let addr = self.regs[rs1];
-                let val = self.load(addr, width)?;              // メモリからロード
+                let val = self.load(addr, 32)?;              // メモリからロード
                 let src = self.regs[rs2];
                 self.regs[rd] = val;                             // rd に old val
                 self.regs[rs2] = val;                            // swap
-                self.store(addr, width, src)?;                   // 書き戻し
+                self.store(addr, 32, src)?;                   // 書き戻し
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
                 Ok(()) 
             }
-            DecodedInstr::Amoadd { rd, rs1, rs2, imm } => {
+            DecodedInstr::Amoadd { rd, rs1, rs2 } => {
                 let addr = self.regs[rs1];
-                let val = self.load(addr, width)?;
+                let val = self.load(addr, 32)?;
                 let result = val.wrapping_add(self.regs[rs2]);
                 self.regs[rd] = val;
-                self.store(addr, width, result)?;
+                self.store(addr, 32, result)?;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
                 Ok(()) 
             }
-            DecodedInstr::Amoxor { rd, rs1, rs2, imm } => {
+            DecodedInstr::Amoxor { rd, rs1, rs2 } => {
                 let addr = self.regs[rs1];
-                let val = self.load(addr, width)?;
+                let val = self.load(addr, 32)?;
                 let result = val ^ self.regs[rs2];
                 self.regs[rd] = val;
-                self.store(addr, width, result)?;
+                self.store(addr, 32, result)?;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
                 Ok(()) 
             }
-            DecodedInstr::Amoand { rd, rs1, rs2, imm } => {
+            DecodedInstr::Amoand { rd, rs1, rs2 } => {
                 let addr = self.regs[rs1];
-                let val = self.load(addr, width)?;
+                let val = self.load(addr, 32)?;
                 let result = val & self.regs[rs2];
                 self.regs[rd] = val;
-                self.store(addr, width, result)?;
+                self.store(addr, 32, result)?;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
                 Ok(()) 
             }
-            DecodedInstr::Amoor { rd, rs1, rs2, imm } => {
+            DecodedInstr::Amoor { rd, rs1, rs2 } => {
                 let addr = self.regs[rs1];
-                let val = self.load(addr, width)?;
+                let val = self.load(addr, 32)?;
                 let result = val | self.regs[rs2];
                 self.regs[rd] = val;
-                self.store(addr, width, result)?;
+                self.store(addr, 32, result)?;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
                 Ok(()) 
             }
-            DecodedInstr::Amomin { rd, rs1, rs2, width, signed } => {
+            DecodedInstr::Amomin { rd, rs1, rs2 } => {
+                // "amomin.
                 let addr = self.regs[rs1];
-                let val = self.load(addr, width)?;
-                let result = if signed {
-                    (val as i64).min(self.regs[rs2] as i64) as u64
-                } else {
-                    val.min(self.regs[rs2])
-                };
-                self.regs[rd] = val;
-                self.store(addr, width, result)?;
+                let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
+                let src_value = self.regs[rs2];
+                // store loaded value to dest register
+                self.regs[rd] = loaded_value;
+                // binary operation: singed min
+                let result = cmp::min(loaded_value as i64, src_value as i64) as u64;
+                // store operation result
+                self.store(addr, 32, result)?;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
                 Ok(()) 
             }
-            DecodedInstr::Amomax { rd, rs1, rs2, width, signed } => {
+            DecodedInstr::Amomax { rd, rs1, rs2 } => {
+                // "amomax.
                 let addr = self.regs[rs1];
-                let val = self.load(addr, width)?;
-                let result = if signed {
-                    (val as i64).max(self.regs[rs2] as i64) as u64
-                } else {
-                    val.max(self.regs[rs2])
-                };
-                self.regs[rd] = val;
-                self.store(addr, width, result)?;
+                let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
+                let src_value = self.regs[rs2];
+                // store loaded value to dest register
+                self.regs[rd] = loaded_value;
+                // binary operation: signed max
+                let result = cmp::max(loaded_value as i64, src_value as i64) as u64;
+                // store operation result
+                self.store(addr, 32, result)?;                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(()) 
+            }
+            DecodedInstr::Amominu { rd, rs1, rs2 } => {
+                // "amominu.
+                let addr = self.regs[rs1];
+                let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
+                let src_value = self.regs[rs2];
+                // store loaded value to dest register
+                self.regs[rd] = loaded_value;
+                // binary operation: unsigned min
+                let result = cmp::min(loaded_value, src_value);
+                // store operation result
+                self.store(addr, 32, result)?;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(()) 
+            }
+            DecodedInstr::Amomaxu { rd, rs1, rs2 } => {
+                // "amomaxu.
+                let addr = self.regs[rs1];
+                let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
+                let src_value = self.regs[rs2];
+                // store loaded value to dest register
+                self.regs[rd] = loaded_value;
+                // binary operation: unsigned max
+                let result = cmp::max(loaded_value, src_value);
+                // store operation result
+                self.store(addr, 32, result)?;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);

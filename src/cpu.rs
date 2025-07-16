@@ -933,344 +933,188 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            // 0x37 => {
-            //     let imm = (inst & 0xfffff000) as i32 as i64 as u64;
-            //     // "lui"
-            //     self.regs[rd] = imm;
-            //     self.mark_as_dest(rd);
-            //     Ok(())
-            // }
-            // 0x17 => {
-            //     let imm = inst & 0xfffff000;
-            //     // "auipc"
-            //     self.regs[rd] = imm.wrapping_add(self.pc as u32) as u64;
-            //     self.mark_as_dest(rd);
-            //     Ok(())
-            // }
-            // 0x73 => {
-            //     let csr = ((inst as u32) >> 20) as usize;
-            //     let uimm = ((inst & 0xf8000) as u32) >> 15;
-            //     let imm = (inst as i32 as i64 >> 20) as u64;
-            //     match (funct3, funct7, rs2) {
-            //         (0x0, 0x0, 0x0) => {
-            //             // "ecall"
-            //             Exception::EnvironmentalCallFromMMode.take_trap(self);
-            //         }
-            //         (0x0, 0x0, 0x1) => {
-            //             // "ebreak"
-            //         }
-            //         (0x0, 0x8, 0x2) => {
-            //             // "sret"
-            //             self.return_from_trap();
-            //         }
-            //         (0x0, 0x8, 0x5) => {
-            //             // "wfi"
-            //             self.wait_for_interrupt();
-            //         }
-            //         (0x0, 0x18, 0x2) => {
-            //             // "mret"
-            //             self.return_from_trap();
-            //         }
-            //         (0x1, _, _) => {
-            //             // "csrrw"
-            //             if rd != 0 {
-            //                 self.regs[rd] = self.csr.load_csrs(csr) as u64;
-            //             }
-            //             self.csr.store_csrs(csr, self.regs[rs1]);
-            //         }
-            //         (0x2, _, _) => {
-            //             // "csrrs"
-            //             let old_val = self.csr.load_csrs(csr) as u64;
-            //             self.regs[rd] = old_val;
-            //             if rs1 != 0 {
-            //                 self.csr.store_csrs(csr, self.regs[rs1] | old_val);
-            //             }
-            //         }
-            //         (0x3, _, _) => {
-            //             // "csrrc"
-            //             let old_val = self.csr.load_csrs(csr) as u64;
-            //             self.regs[rd] = old_val;
-            //             if rs1 != 0 {
-            //                 self.csr.store_csrs(csr, self.regs[rs1] & !old_val);
-            //             }
-            //         }
-            //         (0x5, _, _) => {
-            //             // "csrrwi"
-            //             if rd != 0 {
-            //                 self.regs[rd] = self.csr.load_csrs(csr);
-            //             }
-            //             self.csr.store_csrs(csr, uimm as u64);
-            //         }
-            //         (0x6, _, _) => {
-            //             // "csrrsi"
-            //             let old_val = self.csr.load_csrs(csr) as u64;
-            //             self.regs[rd] = old_val;
-            //             if rs1 != 0 {
-            //                 self.csr.store_csrs(csr, uimm as u64 | old_val);
-            //             }
-            //         }
-            //         (0x7, _, _) => {
-            //             // "csrrci"
-            //             let old_val = self.csr.load_csrs(csr) as u64;
-            //             self.regs[rd] = old_val;
-            //             if rs1 != 0 {
-            //                 self.csr.store_csrs(csr, uimm as u64 & !old_val);
-            //             }
-            //         }
-            //         (0x0, 0x9, _) => {
-            //             // "sfence.
-            //             self.address_translation_cache.clear();
-            //         }
-            //         (_, _, _) => {
-            //             error!("Unsupported CSR instruction!");
-            //             error!("pc = 0x{:x}, funct3:{}, funct7:{}", self.pc, funct3, funct7);
-            //             return Err(Exception::IllegalInstruction(inst));
-            //         }
-            //     }
-            //     Ok(())
-            // }
-            // 0x0f => {
-            //     self.inst_string = format!("pc=0x{:x}\nfence(do nothing)\n", self.pc);
-            //     Ok(())
-            // }
-            // 0x2f => {
-            //     // Atomic Operation instructions
-            //     let funct5 = funct7 >> 2;
-            //     self.mark_as_dest(rd);
-            //     self.mark_as_src1(rs1);
-            //     self.mark_as_src2(rs2);
-            //     match (funct3, funct5) {
-            //         (0x2, 0x1) => {
-            //             // "amoswap.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: swap
-            //             self.regs[rs2] = loaded_value;
-            //             let result = src_value;
-            //             // store operation result
-            //             self.store(addr, 32, result)?;
-            //         }
-            //         (0x0, 0x1) => {
-            //             // "amoadd.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: add
-            //             let result = loaded_value.wrapping_add(src_value);
-            //             // store operation result
-            //             self.store(addr, 32, result)?;
-            //         }
-            //         (0x4, 0x1) => {
-            //             // "amoxor.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: xor
-            //             let result = loaded_value ^ src_value;
-            //             // store operation result
-            //             self.store(addr, 32, result)?;
-            //         }
-            //         (0xc, 0x1) => {
-            //             // "amoand.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: and
-            //             let result = loaded_value & src_value;
-            //             // store operation result
-            //             self.store(addr, 32, result)?;
-            //         }
-            //         (0x8, 0x1) => {
-            //             // "amoor.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: or
-            //             let result = loaded_value | src_value;
-            //             // store operation result
-            //             self.store(addr, 32, result)?;
-            //         }
-            //         (0x10, 0x1) => {
-            //             // "amomin.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: singed min
-            //             let result = cmp::min(loaded_value as i64, src_value as i64) as u64;
-            //             // store operation result
-            //             self.store(addr, 32, result)?;
-            //         }
-            //         (0x14, 0x1) => {
-            //             // "amomax.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: signed max
-            //             let result = cmp::max(loaded_value as i64, src_value as i64) as u64;
-            //             // store operation result
-            //             self.store(addr, 32, result)?;
-            //         }
-            //         (0x18, 0x1) => {
-            //             // "amominu.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: unsigned min
-            //             let result = cmp::min(loaded_value, src_value);
-            //             // store operation result
-            //             self.store(addr, 32, result)?;
-            //         }
-            //         (0x1c, 0x1) => {
-            //             // "amomaxu.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: unsigned max
-            //             let result = cmp::max(loaded_value, src_value);
-            //             // store operation result
-            //             self.store(addr, 32, result)?;
-            //         }
-            //         (0x2, 0x3) => {
-            //             // "amoswap.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 64)?;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: swap
-            //             self.regs[rs2] = loaded_value;
-            //             let result = src_value;
-            //             // store operation result
-            //             self.store(addr, 64, result)?;
-            //         }
-            //         (0x0, 0x3) => {
-            //             // "amoadd.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 64)?;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: add
-            //             let result = loaded_value.wrapping_add(src_value);
-            //             // store operation result
-            //             self.store(addr, 64, result)?;
-            //         }
-            //         (0x4, 0x3) => {
-            //             // "amoxor.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 64)?;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: xor
-            //             let result = loaded_value ^ src_value;
-            //             // store operation result
-            //             self.store(addr, 64, result)?;
-            //         }
-            //         (0xc, 0x3) => {
-            //             // "amoand.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 64)?;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: and
-            //             let result = loaded_value & src_value;
-            //             // store operation result
-            //             self.store(addr, 64, result)?;
-            //         }
-            //         (0x8, 0x3) => {
-            //             // "amoor.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 64)?;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: or
-            //             let result = loaded_value | src_value;
-            //             // store operation result
-            //             self.store(addr, 64, result)?;
-            //         }
-            //         (0x10, 0x3) => {
-            //             // "amomin.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 64)?;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: signed min
-            //             let result = cmp::min(loaded_value as i64, src_value as i64) as u64;
-            //             // store operation result
-            //             self.store(addr, 64, result)?;
-            //         }
-            //         (0x14, 0x3) => {
-            //             // "amomax.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 64)?;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: signed max
-            //             let result = cmp::max(loaded_value as i64, src_value as i64) as u64;
-            //             // store operation result
-            //             self.store(addr, 64, result)?;
-            //         }
-            //         (0x18, 0x3) => {
-            //             // "amominu.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 64)?;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: unsigned min
-            //             let result = cmp::min(loaded_value, src_value);
-            //             // store operation result
-            //             self.store(addr, 64, result)?;
-            //         }
-            //         (0x1c, 0x3) => {
-            //             // "amomaxu.
-            //             let addr = self.regs[rs1];
-            //             let loaded_value = self.load(addr, 64)?;
-            //             let src_value = self.regs[rs2];
-            //             // store loaded value to dest register
-            //             self.regs[rd] = loaded_value;
-            //             // binary operation: unsigned max
-            //             let result = cmp::max(loaded_value, src_value);
-            //             // store operation result
-            //             self.store(addr, 64, result)?;
-            //         }
-            //         _ => {
-            //             return Err(Exception::IllegalInstruction(inst));
-            //         }
-            //     }
-            //     Ok(())
-            // }
-        _ => {
-            error!("not implemented yet!");
-            error!("pc=0x{:x}", self.pc);
-            error!("inst:{inst:b}");
-            return Err(Exception::IllegalInstruction(inst));
-        }
-        
+            DecodedInstr::Lui { rd, imm } => {
+                // "lui"
+                self.regs[rd] = imm;
+                self.mark_as_dest(rd);
+                Ok(())
+            }
+            DecodedInstr::Auipc { rd, imm } => {
+                // "auipc"
+                self.regs[rd] = imm.wrapping_add(self.pc as u32) as u64;
+                self.mark_as_dest(rd);
+                Ok(())
+            }
+            DecodedInstr::Ecall => {
+                Exception::EnvironmentalCallFromMMode.take_trap(self);
+            }
+            DecodedInstr::Ebreak => {
+                // Optional: implement EBREAK behavior
+                Ok(())
+            }
+            DecodedInstr::Sret | DecodedInstr::Mret => {
+                self.return_from_trap();
+                Ok(())
+            }
+            DecodedInstr::Wfi => {
+                self.wait_for_interrupt();
+                Ok(())
+            }
+            DecodedInstr::Csrrw { rd, rs1, imm } => {
+                if rd != 0 {
+                    self.regs[rd] = self.csr.load_csrs(imm) as u64;
+                }
+                self.csr.store_csrs(imm, self.regs[rs1]);
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                Ok(()) 
+            }
+            DecodedInstr::Csrrs { rd, rs1, imm } => {
+                let old = self.csr.load_csrs(imm) as u64;
+                self.regs[rd] = old;
+                if rs1 != 0 {
+                    self.csr.store_csrs(imm, self.regs[rs1] | old);
+                }
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                Ok(())
+            }
+            DecodedInstr::Csrrc { rd, rs1, imm } => {
+                let old = self.csr.load_csrs(imm) as u64;
+                self.regs[rd] = old;
+                if rs1 != 0 {
+                    self.csr.store_csrs(imm, self.regs[rs1] & !old);
+                }
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                Ok(()) 
+            }
+            DecodedInstr::Csrrwi { rd, rs1, imm } => {
+                if rd != 0 {
+                    self.regs[rd] = self.csr.load_csrs(imm);
+                }
+                self.csr.store_csrs(imm, rs1 as u64);
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                Ok(()) 
+            }
+            DecodedInstr::Csrrsi { rd, rs1, imm } => {
+                let old = self.csr.load_csrs(imm) as u64;
+                self.regs[rd] = old;
+                if rs1 != 0 {
+                    self.csr.store_csrs(imm, rs1 as u64 | old);
+                }
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                Ok(()) 
+            }
+            DecodedInstr::Csrrci { rd, rs1, imm } => {
+                let old = self.csr.load_csrs(imm) as u64;
+                self.regs[rd] = old;
+                if rs1 != 0 {
+                    self.csr.store_csrs(imm, rs1 as u64 & !old);
+                }
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                Ok(()) 
+            }
+            DecodedInstr::Fence => {
+                self.address_translation_cache.clear();
+                Ok(())
+            }
+            DecodedInstr::Fence => {
+                // 実際には no-op（または memory ordering のために記録する）
+                Ok(())
+            }
+            DecodedInstr::Amoswap { rd, rs1, rs2, imm } => {
+                let addr = self.regs[rs1];
+                let val = self.load(addr, width)?;              // メモリからロード
+                let src = self.regs[rs2];
+                self.regs[rd] = val;                             // rd に old val
+                self.regs[rs2] = val;                            // swap
+                self.store(addr, width, src)?;                   // 書き戻し
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(()) 
+            }
+            DecodedInstr::Amoadd { rd, rs1, rs2, imm } => {
+                let addr = self.regs[rs1];
+                let val = self.load(addr, width)?;
+                let result = val.wrapping_add(self.regs[rs2]);
+                self.regs[rd] = val;
+                self.store(addr, width, result)?;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(()) 
+            }
+            DecodedInstr::Amoxor { rd, rs1, rs2, imm } => {
+                let addr = self.regs[rs1];
+                let val = self.load(addr, width)?;
+                let result = val ^ self.regs[rs2];
+                self.regs[rd] = val;
+                self.store(addr, width, result)?;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(()) 
+            }
+            DecodedInstr::Amoand { rd, rs1, rs2, imm } => {
+                let addr = self.regs[rs1];
+                let val = self.load(addr, width)?;
+                let result = val & self.regs[rs2];
+                self.regs[rd] = val;
+                self.store(addr, width, result)?;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(()) 
+            }
+            DecodedInstr::Amoor { rd, rs1, rs2, imm } => {
+                let addr = self.regs[rs1];
+                let val = self.load(addr, width)?;
+                let result = val | self.regs[rs2];
+                self.regs[rd] = val;
+                self.store(addr, width, result)?;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(()) 
+            }
+            DecodedInstr::Amomin { rd, rs1, rs2, width, signed } => {
+                let addr = self.regs[rs1];
+                let val = self.load(addr, width)?;
+                let result = if signed {
+                    (val as i64).min(self.regs[rs2] as i64) as u64
+                } else {
+                    val.min(self.regs[rs2])
+                };
+                self.regs[rd] = val;
+                self.store(addr, width, result)?;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(()) 
+            }
+            DecodedInstr::Amomax { rd, rs1, rs2, width, signed } => {
+                let addr = self.regs[rs1];
+                let val = self.load(addr, width)?;
+                let result = if signed {
+                    (val as i64).max(self.regs[rs2] as i64) as u64
+                } else {
+                    val.max(self.regs[rs2])
+                };
+                self.regs[rd] = val;
+                self.store(addr, width, result)?;
+                self.mark_as_dest(rd);
+                self.mark_as_src1(rs1);
+                self.mark_as_src2(rs2);
+                Ok(()) 
+            }
+            DecodedInstr::IllegalInstruction => {
+                return Err(Exception::IllegalInstruction(inst));
+            }        
         }
     }
 

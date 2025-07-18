@@ -1,4 +1,3 @@
-use gdbstub::target::ext::target_description_xml_override::TargetDescriptionXmlOverride;
 use log::{error, info};
 
 pub enum DecodedInstr {

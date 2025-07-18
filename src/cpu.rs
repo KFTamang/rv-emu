@@ -935,7 +935,7 @@ impl Cpu {
             }
             DecodedInstr::Lui { rd, imm } => {
                 // "lui"
-                self.regs[rd] = imm;
+                self.regs[rd] = imm as u64;
                 self.mark_as_dest(rd);
                 Ok(())
             }
@@ -947,6 +947,7 @@ impl Cpu {
             }
             DecodedInstr::Ecall => {
                 Exception::EnvironmentalCallFromMMode.take_trap(self);
+                Ok(())
             }
             DecodedInstr::Ebreak => {
                 // Optional: implement EBREAK behavior
@@ -1018,7 +1019,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(()) 
             }
-            DecodedInstr::Fence => {
+            DecodedInstr::Sfence => {
                 self.address_translation_cache.clear();
                 Ok(())
             }
@@ -1145,8 +1146,8 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(()) 
             }
-            DecodedInstr::IllegalInstruction => {
-                return Err(Exception::IllegalInstruction(inst));
+            DecodedInstr::IllegalInstruction {inst } => {
+                Err(Exception::IllegalInstruction(inst))
             }        
         }
     }

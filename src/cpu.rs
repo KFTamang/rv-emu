@@ -585,7 +585,7 @@ impl Cpu {
             }
             DecodedInstr::Sltiu{rd, rs1, imm} => {
                 // "sltiu"
-                let result = if (self.regs[rs1] as i32 as u32) < imm {
+                let result = if (self.regs[rs1] as i32 as i64 as u64) < imm {
                     1
                 } else {
                     0
@@ -762,28 +762,28 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Slliw {rd, rs1, imm } => {
+            DecodedInstr::Slliw {rd, rs1, shamt } => {
                 // slliw
                 let src = self.regs[rs1] as u32;
-                let val = src << imm;
+                let val = src << shamt;
                 self.regs[rd] = val as i32 as i64 as u64;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Srliw {rd, rs1, imm } => {
+            DecodedInstr::Srliw {rd, rs1, shamt } => {
                 // srliw
                 let src = self.regs[rs1] as u32;
-                let val = src >> imm;
+                let val = src >> shamt;
                 self.regs[rd] = val as i32 as i64 as u64;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Sraiw {rd, rs1, imm } => {
+            DecodedInstr::Sraiw {rd, rs1, shamt } => {
                 // sraiw
                 let src = self.regs[rs1] as i32;
-                let val = src >> imm;
+                let val = src >> shamt;
                 self.regs[rd] = val as i64 as u64;
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
@@ -941,7 +941,7 @@ impl Cpu {
             }
             DecodedInstr::Auipc { rd, imm } => {
                 // "auipc"
-                self.regs[rd] = imm.wrapping_add(self.pc as u32) as u64;
+                self.regs[rd] = self.pc + imm;
                 self.mark_as_dest(rd);
                 Ok(())
             }
@@ -961,59 +961,59 @@ impl Cpu {
                 self.wait_for_interrupt();
                 Ok(())
             }
-            DecodedInstr::Csrrw { rd, rs1, imm } => {
+            DecodedInstr::Csrrw { rd, rs1, csr } => {
                 if rd != 0 {
-                    self.regs[rd] = self.csr.load_csrs(imm) as u64;
+                    self.regs[rd] = self.csr.load_csrs(csr) as u64;
                 }
-                self.csr.store_csrs(imm, self.regs[rs1]);
+                self.csr.store_csrs(csr, self.regs[rs1]);
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(()) 
             }
-            DecodedInstr::Csrrs { rd, rs1, imm } => {
-                let old = self.csr.load_csrs(imm) as u64;
+            DecodedInstr::Csrrs { rd, rs1, csr } => {
+                let old = self.csr.load_csrs(csr) as u64;
                 self.regs[rd] = old;
                 if rs1 != 0 {
-                    self.csr.store_csrs(imm, self.regs[rs1] | old);
+                    self.csr.store_csrs(csr, self.regs[rs1] | old);
                 }
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Csrrc { rd, rs1, imm } => {
-                let old = self.csr.load_csrs(imm) as u64;
+            DecodedInstr::Csrrc { rd, rs1, csr } => {
+                let old = self.csr.load_csrs(csr) as u64;
                 self.regs[rd] = old;
                 if rs1 != 0 {
-                    self.csr.store_csrs(imm, self.regs[rs1] & !old);
+                    self.csr.store_csrs(csr, self.regs[rs1] & !old);
                 }
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(()) 
             }
-            DecodedInstr::Csrrwi { rd, rs1, imm } => {
+            DecodedInstr::Csrrwi { rd, rs1, csr, uimm } => {
                 if rd != 0 {
-                    self.regs[rd] = self.csr.load_csrs(imm);
+                    self.regs[rd] = self.csr.load_csrs(csr);
                 }
-                self.csr.store_csrs(imm, rs1 as u64);
+                self.csr.store_csrs(csr, uimm as u64);
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(()) 
             }
-            DecodedInstr::Csrrsi { rd, rs1, imm } => {
-                let old = self.csr.load_csrs(imm) as u64;
-                self.regs[rd] = old;
+            DecodedInstr::Csrrsi { rd, rs1, csr, uimm } => {
+                let old_val = self.csr.load_csrs(csr) as u64;
+                self.regs[rd] = old_val;
                 if rs1 != 0 {
-                    self.csr.store_csrs(imm, rs1 as u64 | old);
+                    self.csr.store_csrs(csr, uimm as u64 | old_val);
                 }
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(()) 
             }
-            DecodedInstr::Csrrci { rd, rs1, imm } => {
-                let old = self.csr.load_csrs(imm) as u64;
-                self.regs[rd] = old;
+            DecodedInstr::Csrrci { rd, rs1, csr, uimm } => {
+                let old_val = self.csr.load_csrs(csr) as u64;
+                self.regs[rd] = old_val;
                 if rs1 != 0 {
-                    self.csr.store_csrs(imm, rs1 as u64 & !old);
+                    self.csr.store_csrs(csr, uimm as u64 & !old_val);
                 }
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);

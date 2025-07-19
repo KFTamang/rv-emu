@@ -19,37 +19,37 @@ pub enum DecodedInstr {
     Divu {rd: usize, rs1: usize, rs2: usize},
     Rem {rd: usize, rs1: usize, rs2: usize},
     Remu {rd: usize, rs1: usize, rs2: usize},
-    Addi { rd: usize, rs1: usize, imm: u32 },
-    Slti { rd: usize, rs1: usize, imm: u32 },
-    Sltiu { rd: usize, rs1: usize, imm: u32 },
-    Xori { rd: usize, rs1: usize, imm: u32 },
-    Ori { rd: usize, rs1: usize, imm: u32 },
-    Andi { rd: usize, rs1: usize, imm: u32 },
-    Slli { rd: usize, rs1: usize, imm: u32 },
-    Srli { rd: usize, rs1: usize, imm: u32 },
-    Lb { rd: usize, rs1: usize, imm: u32 },
-    Lh { rd: usize, rs1: usize, imm: u32 },
-    Lw { rd: usize, rs1: usize, imm: u32 },
-    Ld { rd: usize, rs1: usize, imm: u32 },
-    Lbu { rd: usize, rs1: usize, imm: u32 },
-    Lhu { rd: usize, rs1: usize, imm: u32 },
-    Lwu { rd: usize, rs1: usize, imm: u32 },
-    Sb { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Sh { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Sw { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Sd { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Jal { rd: usize, imm: u32 },
-    Jalr { rd: usize, rs1: usize, imm: u32 },
-    Addiw { rd: usize, rs1: usize, imm: u32 },
-    Slliw { rd: usize, rs1: usize, imm: u32 },
-    Srliw { rd: usize, rs1: usize, imm: u32 },
-    Sraiw { rd: usize, rs1: usize, imm: u32 },
-    Beq { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Bne { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Blt { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Bge { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Bltu { rd: usize, rs1: usize, rs2: usize, imm: u32 },
-    Bgeu { rd: usize, rs1: usize, rs2: usize, imm: u32 },
+    Addi { rd: usize, rs1: usize, imm: u64 },
+    Slti { rd: usize, rs1: usize, imm: u64 },
+    Sltiu { rd: usize, rs1: usize, imm: u64 },
+    Xori { rd: usize, rs1: usize, imm: u64 },
+    Ori { rd: usize, rs1: usize, imm: u64 },
+    Andi { rd: usize, rs1: usize, imm: u64 },
+    Slli { rd: usize, rs1: usize, imm: u64 },
+    Srli { rd: usize, rs1: usize, imm: u64 },
+    Lb { rd: usize, rs1: usize, imm: u64 },
+    Lh { rd: usize, rs1: usize, imm: u64 },
+    Lw { rd: usize, rs1: usize, imm: u64 },
+    Ld { rd: usize, rs1: usize, imm: u64 },
+    Lbu { rd: usize, rs1: usize, imm: u64 },
+    Lhu { rd: usize, rs1: usize, imm: u64 },
+    Lwu { rd: usize, rs1: usize, imm: u64 },
+    Sb { rd: usize, rs1: usize, rs2: usize, imm: u64 },
+    Sh { rd: usize, rs1: usize, rs2: usize, imm: u64 },
+    Sw { rd: usize, rs1: usize, rs2: usize, imm: u64 },
+    Sd { rd: usize, rs1: usize, rs2: usize, imm: u64 },
+    Jal { rd: usize, imm: u64 },
+    Jalr { rd: usize, rs1: usize, imm: u64 },
+    Addiw { rd: usize, rs1: usize, imm: i32 },
+    Slliw { rd: usize, rs1: usize, shamt: u32 },
+    Srliw { rd: usize, rs1: usize, shamt: u32 },
+    Sraiw { rd: usize, rs1: usize, shamt: u32 },
+    Beq { rd: usize, rs1: usize, rs2: usize, imm: u64 },
+    Bne { rd: usize, rs1: usize, rs2: usize, imm: u64 },
+    Blt { rd: usize, rs1: usize, rs2: usize, imm: u64 },
+    Bge { rd: usize, rs1: usize, rs2: usize, imm: u64 },
+    Bltu { rd: usize, rs1: usize, rs2: usize, imm: u64 },
+    Bgeu { rd: usize, rs1: usize, rs2: usize, imm: u64 },
     Addw { rd: usize, rs1: usize, rs2: usize },
     Subw { rd: usize, rs1: usize, rs2: usize },
     Sllw { rd: usize, rs1: usize, rs2: usize },
@@ -60,19 +60,19 @@ pub enum DecodedInstr {
     Divuw { rd: usize, rs1: usize, rs2: usize },
     Remw { rd: usize, rs1: usize, rs2: usize },
     Remuw { rd: usize, rs1: usize, rs2: usize },
-    Lui { rd: usize, imm: u32 },
-    Auipc { rd: usize, imm: u32 },
+    Lui { rd: usize, imm: u64 },
+    Auipc { rd: usize, imm: u64 },
     Ecall,
     Ebreak,
     Sret,
     Wfi,
     Mret,
-    Csrrw { rd: usize, rs1: usize, imm: usize },
-    Csrrs { rd: usize, rs1: usize, imm: usize },
-    Csrrc { rd: usize, rs1: usize, imm: usize },
-    Csrrwi { rd: usize, rs1: usize, imm: usize },
-    Csrrsi { rd: usize, rs1: usize, imm: usize },
-    Csrrci { rd: usize, rs1: usize, imm: usize },
+    Csrrw { rd: usize, rs1: usize, csr: usize },
+    Csrrs { rd: usize, rs1: usize, csr: usize },
+    Csrrc { rd: usize, rs1: usize, csr: usize },
+    Csrrwi { rd: usize, rs1: usize, csr: usize, uimm: u32 },
+    Csrrsi { rd: usize, rs1: usize, csr: usize, uimm: u32 },
+    Csrrci { rd: usize, rs1: usize, csr: usize, uimm: u32 },
     Sfence,
     Fence,
     Amoswap { rd: usize, rs1: usize, rs2: usize },
@@ -161,7 +161,7 @@ impl DecodedInstr {
                 }
             },
             0x13 => {
-                let imm = (inst as i32 >> 20) as u32;
+                let imm = (inst as i32 >> 20) as u64;
                 match funct3 {
                     0x0 => {
                         DecodedInstr::Addi{ rd, rs1, imm }
@@ -195,7 +195,7 @@ impl DecodedInstr {
                 }
             }
             0x03 => {
-                let imm = ((inst as i32 as i64) >> 20) as u32;
+                let imm = ((inst as i32 as i64) >> 20) as u64;
                 match funct3 {
                     0x0 => {
                         DecodedInstr::Lb { rd, rs1, imm}
@@ -227,8 +227,8 @@ impl DecodedInstr {
             },
             0x23 => {
                 // store instructions
-                let imm = (((inst & 0xfe000000) as i32 as i64 >> 20) as u32)
-                    | ((inst >> 7) & 0x1f) as u32;
+                let imm = (((inst & 0xfe000000) as i32 as i64 >> 20) as u64)
+                    | ((inst >> 7) & 0x1f) as u64;
                 match funct3 {
                     0x0 => {
                         DecodedInstr::Sb { rd, rs1, rs2, imm }
@@ -251,17 +251,16 @@ impl DecodedInstr {
             }
             0x6f => {
                 // jal
-                let imm = ((inst & 0x80000000) as i32 >> 11) as u32
-                    | ((inst & 0x7fe00000) as u32) >> 20
-                    | ((inst & 0x100000) as u32) >> 9
-                    | ((inst & 0xff000) as u32);
-                // "jal"
+                let imm = ((inst & 0x80000000) as i32 as i64 >> 11) as u64
+                    | ((inst & 0x7fe00000) as u64) >> 20
+                    | ((inst & 0x100000) as u64) >> 9
+                    | ((inst & 0xff000) as u64);
                 DecodedInstr::Jal { rd, imm }
             }
             0x67 => {
                 match funct3 {
                     0x0 => {
-                        let imm = ((inst as i32) >> 20) as u32;
+                        let imm = ((inst as i32 as i64) >> 20) as u64;
                         DecodedInstr::Jalr { rd, rs1, imm }
                     }
                     _ => {
@@ -277,25 +276,25 @@ impl DecodedInstr {
                         // addiw
                         // I-type format
                         let imm = (inst as i32) >> 20;
-                        DecodedInstr::Addiw { rd, rs1, imm: imm as u32 }
+                        DecodedInstr::Addiw { rd, rs1, imm }
                     }
                     (0x1, 0x0) => {
                         // slliw
                         // I-type format
-                        let imm = ((inst as u32) >> 20) & 0x1f;
-                        DecodedInstr::Slliw { rd, rs1, imm}
+                        let shamt = ((inst as u32) >> 20) & 0x1f;
+                        DecodedInstr::Slliw { rd, rs1, shamt }
                     }
                     (0x5, 0x0) => {
                         // srliw
                         // I-type format
-                        let imm = ((inst as u32) >> 20) & 0x1f;
-                        DecodedInstr::Srliw { rd, rs1, imm }
+                        let shamt = ((inst as u32) >> 20) & 0x1f;
+                        DecodedInstr::Srliw { rd, rs1, shamt }
                     }
                     (0x5, 0x20) => {
                         // sraiw
                         // I-type format
-                        let imm = ((inst as u32) >> 20) & 0x1f;
-                        DecodedInstr::Sraiw { rd, rs1, imm }
+                        let shamt = ((inst as u32) >> 20) & 0x1f;
+                        DecodedInstr::Sraiw { rd, rs1, shamt }
                     }
                     _ => {
                         error!("This should not be reached!");
@@ -306,10 +305,10 @@ impl DecodedInstr {
             }
             0x63 => {
                 // branch instructions
-                let imm = ((inst & 0x80000000) as i32 >> 19) as u32
-                    | ((inst & 0x7e000000) as u32) >> 20
-                    | ((inst & 0xf00) as u32) >> 7
-                    | ((inst & 0x80) as u32) << 4;
+                let imm = ((inst & 0x80000000) as i32 as i64 >> 19) as u64
+                    | ((inst & 0x7e000000) as u64) >> 20
+                    | ((inst & 0xf00) as u64) >> 7
+                    | ((inst & 0x80) as u64) << 4;
                 match funct3 {
                     0x0 => {
                         DecodedInstr::Beq { rd, rs1, rs2, imm }
@@ -375,19 +374,18 @@ impl DecodedInstr {
                 }
             }
             0x37 => {
-                let imm = (inst & 0xfffff000) as i32 as u32;
                 // "lui"
+                let imm = (inst & 0xfffff000) as i32 as i64 as u64;
                 DecodedInstr::Lui { rd, imm }
             }
             0x17 => {
-                let imm = inst & 0xfffff000;
                 // "auipc"
+                let imm = (inst & 0xfffff000) as i32 as i64 as u64;
                 DecodedInstr::Auipc { rd, imm }
             }
             0x73 => {
                 let csr = ((inst as u32) >> 20) as usize;
                 let uimm = ((inst & 0xf8000) as u32) >> 15;
-                let imm = (inst as i32 as i64 >> 20) as u64;
                 match (funct3, funct7, rs2) {
                     (0x0, 0x0, 0x0) => {
                         DecodedInstr::Ecall
@@ -406,32 +404,32 @@ impl DecodedInstr {
                     }
                     (0x1, _, _) => {
                         DecodedInstr::Csrrw {
-                            rd, rs1, imm: csr
+                            rd, rs1, csr
                         }
                     }
                     (0x2, _, _) => {
                         DecodedInstr::Csrrs{ 
-                            rd, rs1, imm: csr
+                            rd, rs1, csr
                         }
                     }
                     (0x3, _, _) => {
                         DecodedInstr::Csrrc{ 
-                            rd, rs1, imm: csr
+                            rd, rs1, csr
                         }
                     }
                     (0x5, _, _) => {
                         DecodedInstr::Csrrwi{ 
-                            rd, rs1, imm: csr
+                            rd, rs1, csr, uimm
                         }
                     }
                     (0x6, _, _) => {
                         DecodedInstr::Csrrsi{ 
-                            rd, rs1, imm: csr
+                            rd, rs1, csr, uimm
                         }
                     }
                     (0x7, _, _) => {
                         DecodedInstr::Csrrci{ 
-                            rd, rs1, imm: csr
+                            rd, rs1, csr, uimm
                         }
                     }
                     (0x0, 0x9, _) => {

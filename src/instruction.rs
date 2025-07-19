@@ -234,13 +234,13 @@ impl DecodedInstr {
                         DecodedInstr::Sb { rd, rs1, rs2, imm }
                     }
                     0x1 => {
-                        DecodedInstr::Sb { rd, rs1, rs2, imm }
+                        DecodedInstr::Sh { rd, rs1, rs2, imm }
                     }
                     0x2 => {
-                        DecodedInstr::Sb { rd, rs1, rs2, imm }
+                        DecodedInstr::Sw { rd, rs1, rs2, imm }
                     }
                     0x3 => {
-                        DecodedInstr::Sb { rd, rs1, rs2, imm }
+                        DecodedInstr::Sd { rd, rs1, rs2, imm }
                     }
                     _ => {
                         error!("This should not be reached!");

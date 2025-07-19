@@ -705,7 +705,7 @@ impl Cpu {
             }
             DecodedInstr::Sb { rd, rs1, rs2, imm } => {
                 // store instructions
-                let addr = self.regs[rs1].wrapping_add(imm as u64);
+                let addr = self.regs[rs1].wrapping_add(imm as i32 as i64 as u64);
                 self.store(addr, 8, self.regs[rs2])?;
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
@@ -713,7 +713,7 @@ impl Cpu {
             }
             DecodedInstr::Sh { rd, rs1, rs2, imm } => {
                 // store instructions
-                let addr = self.regs[rs1].wrapping_add(imm as u64);
+                let addr = self.regs[rs1].wrapping_add(imm as i32 as i64 as u64);
                 self.store(addr, 16, self.regs[rs2])?;
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
@@ -721,7 +721,7 @@ impl Cpu {
             }
             DecodedInstr::Sw { rd, rs1, rs2, imm } => {
                 // store instructions
-                let addr = self.regs[rs1].wrapping_add(imm as u64);
+                let addr = self.regs[rs1].wrapping_add(imm as i32 as i64 as u64);
                 self.store(addr, 32, self.regs[rs2])?;
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
@@ -729,7 +729,7 @@ impl Cpu {
             }
             DecodedInstr::Sd { rd, rs1, rs2, imm } => {
                 // store instructions
-                let addr = self.regs[rs1].wrapping_add(imm as u64);
+                let addr = self.regs[rs1].wrapping_add(imm as i32 as i64 as u64);
                 self.store(addr, 64, self.regs[rs2])?;
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);

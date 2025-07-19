@@ -161,6 +161,40 @@ impl DecodedInstr {
                 }
             },
             0x13 => {
+                let imm = (inst as i32 >> 20) as u32;
+                match funct3 {
+                    0x0 => {
+                        DecodedInstr::Addi{ rd, rs1, imm }
+                    }
+                    0x2 => {
+                        DecodedInstr::Slti{ rd, rs1, imm }
+                    }
+                    0x3 => {
+                        DecodedInstr::Sltiu{ rd, rs1, imm }
+                    }
+                    0x4 => {
+                        DecodedInstr::Xori{ rd, rs1, imm }
+                    }
+                    0x6 => {
+                        DecodedInstr::Ori{ rd, rs1, imm }
+                    }
+                    0x7 => {
+                        DecodedInstr::Andi{ rd, rs1, imm }
+                    }
+                    0x1 => {
+                        DecodedInstr::Slli{ rd, rs1, imm }
+                    }
+                    0x5 => {
+                        DecodedInstr::Srli{ rd, rs1, imm }
+                    }
+                    _ => {
+                        error!("This should not be reached!");
+                        error!("funct3 = {:>#x}, funct7 = {:>#x}", funct3, funct7);
+                        DecodedInstr::IllegalInstruction{ inst }
+                    }
+                }
+            }
+            0x03 => {
                 let imm = ((inst as i32 as i64) >> 20) as u32;
                 match funct3 {
                     0x0 => {

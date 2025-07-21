@@ -18,7 +18,7 @@ pub const M_MODE: u64 = 0b11;
 pub const S_MODE: u64 = 0b01;
 pub const U_MODE: u64 = 0b00;
 
-pub const CPU_FREQUENCY: u64 = 10_000_000; // 10MHz
+pub const CPU_FREQUENCY: u64 = 200_000_000; // 200MHz
 
 #[derive(PartialEq)]
 enum AccessMode {

@@ -716,7 +716,7 @@ impl Cpu {
                 let addr = self.regs[rs1].wrapping_add(imm as i32 as i64 as u64);
                 self.store(addr, 8, self.regs[rs2])?;
                 self.mark_as_src1(rs1);
-                self.mark_as_src2(rs2);
+                self.mark_as_dest(rs2);
                 Ok(())
             }
             DecodedInstr::Sh { rd, rs1, rs2, imm } => {
@@ -724,7 +724,7 @@ impl Cpu {
                 let addr = self.regs[rs1].wrapping_add(imm as i32 as i64 as u64);
                 self.store(addr, 16, self.regs[rs2])?;
                 self.mark_as_src1(rs1);
-                self.mark_as_src2(rs2);
+                self.mark_as_dest(rs2);
                 Ok(())
             }
             DecodedInstr::Sw { rd, rs1, rs2, imm } => {
@@ -732,7 +732,7 @@ impl Cpu {
                 let addr = self.regs[rs1].wrapping_add(imm as i32 as i64 as u64);
                 self.store(addr, 32, self.regs[rs2])?;
                 self.mark_as_src1(rs1);
-                self.mark_as_src2(rs2);
+                self.mark_as_dest(rs2);
                 Ok(())
             }
             DecodedInstr::Sd { rd, rs1, rs2, imm } => {
@@ -740,7 +740,7 @@ impl Cpu {
                 let addr = self.regs[rs1].wrapping_add(imm as i32 as i64 as u64);
                 self.store(addr, 64, self.regs[rs2])?;
                 self.mark_as_src1(rs1);
-                self.mark_as_src2(rs2);
+                self.mark_as_dest(rs2);
                 Ok(())
             }
             DecodedInstr::Jal { rd, imm } => {
@@ -1251,14 +1251,13 @@ impl Cpu {
     fn run_block(&mut self, block: &BasicBlock) {
         self.pc = block.start_pc;
         for instr in &block.instrs {
-            info!("{:?} executed at pc={:x}", instr, self.pc);
             let result = self.execute(instr.clone());
             if let Err(mut e) = result {
                 error!("Execution failed in block at pc={:x}: {:?}", self.pc, e);
                 e.take_trap(self);
                 break;
             }
-            info!("{}", self.dump_registers());
+            self.regs[0] = 0; // x0 is always zero
             self.pc = self.pc.wrapping_add(4);
             *self.cycle.borrow_mut() += 1;
         }

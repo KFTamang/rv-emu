@@ -10,8 +10,6 @@ use std::collections::BTreeSet;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-const INTERRUPT_ID_UART: u64 = 10;
-
 #[derive(Serialize, Deserialize)]
 pub struct BusSnapshot {
     pub dram: Dram,

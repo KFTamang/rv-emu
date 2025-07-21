@@ -68,7 +68,6 @@ fn main() -> io::Result<()> {
     }
 
     let reg_dump_count = cli.dump.unwrap_or(0);
-    let mut counter = cli.count.unwrap_or(1);
 
     let mut emu = if cli.snapshot.is_some() {
         let path = cli.snapshot.unwrap();

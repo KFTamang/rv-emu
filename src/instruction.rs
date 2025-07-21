@@ -36,22 +36,22 @@ pub enum DecodedInstr {
     Lbu { rd: usize, rs1: usize, imm: u64 },
     Lhu { rd: usize, rs1: usize, imm: u64 },
     Lwu { rd: usize, rs1: usize, imm: u64 },
-    Sb { rd: usize, rs1: usize, rs2: usize, imm: u64 },
-    Sh { rd: usize, rs1: usize, rs2: usize, imm: u64 },
-    Sw { rd: usize, rs1: usize, rs2: usize, imm: u64 },
-    Sd { rd: usize, rs1: usize, rs2: usize, imm: u64 },
+    Sb { rs1: usize, rs2: usize, imm: u64 },
+    Sh { rs1: usize, rs2: usize, imm: u64 },
+    Sw { rs1: usize, rs2: usize, imm: u64 },
+    Sd { rs1: usize, rs2: usize, imm: u64 },
     Jal { rd: usize, imm: u64 },
     Jalr { rd: usize, rs1: usize, imm: u64 },
     Addiw { rd: usize, rs1: usize, imm: i32 },
     Slliw { rd: usize, rs1: usize, shamt: u32 },
     Srliw { rd: usize, rs1: usize, shamt: u32 },
     Sraiw { rd: usize, rs1: usize, shamt: u32 },
-    Beq { rd: usize, rs1: usize, rs2: usize, imm: u64 },
-    Bne { rd: usize, rs1: usize, rs2: usize, imm: u64 },
-    Blt { rd: usize, rs1: usize, rs2: usize, imm: u64 },
-    Bge { rd: usize, rs1: usize, rs2: usize, imm: u64 },
-    Bltu { rd: usize, rs1: usize, rs2: usize, imm: u64 },
-    Bgeu { rd: usize, rs1: usize, rs2: usize, imm: u64 },
+    Beq { rs1: usize, rs2: usize, imm: u64 },
+    Bne { rs1: usize, rs2: usize, imm: u64 },
+    Blt { rs1: usize, rs2: usize, imm: u64 },
+    Bge { rs1: usize, rs2: usize, imm: u64 },
+    Bltu { rs1: usize, rs2: usize, imm: u64 },
+    Bgeu { rs1: usize, rs2: usize, imm: u64 },
     Addw { rd: usize, rs1: usize, rs2: usize },
     Subw { rd: usize, rs1: usize, rs2: usize },
     Sllw { rd: usize, rs1: usize, rs2: usize },
@@ -233,16 +233,16 @@ impl DecodedInstr {
                     | ((inst >> 7) & 0x1f) as u64;
                 match funct3 {
                     0x0 => {
-                        DecodedInstr::Sb { rd, rs1, rs2, imm }
+                        DecodedInstr::Sb { rs1, rs2, imm }
                     }
                     0x1 => {
-                        DecodedInstr::Sh { rd, rs1, rs2, imm }
+                        DecodedInstr::Sh { rs1, rs2, imm }
                     }
                     0x2 => {
-                        DecodedInstr::Sw { rd, rs1, rs2, imm }
+                        DecodedInstr::Sw { rs1, rs2, imm }
                     }
                     0x3 => {
-                        DecodedInstr::Sd { rd, rs1, rs2, imm }
+                        DecodedInstr::Sd { rs1, rs2, imm }
                     }
                     _ => {
                         error!("This should not be reached!");
@@ -313,22 +313,22 @@ impl DecodedInstr {
                     | ((inst & 0x80) as u64) << 4;
                 match funct3 {
                     0x0 => {
-                        DecodedInstr::Beq { rd, rs1, rs2, imm }
+                        DecodedInstr::Beq { rs1, rs2, imm }
                     }
                     0x1 => {
-                        DecodedInstr::Bne { rd, rs1, rs2, imm }
+                        DecodedInstr::Bne { rs1, rs2, imm }
                     }
                     0x4 => {
-                        DecodedInstr::Blt { rd, rs1, rs2, imm }
+                        DecodedInstr::Blt { rs1, rs2, imm }
                     }
                     0x5 => {
-                        DecodedInstr::Bge { rd, rs1, rs2, imm }
+                        DecodedInstr::Bge { rs1, rs2, imm }
                     }
                     0x6 => {
-                        DecodedInstr::Bltu { rd, rs1, rs2, imm }
+                        DecodedInstr::Bltu { rs1, rs2, imm }
                     }
                     0x7 => {
-                        DecodedInstr::Bgeu { rd, rs1, rs2, imm }
+                        DecodedInstr::Bgeu { rs1, rs2, imm }
                     }
                     _ => {
                         error!("This should not be reached!");

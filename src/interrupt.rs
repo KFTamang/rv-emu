@@ -29,15 +29,6 @@ impl Ord for Interrupt {
 }
 
 impl Interrupt {
-    pub const PRIORITY_ORDER: [Interrupt; 6] = [
-        Interrupt::MachineExternalInterrupt,    //MEI
-        Interrupt::MachineSoftwareInterrupt,    //MSI
-        Interrupt::MachineTimerInterrupt,       //MTI
-        Interrupt::SupervisorExternalInterrupt, //SEI
-        Interrupt::SupervisorSoftwareInterrupt, //SSI
-        Interrupt::SupervisorTimerInterrupt,    //STI
-    ];
-
     pub fn code(&self) -> u64 {
         match self {
             Interrupt::SupervisorSoftwareInterrupt => 1,

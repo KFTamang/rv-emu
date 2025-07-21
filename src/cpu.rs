@@ -283,25 +283,6 @@ impl Cpu {
         // }
     }
 
-    fn set_pending_interrupt(&mut self, interrupt: Interrupt) {
-        let xip = if self.mode == M_MODE {
-            self.csr.load_csrs(MIP)
-        } else {
-            self.csr.load_csrs(SIP)
-        };
-        let new_xip = xip | interrupt.bit_code();
-        if self.mode == M_MODE {
-            self.csr.store_csrs(MIP, new_xip);
-        } else {
-            self.csr.store_csrs(SIP, new_xip);
-        };
-
-        debug!("Interrupt {:?} is set", interrupt);
-        debug!("xIP: {:0b}", new_xip);
-        debug!("xIE: {:0b}", self.csr.load_csrs(MIE));
-        debug!("{}", self.csr.dump());
-    }
-
     // get the takable pending interrupt with the highest priority
     pub fn get_interrupt_to_take(&mut self) -> Option<Interrupt> {
         // An interrupt i will be taken
@@ -388,7 +369,7 @@ impl Cpu {
                 self.csr.set_mstatus_bit(U_MODE, MASK_MPP, BIT_MPP);
                 self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
                 self.mode = pp;
-                debug!("back to privilege {} from machine mode", pp);
+                info!("back to privilege {} from machine mode", pp);
             }
             S_MODE => {
                 let pp = self.csr.get_sstatus_bit(MASK_SPP, BIT_SPP);
@@ -399,7 +380,7 @@ impl Cpu {
                 self.csr.set_sstatus_bit(U_MODE, MASK_SPP, BIT_SPP);
                 self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
                 self.mode = pp;
-                debug!("back to privilege {} from supervisor mode", pp);
+                info!("back to privilege {} from supervisor mode", pp);
             }
             _ => {
                 panic!("m/sret from U_MODE\n");
@@ -711,7 +692,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Sb { rd, rs1, rs2, imm } => {
+            DecodedInstr::Sb { rs1, rs2, imm } => {
                 // store instructions
                 let addr = self.regs[rs1].wrapping_add(imm as i32 as i64 as u64);
                 self.store(addr, 8, self.regs[rs2])?;
@@ -719,7 +700,7 @@ impl Cpu {
                 self.mark_as_dest(rs2);
                 Ok(())
             }
-            DecodedInstr::Sh { rd, rs1, rs2, imm } => {
+            DecodedInstr::Sh { rs1, rs2, imm } => {
                 // store instructions
                 let addr = self.regs[rs1].wrapping_add(imm as i32 as i64 as u64);
                 self.store(addr, 16, self.regs[rs2])?;
@@ -727,7 +708,7 @@ impl Cpu {
                 self.mark_as_dest(rs2);
                 Ok(())
             }
-            DecodedInstr::Sw { rd, rs1, rs2, imm } => {
+            DecodedInstr::Sw { rs1, rs2, imm } => {
                 // store instructions
                 let addr = self.regs[rs1].wrapping_add(imm as i32 as i64 as u64);
                 self.store(addr, 32, self.regs[rs2])?;
@@ -735,7 +716,7 @@ impl Cpu {
                 self.mark_as_dest(rs2);
                 Ok(())
             }
-            DecodedInstr::Sd { rd, rs1, rs2, imm } => {
+            DecodedInstr::Sd { rs1, rs2, imm } => {
                 // store instructions
                 let addr = self.regs[rs1].wrapping_add(imm as i32 as i64 as u64);
                 self.store(addr, 64, self.regs[rs2])?;
@@ -797,7 +778,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Beq {rd, rs1, rs2, imm } => {
+            DecodedInstr::Beq {rs1, rs2, imm } => {
                 // "beq"
                 if self.regs[rs1] == self.regs[rs2] {
                     self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
@@ -806,7 +787,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Bne {rd, rs1, rs2, imm } => {
+            DecodedInstr::Bne {rs1, rs2, imm } => {
                 // "bne"
                 if self.regs[rs1] != self.regs[rs2] {
                     self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
@@ -815,7 +796,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Blt {rd, rs1, rs2, imm } => {
+            DecodedInstr::Blt {rs1, rs2, imm } => {
                 // "blt"
                 if (self.regs[rs1] as i64) < (self.regs[rs2] as i64) {
                     self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
@@ -824,7 +805,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Bge {rd, rs1, rs2, imm } => {
+            DecodedInstr::Bge {rs1, rs2, imm } => {
                 // "bge"
                 if (self.regs[rs1] as i64) >= (self.regs[rs2] as i64) {
                     self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
@@ -833,7 +814,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Bltu {rd, rs1, rs2, imm } => {
+            DecodedInstr::Bltu {rs1, rs2, imm } => {
                 // "bltu"
                 if self.regs[rs1] < self.regs[rs2] {
                     self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
@@ -842,7 +823,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Bgeu {rd, rs1, rs2, imm } => {
+            DecodedInstr::Bgeu {rs1, rs2, imm } => {
                 // "bgeu"
                 if self.regs[rs1] >= self.regs[rs2] {
                     self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);

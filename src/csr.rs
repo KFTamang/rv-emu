@@ -6,7 +6,6 @@ use serde_big_array::BigArray;
 use std::cell::RefCell;
 use std::collections::BTreeSet;
 use std::rc::Rc;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Serialize, Deserialize)]
 pub struct CsrSnapshot {
@@ -16,7 +15,6 @@ pub struct CsrSnapshot {
 
 pub struct Csr {
     csr: [u64; 4096],
-    initial_time: u64,
     cycle: Rc<RefCell<u64>>,
     interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>,
 }
@@ -86,10 +84,6 @@ impl Csr {
             csr: [0; 4096],
             interrupt_list,
             cycle,
-            initial_time: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64,
         }
     }
 
@@ -106,10 +100,6 @@ impl Csr {
             csr: snapshot.csr,
             interrupt_list,
             cycle,
-            initial_time: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64,
         }
     }
 

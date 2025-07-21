@@ -125,15 +125,8 @@ fn main() -> io::Result<()> {
         }
     } else {
         info!("No GDB");
-        while counter != 0 {
-            if emu.step() == Some(emu::Event::Halted) {
-                info!("Halted");
-                break;
-            }
-            if !cli.loop_on && counter > 0 {
-                counter -= 1;
-            }
-        }
+        emu.exec_mode = emu::ExecMode::Continue;
+        emu.run(|| false);
     }
 
     // cpu.bus.dump("log/memory.dump");

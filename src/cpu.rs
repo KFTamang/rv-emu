@@ -30,6 +30,13 @@ fn bit(integer: u64, bit: u64) -> u64 {
     (integer >> bit) & 0x1
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct BasicBlock {
+    start_pc: u64,
+    end_pc: u64,
+    instrs: Vec<DecodedInstr>,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct CpuSnapshot {
     pub regs: [u64; 32],
@@ -41,6 +48,7 @@ pub struct CpuSnapshot {
     pub clint: Clint,
     pub interrupt_list: BTreeSet<Interrupt>,
     pub address_translation_cache: std::collections::HashMap<u64, u64>,
+    basic_block_cache: std::collections::HashMap<u64, BasicBlock>,
 }
 
 pub struct Cpu {
@@ -99,6 +107,7 @@ impl Cpu {
             clint: self.clint.clone(),
             interrupt_list: self.interrupt_list.borrow().clone(),
             address_translation_cache: self.address_translation_cache.clone(),
+            basic_block_cache: std::collections::HashMap::new(), // not needed for snapshot
         }
     }
 
@@ -126,9 +135,8 @@ impl Cpu {
         cpu
     }
 
-    pub fn fetch(&mut self) -> Result<u32, ()> {
-        let index = self.pc as usize;
-        match self.load(index as u64, 32) {
+    pub fn fetch(&mut self, addr: u64) -> Result<u32, ()> {
+        match self.load(addr, 32) {
             Ok(inst) => Ok(inst as u32),
             Err(_) => Err(()),
         }
@@ -566,7 +574,7 @@ impl Cpu {
             }
             DecodedInstr::Addi{rd, rs1, imm} => {
                 // "addi"
-                self.regs[rd] = self.regs[rs1].wrapping_add(imm as u64);
+                self.regs[rd] = self.regs[rs1].wrapping_add(imm);
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(())
@@ -1190,8 +1198,7 @@ impl Cpu {
         output
     }
 
-    pub fn step_run(&mut self) -> u64 {
-        trace!("pc={:>#18x}", self.pc);
+    fn trap_interrupt(&mut self) {
         *self.cycle.borrow_mut() += 1;
         if *self.cycle.borrow() % 1000000 == 0 {
             debug!("Cycle: {}", self.cycle.borrow());
@@ -1208,8 +1215,72 @@ impl Cpu {
             debug!("{}", self.csr.dump());
             interrupt.take_trap(self);
         }
+    }
 
-        let inst = match self.fetch() {
+    fn build_basic_block(&mut self) -> BasicBlock {
+        // Build a basic block for the current instruction
+        let mut instrs = Vec::new();
+        let mut pc = self.pc;
+
+        loop {
+            let inst = match self.fetch(pc) {
+                Ok(inst) => inst,
+                Err(e) => {
+                    error!("Failed to fetch instruction at pc={:x}: {:?}", pc, e);
+                    break;
+                }
+            };
+
+            let decoded_inst = DecodedInstr::decode(inst);
+            instrs.push(decoded_inst.clone());
+
+            if decoded_inst.is_branch() || decoded_inst.is_jump() {
+                break;
+            }
+
+            pc = pc.wrapping_add(4);
+        }
+        
+        BasicBlock {
+            start_pc: self.pc,
+            end_pc: pc,
+            instrs,
+        }
+    }
+
+    fn run_block(&mut self, block: &BasicBlock) {
+        self.pc = block.start_pc;
+        for instr in &block.instrs {
+            info!("{:?} executed at pc={:x}", instr, self.pc);
+            let result = self.execute(instr.clone());
+            if let Err(mut e) = result {
+                error!("Execution failed in block at pc={:x}: {:?}", self.pc, e);
+                e.take_trap(self);
+                break;
+            }
+            info!("{}", self.dump_registers());
+            self.pc = self.pc.wrapping_add(4);
+            *self.cycle.borrow_mut() += 1;
+        }
+    }
+
+    pub fn block_run(&mut self) {
+        let mut block_cache = std::collections::HashMap::<u64, BasicBlock>::new();
+
+        while self.pc != 0 {
+            self.trap_interrupt();
+            let pc = self.pc;
+            let block = block_cache.entry(pc).or_insert_with(|| self.build_basic_block());
+            self.run_block(block);
+        }
+    }
+
+    pub fn step_run(&mut self) -> u64 {
+        trace!("pc={:>#18x}", self.pc);
+
+        self.trap_interrupt();
+
+        let inst = match self.fetch(self.pc) {
             Ok(inst) => inst,
             Err(_) => return 0x0,
         };

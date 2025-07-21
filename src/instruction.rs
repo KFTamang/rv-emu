@@ -1,5 +1,7 @@
 use log::{error, info};
+use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum DecodedInstr {
     Add { rd: usize, rs1: usize, rs2: usize },
     Sub {rd: usize, rs1: usize, rs2: usize},
@@ -161,7 +163,7 @@ impl DecodedInstr {
                 }
             },
             0x13 => {
-                let imm = (inst as i32 >> 20) as u64;
+                let imm = (inst as i32 >> 20) as i64 as u64;
                 match funct3 {
                     0x0 => {
                         DecodedInstr::Addi{ rd, rs1, imm }
@@ -551,5 +553,24 @@ impl DecodedInstr {
                 return DecodedInstr::IllegalInstruction{inst};
             }
         }
+    }
+
+    pub fn is_branch(&self) -> bool {
+        matches!(self, DecodedInstr::Beq { .. }
+            | DecodedInstr::Bne { .. }
+            | DecodedInstr::Blt { .. }
+            | DecodedInstr::Bge { .. }
+            | DecodedInstr::Bltu { .. }
+            | DecodedInstr::Bgeu { .. })
+    }
+
+    pub fn is_jump(&self) -> bool {
+        matches!(self, DecodedInstr::Jal { .. }
+            | DecodedInstr::Jalr { .. }
+            | DecodedInstr::Ecall
+            | DecodedInstr::Ebreak
+            | DecodedInstr::Sret
+            | DecodedInstr::Wfi
+            | DecodedInstr::Mret)
     }
 }

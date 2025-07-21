@@ -69,19 +69,13 @@ impl Emu {
         match self.exec_mode {
             ExecMode::Step => RunEvent::Event(self.step().unwrap_or(Event::DoneStep)),
             ExecMode::Continue => {
-                let mut cycles = 0;
-                loop {
-                    if cycles % 1024 == 0 {
-                        // poll for incoming data
-                        if poll_incoming_data() {
-                            break RunEvent::IncomingData;
-                        }
-                    }
-                    cycles += 1;
-
-                    if let Some(event) = self.step() {
-                        break RunEvent::Event(event);
-                    };
+                self.cpu.block_run();
+                if self.breakpoints.contains(&self.cpu.pc) {
+                    RunEvent::Event(Event::Break)
+                } else if poll_incoming_data() {
+                    RunEvent::IncomingData
+                } else {
+                    RunEvent::Event(Event::DoneStep)
                 }
             }
         }

@@ -30,7 +30,7 @@ impl Bus {
         code: Vec<u8>,
         base_addr: u64,
         interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>,
-    ) -> Bus {
+    ) -> Rc<RefCell<Bus>> {
         let plic = Plic::new(0xc000000, interrupt_list.clone());
         let uart_notificator = plic.get_interrupt_notificator(ExternalInterrupt::UartInput);
         let bus_rc = Rc::new(RefCell::new(Self {
@@ -50,7 +50,7 @@ impl Bus {
         virtio.borrow_mut().set_bus(Rc::clone(&bus_rc));
         // Set virtio in bus
         bus_rc.borrow_mut().virtio = Some(Rc::try_unwrap(virtio).ok().unwrap().into_inner());
-        Rc::try_unwrap(bus_rc).ok().unwrap().into_inner()
+        bus_rc
     }
 
     pub fn load(&mut self, addr: u64, size: u64) -> Result<u64, Exception> {

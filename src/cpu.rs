@@ -54,7 +54,7 @@ pub struct CpuSnapshot {
 pub struct Cpu {
     pub regs: [u64; 32],
     pub pc: u64,
-    pub bus: Bus,
+    pub bus: Rc<RefCell<Bus>>,
     pub csr: Csr,
     dest: usize,
     src1: usize,
@@ -100,7 +100,7 @@ impl Cpu {
         CpuSnapshot {
             regs: self.regs,
             pc: self.pc,
-            bus: self.bus.to_snapshot(),
+            bus: self.bus.borrow().to_snapshot(),
             csr: self.csr.to_snapshot(),
             mode: self.mode,
             cycle: *self.cycle.borrow(),
@@ -117,7 +117,7 @@ impl Cpu {
         let mut cpu = Self {
             regs: snapshot.regs,
             pc: snapshot.pc,
-            bus: Bus::from_snapshot(snapshot.bus, interrupt_list.clone()),
+            bus: Rc::new(RefCell::new(Bus::from_snapshot(snapshot.bus, interrupt_list.clone()))),
             csr: Csr::from_snapshot(snapshot.csr, interrupt_list.clone(), cycle.clone()),
             dest: REG_NUM,
             src1: REG_NUM,
@@ -169,7 +169,9 @@ impl Cpu {
                 if self.clint.is_accessible(pa) {
                     self.clint.load(pa, size)
                 } else {
-                    self.bus.load(pa, size)
+                    self.bus.as_ref()
+                        .borrow_mut()
+                        .load(pa, size)
                 }
             }
             Err(e) => Err(e),
@@ -182,7 +184,9 @@ impl Cpu {
                 if self.clint.is_accessible(pa) {
                     self.clint.store(pa, size, value)
                 } else {
-                    self.bus.store(pa, size, value)
+                    self.bus.as_ref()
+                        .borrow_mut()
+                        .store(pa, size, value)
                 }
             }
             Err(e) => Err(e),
@@ -212,7 +216,9 @@ impl Cpu {
         let mut ppn = satp & 0xfff_ffff_ffff;
         while i >= 0 {
             pt_addr = ppn * PAGESIZE + vpn[i as usize] * PTESIZE;
-            if let Ok(val) = self.bus.load(pt_addr, 64) {
+            if let Ok(val) = self.bus.as_ref()
+                .borrow_mut()
+                .load(pt_addr, 64) {
                 pte = val;
                 let v = bit(pte, 0);
                 let r = bit(pte, 1);
@@ -244,7 +250,9 @@ impl Cpu {
         let a = bit(pte, 6);
         let d = bit(pte, 7);
         if (a == 0) || ((d == 0) && (acc_mode == AccessMode::Store)) {
-            self.bus.store(pt_addr, 64, pte | (1 << 6))?;
+            self.bus
+                .borrow_mut()
+                .store(pt_addr, 64, pte | (1 << 6))?;
         }
         let pa = match i {
             0 => ((pte << 2) & 0xfffffffffff000) | (va & 0x00000fff),
@@ -1186,7 +1194,9 @@ impl Cpu {
         }
 
         // check for interrupts
-        self.bus.plic.process_pending_interrupts();
+        self.bus.as_ref()
+            .borrow_mut()
+            .plic.process_pending_interrupts();
 
         // check and pend all the delayed interrupts
         self.update_pending_interrupts();

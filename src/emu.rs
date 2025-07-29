@@ -86,7 +86,7 @@ impl Emu {
     }
 
     pub fn set_disk_image(&mut self, disk_image: Vec<u8>) {
-        if let Some(virtio) = &mut self.cpu.bus.virtio {
+        if let Some(virtio) = &mut self.cpu.bus.as_ref().borrow_mut().virtio {
             virtio.set_disk_image(disk_image);
         } else {
             panic!("Virtio not initialized: No virtio device found in bus");

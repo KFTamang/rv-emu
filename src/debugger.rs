@@ -58,7 +58,9 @@ impl SingleThreadBase for Emu {
         let mut read_size = 0;
         while data.len() - read_size >= 8 {
             // load 64 bytes at a time, copy to data
-            if let Ok(source_slice) = self.cpu.bus.load(start_addr + read_size as u64, 64) {
+            if let Ok(source_slice) = self.cpu.bus.as_ref()
+                .borrow_mut()
+                .load(start_addr + read_size as u64, 64) {
                 data[read_size..read_size + 8].copy_from_slice(&source_slice.to_le_bytes());
                 read_size += 8;
             } else {
@@ -66,7 +68,9 @@ impl SingleThreadBase for Emu {
             }
         }
         while data.len() - read_size > 0 {
-            if let Ok(source_slice) = self.cpu.bus.load(start_addr + read_size as u64, 8) {
+            if let Ok(source_slice) = self.cpu.bus.as_ref()
+                .borrow_mut()
+                .load(start_addr + read_size as u64, 8) {
                 data[read_size] = source_slice as u8;
                 read_size += 1;
             } else {
@@ -86,6 +90,8 @@ impl SingleThreadBase for Emu {
             if let Ok(_source_slice) =
                 self.cpu
                     .bus
+                    .as_ref()
+                    .borrow_mut()
                     .store(start_addr + wrote_size as u64, data_8byte, 64)
             {
                 wrote_size += 8;
@@ -97,6 +103,8 @@ impl SingleThreadBase for Emu {
             if let Ok(_source_slice) =
                 self.cpu
                     .bus
+                    .as_ref()
+                    .borrow_mut()
                     .store(start_addr + wrote_size as u64, data[wrote_size] as u64, 8)
             {
                 wrote_size += 1;

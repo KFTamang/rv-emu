@@ -49,6 +49,8 @@ struct Cli {
     snapshot: Option<std::path::PathBuf>,
     #[clap(long, default_value_t = 100000000)]
     snapshot_interval: u64,
+    #[clap(long)]
+    image: Option<std::path::PathBuf>,
 }
 
 fn main() -> io::Result<()> {
@@ -84,6 +86,11 @@ fn main() -> io::Result<()> {
         emu.set_entry_point(entry_address);
         emu
     };
+
+    if cli.image.is_some() {
+        let disk_image = std::fs::read(cli.image.unwrap()).expect("Failed to read disk image");
+        emu.set_disk_image(disk_image);
+    }
 
     if cli.gdb {
         info!("GDB enabled");

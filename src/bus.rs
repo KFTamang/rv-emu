@@ -33,24 +33,24 @@ impl Bus {
     ) -> Bus {
         let plic = Plic::new(0xc000000, interrupt_list.clone());
         let uart_notificator = plic.get_interrupt_notificator(ExternalInterrupt::UartInput);
-        let mut bus = Self {
+        let bus_rc = Rc::new(RefCell::new(Self {
             plic,
             dram: Dram::new(code, base_addr),
             uart: Uart::new(0x10000000, uart_notificator),
             virtio: None,
-        };
+        }));
         let virtio = Rc::new(
             RefCell::new(
                 Virtio::new(
                     0x10001000, 
-                    bus.plic.get_interrupt_notificator(ExternalInterrupt::VirtioDiskIO),
+                    bus_rc.borrow().plic.get_interrupt_notificator(ExternalInterrupt::VirtioDiskIO),
                 )
             )
         );
-        virtio.borrow_mut().set_bus(Rc::new(RefCell::new(bus.clone())));
-          
-        bus.virtio = Some(virtio.borrow().clone());
-        bus
+        virtio.borrow_mut().set_bus(Rc::clone(&bus_rc));
+        // Set virtio in bus
+        bus_rc.borrow_mut().virtio = Some(Rc::try_unwrap(virtio).ok().unwrap().into_inner());
+        Rc::try_unwrap(bus_rc).ok().unwrap().into_inner()
     }
 
     pub fn load(&mut self, addr: u64, size: u64) -> Result<u64, Exception> {
@@ -81,7 +81,7 @@ impl Bus {
             );
             return ret_val;
         }
-        let mut virtio = self.virtio.as_mut().expect("No virtio bus");
+        let virtio = self.virtio.as_mut().expect("No virtio bus");
         if virtio.is_accessible(addr) {
             let ret_val = virtio.load(addr, size);
             debug!(
@@ -114,7 +114,7 @@ impl Bus {
         if self.plic.is_accessible(addr) {
             return self.plic.store(addr, size, value);
         }
-        let mut virtio = self.virtio.as_mut().expect("No virtio bus");
+        let virtio = self.virtio.as_mut().expect("No virtio bus");
         if virtio.is_accessible(addr) {
             return virtio.store(addr, size, value);
         }

@@ -21,11 +21,14 @@ const VIRTIO_MMIO_GUEST_PAGE_SIZE: usize = 0x028; // page size for PFN, write-on
 const VIRTIO_MMIO_QUEUE_SEL: usize = 0x030; // select queue, write-only
 const VIRTIO_MMIO_QUEUE_NUM_MAX: usize = 0x034; // max size of current queue, read-only
 const VIRTIO_MMIO_QUEUE_NUM: usize = 0x038; // size of current queue, write-only
-const VIRTIO_MMIO_QUEUE_ALIGN: usize = 0x03c; // used ring alignment, write-only
 const VIRTIO_MMIO_QUEUE_PFN: usize = 0x040; // physical page number for queue, read/write
+#[allow(dead_code)]
 const VIRTIO_MMIO_QUEUE_READY: usize = 0x044; // ready bit
+#[allow(dead_code)]
 const VIRTIO_MMIO_QUEUE_NOTIFY: usize = 0x050; // write-only
+#[allow(dead_code)]
 const VIRTIO_MMIO_INTERRUPT_STATUS: usize = 0x060; // read-only
+#[allow(dead_code)]
 const VIRTIO_MMIO_INTERRUPT_ACK: usize = 0x064; // write-only
 const VIRTIO_MMIO_STATUS: usize = 0x070; // read/write
 
@@ -43,7 +46,6 @@ pub struct VirtioSnapshot {
     disk: Vec<u8>,
 }
 
-#[derive(Clone)]
 pub struct Virtio {
     start_addr: u64,
     notificator: Box<dyn Fn() + Send + Sync>,
@@ -84,7 +86,7 @@ impl Virtio {
     pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
         let relative_addr = (addr - self.start_addr) as usize;
         let ret_val = match relative_addr {
-            VIRTIO_MMIO_MAGIC => 0x74726976,
+            VIRTIO_MMIO_MAGIC_VALUE => 0x74726976,
             VIRTIO_MMIO_VERSION => 0x1,
             VIRTIO_MMIO_DEVICE_ID => 0x2,
             VIRTIO_MMIO_VENDOR_ID => 0x554d4551,
@@ -134,7 +136,7 @@ impl Virtio {
     }
 
     /// Set the binary in the virtio disk.
-    pub fn set_disk(&mut self, binary: Vec<u8>) {
+    pub fn set_disk_image(&mut self, binary: Vec<u8>) {
         self.disk.extend(binary.iter().cloned());
     }
 
@@ -215,17 +217,21 @@ impl Virtio {
         let blk_sector = bus.load(addr0.wrapping_add(8), 64)
             .expect("failed to read a sector field in a virtio_blk_outhdr");
 
+        drop(bus);
         // Write to a device if the second bit `flag1` is set.
         match (flags1 & 2) == 0 {
             true => {
                 // Read memory data and write it to a disk directly (DMA).
                 let mut buffer = Vec::with_capacity(len1 as usize);
                 for i in 0..len1 as u64 {
-                    let data = bus.load(addr1 + i, 8)
+                    let data = self.bus
+                        .as_ref()
+                        .expect("No bus")
+                        .borrow_mut()
+                        .load(addr1 + i, 8)
                         .expect("failed to read from memory") as u8;
                     buffer.push(data);
                 }
-                drop(bus); // Release the mutable borrow of bus before mutably borrowing self
                 for (i, data) in buffer.into_iter().enumerate() {
                     self.write_disk(blk_sector * 512 + i as u64, data);
                 }
@@ -234,7 +240,10 @@ impl Virtio {
                 // Read disk data and write it to memory directly (DMA).
                 for i in 0..len1 as u64 {
                     let data = self.read_disk(blk_sector * 512 + i) as u64;
-                    bus.store(addr1 + i, 8, data)
+                    self.bus.as_mut()
+                        .expect("No bus")
+                        .borrow_mut()
+                        .store(addr1 + i, 8, data)
                         .expect("failed to write to memory");
                 }
             }
@@ -247,6 +256,7 @@ impl Virtio {
         //   struct VRingUsedElem elems[NUM];
         // };
         let new_id = self.get_new_id() as u64;
+        let mut bus = self.bus.as_ref().expect("No bus").borrow_mut();
         bus.store(used_addr.wrapping_add(2), 16, new_id % 8)
             .expect("failed to write to memory");
     }

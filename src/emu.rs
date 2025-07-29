@@ -85,6 +85,14 @@ impl Emu {
         self.cpu.pc = entry_addr;
     }
 
+    pub fn set_disk_image(&mut self, disk_image: Vec<u8>) {
+        if let Some(virtio) = &mut self.cpu.bus.virtio {
+            virtio.set_disk_image(disk_image);
+        } else {
+            panic!("Virtio not initialized: No virtio device found in bus");
+        }
+    }
+
     pub fn to_snapshot(&self) -> EmuSnapshot {
         EmuSnapshot {
             cpu: self.cpu.to_snapshot(),

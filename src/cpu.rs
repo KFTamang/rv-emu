@@ -1186,7 +1186,9 @@ impl Cpu {
         }
 
         // check for interrupts
-        self.bus.plic.process_pending_interrupts();
+        for device in self.bus.devices.iter_mut() {
+            device.process_pending_interrupts();
+        }
 
         // check and pend all the delayed interrupts
         self.update_pending_interrupts();

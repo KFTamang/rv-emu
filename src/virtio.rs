@@ -1,71 +1,79 @@
-use crate::interrupt::*;
-use log::{debug, info};
+use crate::{bus::Bus, interrupt::*};
+use log::info;
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 const VIRTIO_SIZE: u64 = 0x1000; // size of virtio mmio device
+const VRING_DESC_SIZE: u64 = 16;
+/// The number of virtio descriptors. It must be a power of two.
+const DESC_NUM: u64 = 8;
 
 // virtio mmio control registers, mapped starting at 0x10001000.
 // from qemu virtio_mmio.h
-#[allow(dead_code)]
 const VIRTIO_MMIO_MAGIC_VALUE: usize = 0x000; // 0x74726976
-#[allow(dead_code)]
 const VIRTIO_MMIO_VERSION: usize = 0x004; // version; 1 is legacy
-#[allow(dead_code)]
 const VIRTIO_MMIO_DEVICE_ID: usize = 0x008; // device type; 1 is net, 2 is disk
-#[allow(dead_code)]
 const VIRTIO_MMIO_VENDOR_ID: usize = 0x00c; // 0x554d4551
-#[allow(dead_code)]
 const VIRTIO_MMIO_DEVICE_FEATURES: usize = 0x010;
-#[allow(dead_code)]
 const VIRTIO_MMIO_DRIVER_FEATURES: usize = 0x020;
-#[allow(dead_code)]
 const VIRTIO_MMIO_GUEST_PAGE_SIZE: usize = 0x028; // page size for PFN, write-only
-#[allow(dead_code)]
 const VIRTIO_MMIO_QUEUE_SEL: usize = 0x030; // select queue, write-only
-#[allow(dead_code)]
 const VIRTIO_MMIO_QUEUE_NUM_MAX: usize = 0x034; // max size of current queue, read-only
-#[allow(dead_code)]
 const VIRTIO_MMIO_QUEUE_NUM: usize = 0x038; // size of current queue, write-only
-#[allow(dead_code)]
 const VIRTIO_MMIO_QUEUE_ALIGN: usize = 0x03c; // used ring alignment, write-only
-#[allow(dead_code)]
 const VIRTIO_MMIO_QUEUE_PFN: usize = 0x040; // physical page number for queue, read/write
-#[allow(dead_code)]
 const VIRTIO_MMIO_QUEUE_READY: usize = 0x044; // ready bit
-#[allow(dead_code)]
 const VIRTIO_MMIO_QUEUE_NOTIFY: usize = 0x050; // write-only
-#[allow(dead_code)]
 const VIRTIO_MMIO_INTERRUPT_STATUS: usize = 0x060; // read-only
-#[allow(dead_code)]
 const VIRTIO_MMIO_INTERRUPT_ACK: usize = 0x064; // write-only
-#[allow(dead_code)]
 const VIRTIO_MMIO_STATUS: usize = 0x070; // read/write
 
 #[derive(Clone, Serialize, Deserialize)]
+pub struct VirtioSnapshot {
+    start_addr: u64,
+    id: u8,
+    driver_features: u64,
+    page_size: u64,
+    queue_sel: u64,
+    queue_num: u64,
+    queue_pfn: u64,
+    queue_notify: u64,
+    status: u64,
+    disk: Vec<u8>,
+}
+
+#[derive(Clone)]
 pub struct Virtio {
     start_addr: u64,
-    registers: Vec<u8>,
+    notificator: Box<dyn Fn() + Send + Sync>,
+    bus: Option<Rc<RefCell<Bus>>>,
+    id: u8,
+    driver_features: u64,
+    page_size: u64,
+    queue_sel: u64,
+    queue_num: u64,
+    queue_pfn: u64,
+    queue_notify: u64,
+    status: u64,
+    disk: Vec<u8>,
 }
 
 impl Virtio {
-    pub fn new(_start_addr: u64) -> Virtio {
-        let mut _registers = vec![0; VIRTIO_SIZE as usize];
-
-        _registers[VIRTIO_MMIO_MAGIC_VALUE + 0] = 0x76;
-        _registers[VIRTIO_MMIO_MAGIC_VALUE + 1] = 0x69;
-        _registers[VIRTIO_MMIO_MAGIC_VALUE + 2] = 0x72;
-        _registers[VIRTIO_MMIO_MAGIC_VALUE + 3] = 0x74;
-        _registers[VIRTIO_MMIO_VERSION] = 2;
-        _registers[VIRTIO_MMIO_DEVICE_ID] = 2;
-        _registers[VIRTIO_MMIO_VENDOR_ID + 0] = 0x51;
-        _registers[VIRTIO_MMIO_VENDOR_ID + 1] = 0x45;
-        _registers[VIRTIO_MMIO_VENDOR_ID + 2] = 0x4d;
-        _registers[VIRTIO_MMIO_VENDOR_ID + 3] = 0x55;
-        _registers[VIRTIO_MMIO_QUEUE_NUM_MAX] = 10;
-
+    pub fn new(_start_addr: u64, notificator: Box<dyn Fn() + Send + Sync>) -> Virtio {
         Self {
             start_addr: _start_addr,
-            registers: _registers,
+            notificator,
+            bus: None,
+            id: 0,
+            driver_features: 0,
+            page_size: 0,
+            queue_sel: 0,
+            queue_num: 0,
+            queue_pfn: 0,
+            queue_notify: 9999, // TODO: what is the correct initial value?
+            status: 0,
+            disk: Vec::new(),
         }
     }
 
@@ -75,31 +83,17 @@ impl Virtio {
 
     pub fn load(&self, addr: u64, size: u64) -> Result<u64, Exception> {
         let relative_addr = (addr - self.start_addr) as usize;
-        let ret_val = match size {
-            8 => (self.registers[relative_addr + 0] << 0) as u64,
-            16 => {
-                ((self.registers[relative_addr + 0] as u64) << 0)
-                    | ((self.registers[relative_addr + 1] as u64) << 8)
-            }
-            32 => {
-                ((self.registers[relative_addr + 0] as u64) << 0)
-                    | ((self.registers[relative_addr + 1] as u64) << 8)
-                    | ((self.registers[relative_addr + 2] as u64) << 16)
-                    | ((self.registers[relative_addr + 3] as u64) << 24)
-            }
-            64 => {
-                ((self.registers[relative_addr + 0] as u64) << 0)
-                    | ((self.registers[relative_addr + 1] as u64) << 8)
-                    | ((self.registers[relative_addr + 2] as u64) << 16)
-                    | ((self.registers[relative_addr + 3] as u64) << 24)
-                    | ((self.registers[relative_addr + 4] as u64) << 32)
-                    | ((self.registers[relative_addr + 5] as u64) << 40)
-                    | ((self.registers[relative_addr + 6] as u64) << 48)
-                    | ((self.registers[relative_addr + 7] as u64) << 56)
-            }
-            _ => {
-                panic!("Invalid access size: {}", size)
-            }
+        let ret_val = match relative_addr {
+            VIRTIO_MMIO_MAGIC => 0x74726976,
+            VIRTIO_MMIO_VERSION => 0x1,
+            VIRTIO_MMIO_DEVICE_ID => 0x2,
+            VIRTIO_MMIO_VENDOR_ID => 0x554d4551,
+            VIRTIO_MMIO_DEVICE_FEATURES => 0, // TODO: what should it return?
+            VIRTIO_MMIO_DRIVER_FEATURES => self.driver_features,
+            VIRTIO_MMIO_QUEUE_NUM_MAX => 8,
+            VIRTIO_MMIO_QUEUE_PFN => self.queue_pfn,
+            VIRTIO_MMIO_STATUS => self.status,
+            _ => 0,
         };
         info!(
             "virtio: load addr:{:x}(relative {:x}), size:{}, value:{}",
@@ -114,34 +108,178 @@ impl Virtio {
             addr, size, value
         );
         let relative_addr = (addr - self.start_addr) as usize;
-        match size {
-            8 => self.registers[relative_addr + 0] = (value & 0xff) as u8,
-            16 => {
-                self.registers[relative_addr + 0] = ((value << 0) & 0xff) as u8;
-                self.registers[relative_addr + 1] = ((value << 8) & 0xff) as u8;
+        match relative_addr {
+            VIRTIO_MMIO_DEVICE_FEATURES => self.driver_features = value,
+            VIRTIO_MMIO_GUEST_PAGE_SIZE => self.page_size = value,
+            VIRTIO_MMIO_QUEUE_SEL => self.queue_sel = value,
+            VIRTIO_MMIO_QUEUE_NUM => self.queue_num = value,
+            VIRTIO_MMIO_QUEUE_PFN => self.queue_pfn = value,
+            VIRTIO_MMIO_QUEUE_NOTIFY => {
+                self.queue_notify = value;
+                // Notify the virtio device that a queue is ready.
+                info!("virtio: queue notify called with value: {}", value);
+                if value != 9999 {
+                    self.disk_access();
+                    (self.notificator)();
+                }
             }
-            32 => {
-                self.registers[relative_addr + 0] = ((value << 0) & 0xff) as u8;
-                self.registers[relative_addr + 1] = ((value << 8) & 0xff) as u8;
-                self.registers[relative_addr + 2] = ((value << 16) & 0xff) as u8;
-                self.registers[relative_addr + 3] = ((value << 24) & 0xff) as u8;
-            }
-            64 => {
-                self.registers[relative_addr + 0] = ((value << 0) & 0xff) as u8;
-                self.registers[relative_addr + 1] = ((value << 8) & 0xff) as u8;
-                self.registers[relative_addr + 2] = ((value << 16) & 0xff) as u8;
-                self.registers[relative_addr + 3] = ((value << 24) & 0xff) as u8;
-                self.registers[relative_addr + 4] = ((value << 32) & 0xff) as u8;
-                self.registers[relative_addr + 5] = ((value << 40) & 0xff) as u8;
-                self.registers[relative_addr + 6] = ((value << 48) & 0xff) as u8;
-                self.registers[relative_addr + 7] = ((value << 56) & 0xff) as u8;
-            }
+            VIRTIO_MMIO_STATUS => self.status = value,
             _ => {}
-        };
-        debug!(
-            "register after store: 0x{} at 0x{:x}",
-            self.registers[relative_addr], addr
-        );
+        }
         Ok(())
+    }
+
+    pub fn set_bus(&mut self, bus: Rc<RefCell<Bus>>) {
+        self.bus = Some(bus);
+    }
+
+    /// Set the binary in the virtio disk.
+    pub fn set_disk(&mut self, binary: Vec<u8>) {
+        self.disk.extend(binary.iter().cloned());
+    }
+
+    fn get_new_id(&mut self) -> u8 {
+        self.id = self.id.wrapping_add(1);
+        self.id
+    }
+
+    fn desc_addr(&self) -> u64 {
+        self.queue_pfn as u64 * self.page_size as u64
+    }
+
+    fn read_disk(&self, addr: u64) -> u8 {
+        self.disk[addr as usize]
+    }
+
+    fn write_disk(&mut self, addr: u64, value: u8) {
+        self.disk[addr as usize] = value
+    }
+
+    /// Access the disk via virtio. This is an associated function which takes a `cpu` object to
+    /// read and write with a memory directly (DMA).
+    fn disk_access(&mut self) {
+        // See more information in
+        // https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/virtio_disk.c
+
+        // the spec says that legacy block operations use three
+        // descriptors: one for type/reserved/sector, one for
+        // the data, one for a 1-byte status result.
+
+        // desc = pages -- num * VRingDesc
+        // avail = pages + 0x40 -- 2 * uint16, then num * uint16
+        // used = pages + 4096 -- 2 * uint16, then num * vRingUsedElem
+        let desc_addr = self.desc_addr();
+        let avail_addr = self.desc_addr() + 0x40;
+        let used_addr = self.desc_addr() + 4096;
+        let mut bus = self.bus.as_ref().expect("No bus").borrow_mut();
+
+        // avail[0] is flags
+        // avail[1] tells the device how far to look in avail[2...].
+        let offset = bus.load(avail_addr.wrapping_add(2), 16)
+            .unwrap_or(0) as u64;
+        // avail[2...] are desc[] indices the device should process.
+        // we only tell device the first index in our chain of descriptors.
+        let index = bus.load(avail_addr.wrapping_add(offset % DESC_NUM).wrapping_add(2), 16)
+            .expect("failed to read index");
+
+        // Read `VRingDesc`, virtio descriptors.
+        let desc_addr0 = desc_addr + VRING_DESC_SIZE * index;
+        let addr0 = bus.load(desc_addr0, 64)
+            .expect("failed to read an address field in a descriptor");
+        // Add 14 because of `VRingDesc` structure.
+        // struct VRingDesc {
+        //   uint64 addr;
+        //   uint32 len;
+        //   uint16 flags;
+        //   uint16 next
+        // };
+        // The `next` field can be accessed by offset 14 (8 + 4 + 2) bytes.
+        let next0 = bus.load(desc_addr0.wrapping_add(14), 16)
+            .expect("failed to read a next field in a descripor");
+
+        // Read `VRingDesc` again, virtio descriptors.
+        let desc_addr1 = desc_addr + VRING_DESC_SIZE * next0;
+        let addr1 = bus.load(desc_addr1, 64)
+            .expect("failed to read an address field in a descriptor");
+        let len1 = bus.load(desc_addr1.wrapping_add(8), 32)
+            .expect("failed to read a length field in a descriptor");
+        let flags1 = bus.load(desc_addr1.wrapping_add(12), 16)
+            .expect("failed to read a flags field in a descriptor");
+
+        // Read `virtio_blk_outhdr`. Add 8 because of its structure.
+        // struct virtio_blk_outhdr {
+        //   uint32 type;
+        //   uint32 reserved;
+        //   uint64 sector;
+        // } buf0;
+        let blk_sector = bus.load(addr0.wrapping_add(8), 64)
+            .expect("failed to read a sector field in a virtio_blk_outhdr");
+
+        // Write to a device if the second bit `flag1` is set.
+        match (flags1 & 2) == 0 {
+            true => {
+                // Read memory data and write it to a disk directly (DMA).
+                let mut buffer = Vec::with_capacity(len1 as usize);
+                for i in 0..len1 as u64 {
+                    let data = bus.load(addr1 + i, 8)
+                        .expect("failed to read from memory") as u8;
+                    buffer.push(data);
+                }
+                drop(bus); // Release the mutable borrow of bus before mutably borrowing self
+                for (i, data) in buffer.into_iter().enumerate() {
+                    self.write_disk(blk_sector * 512 + i as u64, data);
+                }
+            }
+            false => {
+                // Read disk data and write it to memory directly (DMA).
+                for i in 0..len1 as u64 {
+                    let data = self.read_disk(blk_sector * 512 + i) as u64;
+                    bus.store(addr1 + i, 8, data)
+                        .expect("failed to write to memory");
+                }
+            }
+        };
+
+        // Write id to `UsedArea`. Add 2 because of its structure.
+        // struct UsedArea {
+        //   uint16 flags;
+        //   uint16 id;
+        //   struct VRingUsedElem elems[NUM];
+        // };
+        let new_id = self.get_new_id() as u64;
+        bus.store(used_addr.wrapping_add(2), 16, new_id % 8)
+            .expect("failed to write to memory");
+    }
+
+    pub fn to_snapshot(&self) -> VirtioSnapshot {
+        VirtioSnapshot {
+            start_addr: self.start_addr,
+            id: self.id,
+            driver_features: self.driver_features,
+            page_size: self.page_size,
+            queue_sel: self.queue_sel,
+            queue_num: self.queue_num,
+            queue_pfn: self.queue_pfn,
+            queue_notify: self.queue_notify,
+            status: self.status,
+            disk: self.disk.clone(),
+        }
+    }
+
+    pub fn from_snapshot(snapshot: VirtioSnapshot, notificator: Box<dyn Fn() + Send + Sync>) -> Self {
+        Self {
+            start_addr: snapshot.start_addr,
+            notificator,
+            bus: None,
+            id: snapshot.id,
+            driver_features: snapshot.driver_features,
+            page_size: snapshot.page_size,
+            queue_sel: snapshot.queue_sel,
+            queue_num: snapshot.queue_num,
+            queue_pfn: snapshot.queue_pfn,
+            queue_notify: snapshot.queue_notify,
+            status: snapshot.status,
+            disk: snapshot.disk,
+        }
     }
 }

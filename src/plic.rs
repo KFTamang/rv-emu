@@ -26,12 +26,14 @@ pub struct PlicSnapshot {
 
 #[derive(Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Debug, Hash, Copy)]
 pub enum ExternalInterrupt {
+    VirtioDiskIO = 1,
     UartInput = 10,
 }
 
 impl ExternalInterrupt {
     pub fn id(&self) -> u64 {
         match self {
+            ExternalInterrupt::VirtioDiskIO => 1,
             ExternalInterrupt::UartInput => 10,
         }
     }

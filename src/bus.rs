@@ -15,14 +15,14 @@ pub struct BusSnapshot {
     pub dram: Dram,
     pub uart: UartSnapshot,
     pub plic: PlicSnapshot,
-    pub virtio: Virtio,
+    pub virtio: VirtioSnapshot,
 }
 
 pub struct Bus {
     pub dram: Dram,
     pub uart: Uart,
     pub plic: Plic,
-    pub virtio: Virtio,
+    pub virtio: Option<Virtio>,
 }
 
 impl Bus {
@@ -33,18 +33,30 @@ impl Bus {
     ) -> Bus {
         let plic = Plic::new(0xc000000, interrupt_list.clone());
         let uart_notificator = plic.get_interrupt_notificator(ExternalInterrupt::UartInput);
-        Self {
+        let mut bus = Self {
             plic,
             dram: Dram::new(code, base_addr),
             uart: Uart::new(0x10000000, uart_notificator),
-            virtio: Virtio::new(0x10001000),
-        }
+            virtio: None,
+        };
+        let virtio = Rc::new(
+            RefCell::new(
+                Virtio::new(
+                    0x10001000, 
+                    bus.plic.get_interrupt_notificator(ExternalInterrupt::VirtioDiskIO),
+                )
+            )
+        );
+        virtio.borrow_mut().set_bus(Rc::new(RefCell::new(bus.clone())));
+          
+        bus.virtio = Some(virtio.borrow().clone());
+        bus
     }
 
     pub fn load(&mut self, addr: u64, size: u64) -> Result<u64, Exception> {
         if self.dram.dram_base <= addr {
             let ret_val = self.dram.load(addr, size);
-            return ret_val;
+            return ret_val; 
         }
         info!("load addr:{:x}, size:{}", addr, size);
         if self.uart.is_accessible(addr) {
@@ -69,8 +81,9 @@ impl Bus {
             );
             return ret_val;
         }
-        if self.virtio.is_accessible(addr) {
-            let ret_val = self.virtio.load(addr, size);
+        let mut virtio = self.virtio.as_mut().expect("No virtio bus");
+        if virtio.is_accessible(addr) {
+            let ret_val = virtio.load(addr, size);
             debug!(
                 "load virtio addr:{:x}, size:{}, value:{}(0x{:x})",
                 addr,
@@ -101,8 +114,9 @@ impl Bus {
         if self.plic.is_accessible(addr) {
             return self.plic.store(addr, size, value);
         }
-        if self.virtio.is_accessible(addr) {
-            return self.virtio.store(addr, size, value);
+        let mut virtio = self.virtio.as_mut().expect("No virtio bus");
+        if virtio.is_accessible(addr) {
+            return virtio.store(addr, size, value);
         }
         debug!(
             "Error while store operation: accessing 0x{:x}, size:{}, value:{}(0x{:x})",
@@ -121,7 +135,7 @@ impl Bus {
             dram: self.dram.clone(),
             uart: self.uart.to_snapshot(),
             plic: self.plic.to_snapshot(),
-            virtio: self.virtio.clone(),
+            virtio: self.virtio.as_ref().expect("No virtio bus").to_snapshot(),
         }
     }
     pub fn from_snapshot(
@@ -129,14 +143,19 @@ impl Bus {
         interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>,
     ) -> Self {
         let plic = Plic::from_snapshot(snapshot.plic, interrupt_list.clone());
+        let uart_notificator = plic.get_interrupt_notificator(ExternalInterrupt::UartInput);
+        let virtio_notificator = plic.get_interrupt_notificator(ExternalInterrupt::VirtioDiskIO);
         Self {
             dram: snapshot.dram,
             uart: Uart::from_snapshot(
                 snapshot.uart,
-                plic.get_interrupt_notificator(ExternalInterrupt::UartInput),
+                uart_notificator,
             ),
             plic,
-            virtio: snapshot.virtio,
+            virtio: Some(Virtio::from_snapshot(
+                snapshot.virtio,
+                virtio_notificator,
+            )),
         }
     }
 }

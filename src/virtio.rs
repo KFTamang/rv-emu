@@ -1,4 +1,4 @@
-use crate::{bus::Bus, interrupt::*};
+use crate::{bus::Bus, interrupt::*, dram::Dram};
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
@@ -87,7 +87,7 @@ impl Virtio {
         let relative_addr = (addr - self.start_addr) as usize;
         let ret_val = match relative_addr {
             VIRTIO_MMIO_MAGIC_VALUE => 0x74726976,
-            VIRTIO_MMIO_VERSION => 0x1,
+            VIRTIO_MMIO_VERSION => 0x2,
             VIRTIO_MMIO_DEVICE_ID => 0x2,
             VIRTIO_MMIO_VENDOR_ID => 0x554d4551,
             VIRTIO_MMIO_DEVICE_FEATURES => 0, // TODO: what should it return?
@@ -121,7 +121,6 @@ impl Virtio {
                 // Notify the virtio device that a queue is ready.
                 info!("virtio: queue notify called with value: {}", value);
                 if value != 9999 {
-                    self.disk_access();
                     (self.notificator)();
                 }
             }
@@ -159,7 +158,11 @@ impl Virtio {
 
     /// Access the disk via virtio. This is an associated function which takes a `cpu` object to
     /// read and write with a memory directly (DMA).
-    fn disk_access(&mut self) {
+    pub fn disk_access(&mut self, dram: &mut Dram) {
+        if self.queue_notify == 9999 {
+            return;
+        }
+
         // See more information in
         // https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/virtio_disk.c
 
@@ -173,20 +176,21 @@ impl Virtio {
         let desc_addr = self.desc_addr();
         let avail_addr = self.desc_addr() + 0x40;
         let used_addr = self.desc_addr() + 4096;
-        let mut bus = self.bus.as_ref().expect("No bus").borrow_mut();
 
         // avail[0] is flags
         // avail[1] tells the device how far to look in avail[2...].
-        let offset = bus.load(avail_addr.wrapping_add(2), 16)
+        info!("virtio: disk access, desc_addr: {:x}, avail_addr: {:x}, used_addr: {:x}",
+            desc_addr, avail_addr, used_addr);
+        let offset = dram.load(avail_addr.wrapping_add(2), 16)
             .unwrap_or(0) as u64;
         // avail[2...] are desc[] indices the device should process.
         // we only tell device the first index in our chain of descriptors.
-        let index = bus.load(avail_addr.wrapping_add(offset % DESC_NUM).wrapping_add(2), 16)
+        let index = dram.load(avail_addr.wrapping_add(offset % DESC_NUM).wrapping_add(2), 16)
             .expect("failed to read index");
 
         // Read `VRingDesc`, virtio descriptors.
         let desc_addr0 = desc_addr + VRING_DESC_SIZE * index;
-        let addr0 = bus.load(desc_addr0, 64)
+        let addr0 = dram.load(desc_addr0, 64)
             .expect("failed to read an address field in a descriptor");
         // Add 14 because of `VRingDesc` structure.
         // struct VRingDesc {
@@ -196,16 +200,16 @@ impl Virtio {
         //   uint16 next
         // };
         // The `next` field can be accessed by offset 14 (8 + 4 + 2) bytes.
-        let next0 = bus.load(desc_addr0.wrapping_add(14), 16)
+        let next0 = dram.load(desc_addr0.wrapping_add(14), 16)
             .expect("failed to read a next field in a descripor");
 
         // Read `VRingDesc` again, virtio descriptors.
         let desc_addr1 = desc_addr + VRING_DESC_SIZE * next0;
-        let addr1 = bus.load(desc_addr1, 64)
+        let addr1 = dram.load(desc_addr1, 64)
             .expect("failed to read an address field in a descriptor");
-        let len1 = bus.load(desc_addr1.wrapping_add(8), 32)
+        let len1 = dram.load(desc_addr1.wrapping_add(8), 32)
             .expect("failed to read a length field in a descriptor");
-        let flags1 = bus.load(desc_addr1.wrapping_add(12), 16)
+        let flags1 = dram.load(desc_addr1.wrapping_add(12), 16)
             .expect("failed to read a flags field in a descriptor");
 
         // Read `virtio_blk_outhdr`. Add 8 because of its structure.
@@ -214,21 +218,16 @@ impl Virtio {
         //   uint32 reserved;
         //   uint64 sector;
         // } buf0;
-        let blk_sector = bus.load(addr0.wrapping_add(8), 64)
+        let blk_sector = dram.load(addr0.wrapping_add(8), 64)
             .expect("failed to read a sector field in a virtio_blk_outhdr");
 
-        drop(bus);
         // Write to a device if the second bit `flag1` is set.
         match (flags1 & 2) == 0 {
             true => {
                 // Read memory data and write it to a disk directly (DMA).
                 let mut buffer = Vec::with_capacity(len1 as usize);
                 for i in 0..len1 as u64 {
-                    let data = self.bus
-                        .as_ref()
-                        .expect("No bus")
-                        .borrow_mut()
-                        .load(addr1 + i, 8)
+                    let data = dram.load(addr1 + i, 8)
                         .expect("failed to read from memory") as u8;
                     buffer.push(data);
                 }
@@ -240,10 +239,7 @@ impl Virtio {
                 // Read disk data and write it to memory directly (DMA).
                 for i in 0..len1 as u64 {
                     let data = self.read_disk(blk_sector * 512 + i) as u64;
-                    self.bus.as_mut()
-                        .expect("No bus")
-                        .borrow_mut()
-                        .store(addr1 + i, 8, data)
+                    dram.store(addr1 + i, 8, data)
                         .expect("failed to write to memory");
                 }
             }

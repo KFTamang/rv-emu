@@ -1,9 +1,18 @@
 use crate::cpu::*;
+use crate::instruction::*;
+use crate::bus::*;
+use crate::interrupt::*;
+use crate::virtio::*;
+use crate::plic::ExternalInterrupt;
+
 use bincode;
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{Read, Write};
+use std::collections::BTreeSet;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 pub enum ExecMode {
     Step,
@@ -26,6 +35,8 @@ pub struct Emu {
     pub breakpoints: Vec<u64>,
     pub exec_mode: ExecMode,
     pub cpu: Cpu,
+    pub bus: Rc<RefCell<Bus>>,
+    pub virtio: Rc<RefCell<Virtio>>,
     pub cycle: u64,
     pub snapshot_interval: u64,
 }
@@ -33,15 +44,31 @@ pub struct Emu {
 #[derive(Serialize, Deserialize)]
 pub struct EmuSnapshot {
     pub cpu: CpuSnapshot,
+    pub bus: BusSnapshot,
+    pub virtio: VirtioSnapshot,
     pub cycle: u64,
 }
 
 impl Emu {
     pub fn new(binary: Vec<u8>, base_addr: u64, _dump_count: u64, _snapshot_interval: u64) -> Self {
+        let interrupt_list = Rc::new(RefCell::new(BTreeSet::<Interrupt>::new()));
+        let bus = Bus::new(binary.clone(), base_addr, interrupt_list.clone());
+        let virtio = Rc::new(
+            RefCell::new(
+                Virtio::new(
+                    0x10001000, 
+                    bus.borrow().plic.get_interrupt_notificator(ExternalInterrupt::VirtioDiskIO),
+                )
+            )
+        );
+        bus.borrow_mut().virtio = Some(Rc::clone(&virtio));
+        virtio.borrow_mut().set_bus(Rc::clone(&bus));
         Self {
             breakpoints: vec![0; 32 as usize],
             exec_mode: ExecMode::Continue,
-            cpu: Cpu::new(binary, base_addr, _dump_count as u64),
+            cpu: Cpu::new(Rc::clone(&bus), base_addr, _dump_count as u64, interrupt_list),
+            bus: Rc::clone(&bus),
+            virtio: Rc::clone(&virtio),
             cycle: 0,
             snapshot_interval: _snapshot_interval,
         }
@@ -69,7 +96,20 @@ impl Emu {
         match self.exec_mode {
             ExecMode::Step => RunEvent::Event(self.step().unwrap_or(Event::DoneStep)),
             ExecMode::Continue => {
-                self.cpu.block_run();
+
+                let mut block_cache = std::collections::HashMap::<u64, BasicBlock>::new();
+
+                while self.cpu.pc != 0 {
+                    self.cpu.trap_interrupt();
+                    {
+                        let dram = &mut self.bus.borrow_mut().dram;
+                        self.virtio.borrow_mut().disk_access(dram);
+                    }
+                    let pc = self.cpu.pc;
+                    let block = block_cache.entry(pc).or_insert_with(|| self.cpu.build_basic_block());
+                    self.cpu.run_block(block);
+                }
+
                 if self.breakpoints.contains(&self.cpu.pc) {
                     RunEvent::Event(Event::Break)
                 } else if poll_incoming_data() {
@@ -86,26 +126,39 @@ impl Emu {
     }
 
     pub fn set_disk_image(&mut self, disk_image: Vec<u8>) {
-        if let Some(virtio) = &mut self.cpu.bus.as_ref().borrow_mut().virtio {
-            virtio.set_disk_image(disk_image);
-        } else {
-            panic!("Virtio not initialized: No virtio device found in bus");
-        }
+        let virtio = &mut self.virtio.as_ref().borrow_mut();
+        virtio.set_disk_image(disk_image);
     }
 
     pub fn to_snapshot(&self) -> EmuSnapshot {
         EmuSnapshot {
             cpu: self.cpu.to_snapshot(),
+            bus: self.bus.borrow().to_snapshot(),
             cycle: self.cycle,
+            virtio: self.virtio.borrow().to_snapshot(),
         }
     }
 
     pub fn from_snapshot(snapshot: EmuSnapshot) -> Self {
         let cpu = Cpu::from_snapshot(snapshot.cpu);
+        let interrupt_list = Rc::new(RefCell::new(BTreeSet::<Interrupt>::new()));
+        let bus = Rc::new(RefCell::new(Bus::from_snapshot(snapshot.bus, interrupt_list.clone())));
+        let virtio = Rc::new(
+            RefCell::new(
+                Virtio::new(
+                    0x10001000, 
+                    bus.borrow().plic.get_interrupt_notificator(ExternalInterrupt::VirtioDiskIO),
+                )
+            )
+        );
+        bus.borrow_mut().virtio = Some(Rc::clone(&virtio));
+        virtio.borrow_mut().set_bus(Rc::clone(&bus));
         Self {
             breakpoints: vec![0; 32 as usize],
             exec_mode: ExecMode::Continue,
             cpu: cpu,
+            bus: Rc::clone(&bus),
+            virtio: Rc::clone(&virtio),
             cycle: snapshot.cycle,
             snapshot_interval: 100000000,
         }

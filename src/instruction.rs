@@ -574,3 +574,11 @@ impl DecodedInstr {
             | DecodedInstr::Mret)
     }
 }
+
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BasicBlock {
+    pub start_pc: u64,
+    pub end_pc: u64,
+    pub instrs: Vec<DecodedInstr>,
+}

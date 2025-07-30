@@ -15,14 +15,13 @@ pub struct BusSnapshot {
     pub dram: Dram,
     pub uart: UartSnapshot,
     pub plic: PlicSnapshot,
-    pub virtio: VirtioSnapshot,
 }
 
 pub struct Bus {
     pub dram: Dram,
     pub uart: Uart,
     pub plic: Plic,
-    pub virtio: Option<Virtio>,
+    pub virtio: Option<Rc<RefCell<Virtio>>>,
 }
 
 impl Bus {
@@ -39,17 +38,6 @@ impl Bus {
             uart: Uart::new(0x10000000, uart_notificator),
             virtio: None,
         }));
-        let virtio = Rc::new(
-            RefCell::new(
-                Virtio::new(
-                    0x10001000, 
-                    bus_rc.borrow().plic.get_interrupt_notificator(ExternalInterrupt::VirtioDiskIO),
-                )
-            )
-        );
-        virtio.borrow_mut().set_bus(Rc::clone(&bus_rc));
-        // Set virtio in bus
-        bus_rc.borrow_mut().virtio = Some(Rc::try_unwrap(virtio).ok().unwrap().into_inner());
         bus_rc
     }
 
@@ -81,7 +69,10 @@ impl Bus {
             );
             return ret_val;
         }
-        let virtio = self.virtio.as_mut().expect("No virtio bus");
+        let mut virtio = self.virtio
+            .as_ref()
+            .expect("No virtio bus")
+            .borrow_mut();
         if virtio.is_accessible(addr) {
             let ret_val = virtio.load(addr, size);
             debug!(
@@ -114,7 +105,10 @@ impl Bus {
         if self.plic.is_accessible(addr) {
             return self.plic.store(addr, size, value);
         }
-        let virtio = self.virtio.as_mut().expect("No virtio bus");
+        let mut virtio = self.virtio
+            .as_ref()
+            .expect("No virtio bus")
+            .borrow_mut();
         if virtio.is_accessible(addr) {
             return virtio.store(addr, size, value);
         }
@@ -135,7 +129,6 @@ impl Bus {
             dram: self.dram.clone(),
             uart: self.uart.to_snapshot(),
             plic: self.plic.to_snapshot(),
-            virtio: self.virtio.as_ref().expect("No virtio bus").to_snapshot(),
         }
     }
     pub fn from_snapshot(
@@ -144,7 +137,6 @@ impl Bus {
     ) -> Self {
         let plic = Plic::from_snapshot(snapshot.plic, interrupt_list.clone());
         let uart_notificator = plic.get_interrupt_notificator(ExternalInterrupt::UartInput);
-        let virtio_notificator = plic.get_interrupt_notificator(ExternalInterrupt::VirtioDiskIO);
         Self {
             dram: snapshot.dram,
             uart: Uart::from_snapshot(
@@ -152,10 +144,7 @@ impl Bus {
                 uart_notificator,
             ),
             plic,
-            virtio: Some(Virtio::from_snapshot(
-                snapshot.virtio,
-                virtio_notificator,
-            )),
+            virtio: None,
         }
     }
 }

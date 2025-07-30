@@ -30,13 +30,6 @@ fn bit(integer: u64, bit: u64) -> u64 {
     (integer >> bit) & 0x1
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct BasicBlock {
-    start_pc: u64,
-    end_pc: u64,
-    instrs: Vec<DecodedInstr>,
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct CpuSnapshot {
     pub regs: [u64; 32],
@@ -70,11 +63,9 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    pub fn new(binary: Vec<u8>, base_addr: u64, _dump_count: u64) -> Self {
+    pub fn new(bus: Rc<RefCell<Bus>>, base_addr: u64, _dump_count: u64, interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>) -> Self {
         let mut regs = [0; 32];
         regs[2] = DRAM_SIZE;
-        let interrupt_list = Rc::new(RefCell::new(BTreeSet::<Interrupt>::new()));
-        let bus = Bus::new(binary, base_addr, interrupt_list.clone());
         let cycle = Rc::new(RefCell::new(0u64));
         let csr = Csr::new(interrupt_list.clone(), cycle.clone());
         Self {
@@ -1187,7 +1178,7 @@ impl Cpu {
         output
     }
 
-    fn trap_interrupt(&mut self) {
+    pub fn trap_interrupt(&mut self) {
         *self.cycle.borrow_mut() += 1;
         if *self.cycle.borrow() % 1000000 == 0 {
             debug!("Cycle: {}", self.cycle.borrow());
@@ -1208,7 +1199,7 @@ impl Cpu {
         }
     }
 
-    fn build_basic_block(&mut self) -> BasicBlock {
+    pub fn build_basic_block(&mut self) -> BasicBlock {
         // Build a basic block for the current instruction
         let mut instrs = Vec::new();
         let mut pc = self.pc;
@@ -1239,7 +1230,7 @@ impl Cpu {
         }
     }
 
-    fn run_block(&mut self, block: &BasicBlock) {
+    pub fn run_block(&mut self, block: &BasicBlock) {
         self.pc = block.start_pc;
         for instr in &block.instrs {
             let result = self.execute(instr.clone());
@@ -1251,17 +1242,6 @@ impl Cpu {
             self.regs[0] = 0; // x0 is always zero
             self.pc = self.pc.wrapping_add(4);
             *self.cycle.borrow_mut() += 1;
-        }
-    }
-
-    pub fn block_run(&mut self) {
-        let mut block_cache = std::collections::HashMap::<u64, BasicBlock>::new();
-
-        while self.pc != 0 {
-            self.trap_interrupt();
-            let pc = self.pc;
-            let block = block_cache.entry(pc).or_insert_with(|| self.build_basic_block());
-            self.run_block(block);
         }
     }
 

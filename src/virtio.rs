@@ -1,4 +1,4 @@
-use crate::{bus::Bus, interrupt::*, dram::Dram};
+use crate::{bus::Bus, interrupt::*};
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
@@ -151,22 +151,22 @@ impl Virtio {
             }
             VIRTIO_MMIO_STATUS => self.status = value,
             VIRTIO_MMIO_QUEUE_DESC_LOW => {
-                self.desc_addr = value;
+                self.desc_addr = value & 0xFFFFFFFF; // lower 32 bits
             }
             VIRTIO_MMIO_QUEUE_DESC_HIGH => {
-                self.desc_addr |= value << 32;
+                self.desc_addr |= (value & 0xFFFFFFFF) << 32;
             }
             VIRTIO_MMIO_DRIVER_DESC_LOW => {
-                self.avail_addr = value;
+                self.avail_addr = value & 0xFFFFFFFF;
             }
             VIRTIO_MMIO_DRIVER_DESC_HIGH => {
-                self.avail_addr |= value << 32;
+                self.avail_addr |= (value & 0xFFFFFFFF) << 32;
             }
             VIRTIO_MMIO_DEVICE_DESC_LOW => {
-                self.used_addr = value;
+                self.used_addr = value & 0xFFFFFFFF;
             }
             VIRTIO_MMIO_DEVICE_DESC_HIGH => {
-                self.used_addr |= value << 32;
+                self.used_addr |= (value & 0xFFFFFFFF) << 32;
             }
             _ => {}
         }
@@ -184,10 +184,6 @@ impl Virtio {
 
     fn read_disk(&self, addr: u64) -> u8 {
         self.disk[addr as usize]
-    }
-
-    fn write_disk(&mut self, addr: u64, value: u8) {
-        self.disk[addr as usize] = value
     }
 
     /// Access the disk via virtio. This is an associated function which takes a `cpu` object to
@@ -268,7 +264,10 @@ impl Virtio {
                     buffer.push(data);
                 }
                 for (i, data) in buffer.into_iter().enumerate() {
-                    self.write_disk(blk_sector * 512 + i as u64, data);
+                    // self.write_disk(blk_sector * 512 + i as u64, data);
+                    let index = blk_sector * 512 + i as u64;
+                    self.disk[index as usize] = data;
+
                 }
             }
             false => {

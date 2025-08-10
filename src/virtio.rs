@@ -31,6 +31,12 @@ const VIRTIO_MMIO_INTERRUPT_STATUS: usize = 0x060; // read-only
 #[allow(dead_code)]
 const VIRTIO_MMIO_INTERRUPT_ACK: usize = 0x064; // write-only
 const VIRTIO_MMIO_STATUS: usize = 0x070; // read/write
+const VIRTIO_MMIO_QUEUE_DESC_LOW: usize = 0x080; // physical address for descriptor table, write-only
+const VIRTIO_MMIO_QUEUE_DESC_HIGH: usize = 0x084;
+const VIRTIO_MMIO_DRIVER_DESC_LOW: usize = 0x090; // physical address for available ring, write-only
+const VIRTIO_MMIO_DRIVER_DESC_HIGH: usize = 0x094;
+const VIRTIO_MMIO_DEVICE_DESC_LOW: usize = 0x0a0; // physical address for used ring, write-only
+const VIRTIO_MMIO_DEVICE_DESC_HIGH: usize = 0x0a4;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct VirtioSnapshot {
@@ -42,6 +48,9 @@ pub struct VirtioSnapshot {
     queue_num: u64,
     queue_pfn: u64,
     queue_notify: u64,
+    desc_addr: u64,
+    avail_addr: u64,
+    used_addr: u64,
     status: u64,
     disk: Vec<u8>,
 }
@@ -56,6 +65,9 @@ pub struct Virtio {
     queue_sel: u64,
     queue_num: u64,
     queue_pfn: u64,
+    desc_addr: u64,
+    avail_addr: u64,
+    used_addr: u64,
     queue_notify: u64,
     status: u64,
     disk: Vec<u8>,
@@ -73,6 +85,9 @@ impl Virtio {
             queue_sel: 0,
             queue_num: 0,
             queue_pfn: 0,
+            desc_addr: 0,
+            avail_addr: 0,
+            used_addr: 0,
             queue_notify: 9999, // TODO: what is the correct initial value?
             status: 0,
             disk: Vec::new(),
@@ -95,6 +110,16 @@ impl Virtio {
             VIRTIO_MMIO_QUEUE_NUM_MAX => 8,
             VIRTIO_MMIO_QUEUE_PFN => self.queue_pfn,
             VIRTIO_MMIO_STATUS => self.status,
+            VIRTIO_MMIO_QUEUE_SEL => self.queue_sel,
+            VIRTIO_MMIO_QUEUE_NUM => self.queue_num,
+            VIRTIO_MMIO_GUEST_PAGE_SIZE => self.page_size,
+            VIRTIO_MMIO_QUEUE_NOTIFY => self.queue_notify,
+            VIRTIO_MMIO_QUEUE_DESC_LOW => self.desc_addr,
+            VIRTIO_MMIO_QUEUE_DESC_HIGH => self.desc_addr >> 32,
+            VIRTIO_MMIO_DRIVER_DESC_LOW => self.avail_addr,
+            VIRTIO_MMIO_DRIVER_DESC_HIGH => self.avail_addr >> 32,
+            VIRTIO_MMIO_DEVICE_DESC_LOW => self.used_addr,
+            VIRTIO_MMIO_DEVICE_DESC_HIGH => self.used_addr >> 32,
             _ => 0,
         };
         info!(
@@ -125,6 +150,24 @@ impl Virtio {
                 }
             }
             VIRTIO_MMIO_STATUS => self.status = value,
+            VIRTIO_MMIO_QUEUE_DESC_LOW => {
+                self.desc_addr = value;
+            }
+            VIRTIO_MMIO_QUEUE_DESC_HIGH => {
+                self.desc_addr |= value << 32;
+            }
+            VIRTIO_MMIO_DRIVER_DESC_LOW => {
+                self.avail_addr = value;
+            }
+            VIRTIO_MMIO_DRIVER_DESC_HIGH => {
+                self.avail_addr |= value << 32;
+            }
+            VIRTIO_MMIO_DEVICE_DESC_LOW => {
+                self.used_addr = value;
+            }
+            VIRTIO_MMIO_DEVICE_DESC_HIGH => {
+                self.used_addr |= value << 32;
+            }
             _ => {}
         }
         Ok(())
@@ -139,15 +182,6 @@ impl Virtio {
         self.disk.extend(binary.iter().cloned());
     }
 
-    fn get_new_id(&mut self) -> u8 {
-        self.id = self.id.wrapping_add(1);
-        self.id
-    }
-
-    fn desc_addr(&self) -> u64 {
-        self.queue_pfn as u64 * self.page_size as u64
-    }
-
     fn read_disk(&self, addr: u64) -> u8 {
         self.disk[addr as usize]
     }
@@ -158,10 +192,12 @@ impl Virtio {
 
     /// Access the disk via virtio. This is an associated function which takes a `cpu` object to
     /// read and write with a memory directly (DMA).
-    pub fn disk_access(&mut self, dram: &mut Dram) {
+    pub fn disk_access(&mut self) {
         if self.queue_notify == 9999 {
             return;
         }
+
+        let mut bus = self.bus.as_ref().expect("No bus").borrow_mut();
 
         // See more information in
         // https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/virtio_disk.c
@@ -173,24 +209,24 @@ impl Virtio {
         // desc = pages -- num * VRingDesc
         // avail = pages + 0x40 -- 2 * uint16, then num * uint16
         // used = pages + 4096 -- 2 * uint16, then num * vRingUsedElem
-        let desc_addr = self.desc_addr();
-        let avail_addr = self.desc_addr() + 0x40;
-        let used_addr = self.desc_addr() + 4096;
+        let desc_addr = self.desc_addr;
+        let avail_addr = self.avail_addr;
+        let used_addr = self.used_addr;
 
         // avail[0] is flags
         // avail[1] tells the device how far to look in avail[2...].
         info!("virtio: disk access, desc_addr: {:x}, avail_addr: {:x}, used_addr: {:x}",
             desc_addr, avail_addr, used_addr);
-        let offset = dram.load(avail_addr.wrapping_add(2), 16)
+        let offset = bus.load(avail_addr.wrapping_add(2), 16)
             .unwrap_or(0) as u64;
         // avail[2...] are desc[] indices the device should process.
         // we only tell device the first index in our chain of descriptors.
-        let index = dram.load(avail_addr.wrapping_add(offset % DESC_NUM).wrapping_add(2), 16)
+        let index = bus.load(avail_addr.wrapping_add(offset % DESC_NUM).wrapping_add(2), 16)
             .expect("failed to read index");
 
         // Read `VRingDesc`, virtio descriptors.
         let desc_addr0 = desc_addr + VRING_DESC_SIZE * index;
-        let addr0 = dram.load(desc_addr0, 64)
+        let addr0 = bus.load(desc_addr0, 64)
             .expect("failed to read an address field in a descriptor");
         // Add 14 because of `VRingDesc` structure.
         // struct VRingDesc {
@@ -200,16 +236,16 @@ impl Virtio {
         //   uint16 next
         // };
         // The `next` field can be accessed by offset 14 (8 + 4 + 2) bytes.
-        let next0 = dram.load(desc_addr0.wrapping_add(14), 16)
+        let next0 = bus.load(desc_addr0.wrapping_add(14), 16)
             .expect("failed to read a next field in a descripor");
 
         // Read `VRingDesc` again, virtio descriptors.
         let desc_addr1 = desc_addr + VRING_DESC_SIZE * next0;
-        let addr1 = dram.load(desc_addr1, 64)
+        let addr1 = bus.load(desc_addr1, 64)
             .expect("failed to read an address field in a descriptor");
-        let len1 = dram.load(desc_addr1.wrapping_add(8), 32)
+        let len1 = bus.load(desc_addr1.wrapping_add(8), 32)
             .expect("failed to read a length field in a descriptor");
-        let flags1 = dram.load(desc_addr1.wrapping_add(12), 16)
+        let flags1 = bus.load(desc_addr1.wrapping_add(12), 16)
             .expect("failed to read a flags field in a descriptor");
 
         // Read `virtio_blk_outhdr`. Add 8 because of its structure.
@@ -218,7 +254,7 @@ impl Virtio {
         //   uint32 reserved;
         //   uint64 sector;
         // } buf0;
-        let blk_sector = dram.load(addr0.wrapping_add(8), 64)
+        let blk_sector = bus.load(addr0.wrapping_add(8), 64)
             .expect("failed to read a sector field in a virtio_blk_outhdr");
 
         // Write to a device if the second bit `flag1` is set.
@@ -227,7 +263,7 @@ impl Virtio {
                 // Read memory data and write it to a disk directly (DMA).
                 let mut buffer = Vec::with_capacity(len1 as usize);
                 for i in 0..len1 as u64 {
-                    let data = dram.load(addr1 + i, 8)
+                    let data = bus.load(addr1 + i, 8)
                         .expect("failed to read from memory") as u8;
                     buffer.push(data);
                 }
@@ -239,7 +275,7 @@ impl Virtio {
                 // Read disk data and write it to memory directly (DMA).
                 for i in 0..len1 as u64 {
                     let data = self.read_disk(blk_sector * 512 + i) as u64;
-                    dram.store(addr1 + i, 8, data)
+                    bus.store(addr1 + i, 8, data)
                         .expect("failed to write to memory");
                 }
             }
@@ -251,8 +287,8 @@ impl Virtio {
         //   uint16 id;
         //   struct VRingUsedElem elems[NUM];
         // };
-        let new_id = self.get_new_id() as u64;
-        let mut bus = self.bus.as_ref().expect("No bus").borrow_mut();
+        self.id = self.id.wrapping_add(1);
+        let new_id = self.id as u64;
         bus.store(used_addr.wrapping_add(2), 16, new_id % 8)
             .expect("failed to write to memory");
     }
@@ -267,6 +303,9 @@ impl Virtio {
             queue_num: self.queue_num,
             queue_pfn: self.queue_pfn,
             queue_notify: self.queue_notify,
+            desc_addr: self.desc_addr,
+            avail_addr: self.avail_addr,
+            used_addr: self.used_addr,
             status: self.status,
             disk: self.disk.clone(),
         }
@@ -284,6 +323,9 @@ impl Virtio {
             queue_num: snapshot.queue_num,
             queue_pfn: snapshot.queue_pfn,
             queue_notify: snapshot.queue_notify,
+            desc_addr: snapshot.desc_addr,
+            avail_addr: snapshot.avail_addr,
+            used_addr: snapshot.used_addr,
             status: snapshot.status,
             disk: snapshot.disk,
         }

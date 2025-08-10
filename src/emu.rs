@@ -102,8 +102,7 @@ impl Emu {
                 while self.cpu.pc != 0 {
                     self.cpu.trap_interrupt();
                     {
-                        let dram = &mut self.bus.borrow_mut().dram;
-                        self.virtio.borrow_mut().disk_access(dram);
+                        self.virtio.borrow_mut().disk_access();
                     }
                     let pc = self.cpu.pc;
                     let block = block_cache.entry(pc).or_insert_with(|| self.cpu.build_basic_block());

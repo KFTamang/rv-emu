@@ -279,6 +279,16 @@ impl Virtio {
                 }
             }
         };
+        // The `next` field can be accessed by offset 14 (8 + 4 + 2) bytes.
+        let next1 = bus.load(desc_addr1.wrapping_add(14), 16)
+            .expect("failed to read a next field in a descripor");
+        let desc_addr2= desc_addr + VRING_DESC_SIZE * next1;
+        let addr2 = bus.load(desc_addr2, 64)
+        .expect("failed to read an address field in a descriptor");
+        // Set 'status' in the next descriptor
+        info!("Setting status in the next descriptor: {}", addr2);
+        bus.store(addr2, 16, 1)
+            .expect("failed to write to memory");
 
         // Write id to `UsedArea`. Add 2 because of its structure.
         // struct UsedArea {

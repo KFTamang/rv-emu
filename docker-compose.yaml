@@ -3,7 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.riscv_gdb
-    image: riscv_gdb:latest
     volumes:
       - .:/projects
     working_dir: /projects

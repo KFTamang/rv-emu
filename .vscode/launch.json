@@ -12,7 +12,8 @@
                 "args": [
                     "build",
                     "--bin=rv-emu",
-                    "--package=rv-emu"
+                    "--package=rv-emu",
+                    "--release"
                 ],
                 "filter": {
                     "name": "rv-emu",
@@ -25,8 +26,10 @@
                 "--base-addr",
                 "2147483648",
                 "--loop-on",
-                "-c",
-                "100000",
+                "--dump",
+                "100000000",
+                "--image",
+                "apps/xv6-riscv/fs.img",
                 "-o",
                 "log/output_kernel.log"
             ],

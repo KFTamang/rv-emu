@@ -22,4 +22,4 @@ inherits = "release"
 debug = true
 
 [profile.release]
-debug = 1
+debug = true

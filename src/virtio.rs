@@ -193,6 +193,8 @@ impl Virtio {
             return;
         }
 
+        self.queue_notify = 9999; // reset notify
+
         let mut bus = self.bus.as_ref().expect("No bus").borrow_mut();
 
         // See more information in
@@ -211,8 +213,8 @@ impl Virtio {
 
         // avail[0] is flags
         // avail[1] tells the device how far to look in avail[2...].
-        info!("virtio: disk access, desc_addr: {:x}, avail_addr: {:x}, used_addr: {:x}",
-            desc_addr, avail_addr, used_addr);
+        // info!("virtio: disk access, desc_addr: {:x}, avail_addr: {:x}, used_addr: {:x}",
+            // desc_addr, avail_addr, used_addr);
         let offset = bus.load(avail_addr.wrapping_add(2), 16)
             .unwrap_or(0) as u64;
         // avail[2...] are desc[] indices the device should process.
@@ -272,6 +274,7 @@ impl Virtio {
             }
             false => {
                 // Read disk data and write it to memory directly (DMA).
+                info!("Reading from disk sector: {}", blk_sector);
                 for i in 0..len1 as u64 {
                     let data = self.read_disk(blk_sector * 512 + i) as u64;
                     bus.store(addr1 + i, 8, data)
@@ -287,7 +290,7 @@ impl Virtio {
         .expect("failed to read an address field in a descriptor");
         // Set 'status' in the next descriptor
         info!("Setting status in the next descriptor: {}", addr2);
-        bus.store(addr2, 16, 1)
+        bus.store(addr2, 16, 0)
             .expect("failed to write to memory");
 
         // Write id to `UsedArea`. Add 2 because of its structure.

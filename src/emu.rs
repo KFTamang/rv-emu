@@ -98,7 +98,7 @@ impl Emu {
             ExecMode::Continue => {
 
                 let mut block_cache = std::collections::HashMap::<u64, BasicBlock>::new();
-
+                let mut last_cycle_before_snapshot: u64 = 0;
                 while self.cpu.pc != 0 {
                     self.cpu.trap_interrupt();
                     {
@@ -106,7 +106,15 @@ impl Emu {
                     }
                     let pc = self.cpu.pc;
                     let block = block_cache.entry(pc).or_insert_with(|| self.cpu.build_basic_block());
-                    self.cpu.run_block(block);
+                    let cycle = self.cpu.run_block(block);
+                    last_cycle_before_snapshot += cycle;
+                    if last_cycle_before_snapshot > self.snapshot_interval {
+                        let path = std::path::PathBuf::from(format!("log/snapshot_{}.bin", self.cycle));
+                        self.save_snapshot(path.clone());
+                        info!("Snapshot saved to {}", path.clone().display());
+                        last_cycle_before_snapshot %= self.snapshot_interval;
+                    }
+                    self.cycle += cycle;
                 }
 
                 if self.breakpoints.contains(&self.cpu.pc) {
@@ -139,19 +147,20 @@ impl Emu {
     }
 
     pub fn from_snapshot(snapshot: EmuSnapshot) -> Self {
-        let cpu = Cpu::from_snapshot(snapshot.cpu);
         let interrupt_list = Rc::new(RefCell::new(BTreeSet::<Interrupt>::new()));
         let bus = Rc::new(RefCell::new(Bus::from_snapshot(snapshot.bus, interrupt_list.clone())));
         let virtio = Rc::new(
             RefCell::new(
-                Virtio::new(
-                    0x10001000, 
-                    bus.borrow().plic.get_interrupt_notificator(ExternalInterrupt::VirtioDiskIO),
+                Virtio::from_snapshot(snapshot.virtio,
+                    bus.borrow().plic.get_interrupt_notificator(ExternalInterrupt::VirtioDiskIO)
                 )
             )
         );
+        let mut cpu = Cpu::from_snapshot(snapshot.cpu, Rc::clone(&bus));
+        cpu.bus = Rc::clone(&bus);
         bus.borrow_mut().virtio = Some(Rc::clone(&virtio));
         virtio.borrow_mut().set_bus(Rc::clone(&bus));
+        info!("emu is made from snapshot!");
         Self {
             breakpoints: vec![0; 32 as usize],
             exec_mode: ExecMode::Continue,

@@ -69,9 +69,9 @@ impl Bus {
             );
             return ret_val;
         }
-        let mut virtio = self.virtio
+        let virtio = self.virtio
             .as_ref()
-            .expect("No virtio bus")
+            .expect("No virtio bus to load")
             .borrow_mut();
         if virtio.is_accessible(addr) {
             let ret_val = virtio.load(addr, size);
@@ -107,7 +107,7 @@ impl Bus {
         }
         let mut virtio = self.virtio
             .as_ref()
-            .expect("No virtio bus")
+            .expect("No virtio bus to store")
             .borrow_mut();
         if virtio.is_accessible(addr) {
             return virtio.store(addr, size, value);

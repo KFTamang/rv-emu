@@ -34,7 +34,6 @@ fn bit(integer: u64, bit: u64) -> u64 {
 pub struct CpuSnapshot {
     pub regs: [u64; 32],
     pub pc: u64,
-    pub bus: BusSnapshot,
     pub csr: CsrSnapshot,
     pub mode: u64,
     pub cycle: u64,
@@ -91,7 +90,6 @@ impl Cpu {
         CpuSnapshot {
             regs: self.regs,
             pc: self.pc,
-            bus: self.bus.borrow().to_snapshot(),
             csr: self.csr.to_snapshot(),
             mode: self.mode,
             cycle: *self.cycle.borrow(),
@@ -102,13 +100,13 @@ impl Cpu {
         }
     }
 
-    pub fn from_snapshot(snapshot: CpuSnapshot) -> Self {
+    pub fn from_snapshot(snapshot: CpuSnapshot, bus: Rc<RefCell<Bus>>) -> Self {
         let interrupt_list = Rc::new(RefCell::new(snapshot.interrupt_list));
         let cycle = Rc::new(RefCell::new(snapshot.cycle));
         let mut cpu = Self {
             regs: snapshot.regs,
             pc: snapshot.pc,
-            bus: Rc::new(RefCell::new(Bus::from_snapshot(snapshot.bus, interrupt_list.clone()))),
+            bus: bus,
             csr: Csr::from_snapshot(snapshot.csr, interrupt_list.clone(), cycle.clone()),
             dest: REG_NUM,
             src1: REG_NUM,
@@ -1230,8 +1228,9 @@ impl Cpu {
         }
     }
 
-    pub fn run_block(&mut self, block: &BasicBlock) {
+    pub fn run_block(&mut self, block: &BasicBlock) -> u64 {
         self.pc = block.start_pc;
+        let mut cycle: u64 = 0;
         for instr in &block.instrs {
             let result = self.execute(instr.clone());
             if let Err(mut e) = result {
@@ -1242,7 +1241,9 @@ impl Cpu {
             self.regs[0] = 0; // x0 is always zero
             self.pc = self.pc.wrapping_add(4);
             *self.cycle.borrow_mut() += 1;
+            cycle += 1;
         }
+        cycle
     }
 
     pub fn step_run(&mut self) -> u64 {

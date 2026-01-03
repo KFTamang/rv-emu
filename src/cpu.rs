@@ -349,41 +349,48 @@ impl Cpu {
         self.pc = self.csr.load_csrs(MTVEC) & !(0b11);
     }
 
-    fn return_from_trap(&mut self) {
+    fn return_from_machine_trap(&mut self) {
         // mstatus.MIE <- mstatus.MPIE(=1)
         // U-modeに遷移する
         // mstatus.MPIE <~ 1 [always]
         // mstatus.MPP <~ 00(U-mode) [always]
         // pc(program counter) <~ mepc CSR
+        info!("mret instruction from mode {}", self.mode);
         debug!("{}", self.csr.dump());
-        match self.mode {
-            M_MODE => {
-                let pp = self.csr.get_mstatus_bit(MASK_MPP, BIT_MPP);
-                let pie = self.csr.get_mstatus_bit(MASK_MPIE, BIT_MPIE);
-                let previous_pc = self.csr.load_csrs(MEPC);
-                self.csr.set_mstatus_bit(pie, MASK_MIE, BIT_MIE);
-                self.csr.set_mstatus_bit(0b1, MASK_MPIE, BIT_MPIE);
-                self.csr.set_mstatus_bit(U_MODE, MASK_MPP, BIT_MPP);
-                self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
-                self.mode = pp;
-                info!("back to privilege {} from machine mode", pp);
-            }
-            S_MODE => {
-                let pp = self.csr.get_sstatus_bit(MASK_SPP, BIT_SPP);
-                let pie = self.csr.get_sstatus_bit(MASK_SPIE, BIT_SPIE);
-                let previous_pc = self.csr.load_csrs(SEPC);
-                self.csr.set_sstatus_bit(pie, MASK_SIE, BIT_SIE);
-                self.csr.set_sstatus_bit(0b1, MASK_SPIE, BIT_SPIE);
-                self.csr.set_sstatus_bit(U_MODE, MASK_SPP, BIT_SPP);
-                self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
-                self.mode = pp;
-                info!("back to privilege {} from supervisor mode", pp);
-            }
-            _ => {
-                panic!("m/sret from U_MODE\n");
-            }
-        }
+        // machine mode is guaranteed here
+        let pp = self.csr.get_mstatus_bit(MASK_MPP, BIT_MPP);
+        let pie = self.csr.get_mstatus_bit(MASK_MPIE, BIT_MPIE);
+        let previous_pc = self.csr.load_csrs(MEPC);
+        self.csr.set_mstatus_bit(pie, MASK_MIE, BIT_MIE);
+        self.csr.set_mstatus_bit(0b1, MASK_MPIE, BIT_MPIE);
+        self.csr.set_mstatus_bit(U_MODE, MASK_MPP, BIT_MPP);
+        self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
+        self.mode = pp;
+        info!("back to privilege {} from machine mode by mret", pp);
         debug!("return from trap");
+        debug!("csr dump");
+        debug!("{}", self.csr.dump());
+    }
+
+    fn return_from_supervisor_trap(&mut self) {
+        // mstatus.MIE <- mstatus.MPIE(=1)
+        // U-modeに遷移する
+        // mstatus.MPIE <~ 1 [always]
+        // mstatus.MPP <~ 00(U-mode) [always]
+        // pc(program counter) <~ mepc CSR
+        debug!("sret instruction from mode {}", self.mode);
+        debug!("{}", self.csr.dump());
+        let pp = self.csr.get_sstatus_bit(MASK_SPP, BIT_SPP);
+        let pie = self.csr.get_sstatus_bit(MASK_SPIE, BIT_SPIE);
+        let previous_pc = self.csr.load_csrs(SEPC);
+        self.csr.set_sstatus_bit(pie, MASK_SIE, BIT_SIE);
+        self.csr.set_sstatus_bit(0b1, MASK_SPIE, BIT_SPIE);
+        self.csr.set_sstatus_bit(U_MODE, MASK_SPP, BIT_SPP);
+        self.pc = previous_pc.wrapping_sub(4); // subtract 4 to cancel out addition in main loop
+        self.mode = pp;
+        info!("back to privilege {} from supervisor mode by sret", pp);
+        debug!("return from trap");
+        debug!("PC: 0x{:x}", self.pc);
         debug!("csr dump");
         debug!("{}", self.csr.dump());
     }
@@ -398,7 +405,7 @@ impl Cpu {
 
         self.clear_reg_marks();
         match inst {
-            DecodedInstr::Add{rd, rs1, rs2} => {
+            DecodedInstr::Add{ raw: _, rd, rs1, rs2} => {
                 // "add"
                 self.regs[rd] = self.regs[rs1].wrapping_add(self.regs[rs2]);
                 self.mark_as_dest(rd);
@@ -406,7 +413,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Sub{rd, rs1, rs2} => {
+            DecodedInstr::Sub{ raw: _, rd, rs1, rs2} => {
                 // "sub"
                 self.regs[rd] = self.regs[rs1].wrapping_sub(self.regs[rs2]);
                 self.mark_as_dest(rd);
@@ -414,7 +421,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Sll{rd, rs1, rs2} => {
+            DecodedInstr::Sll{ raw: _, rd, rs1, rs2} => {
                 // "sll"
                 let shamt = self.regs[rs2] & 0x1f;
                 self.regs[rd] = (self.regs[rs1] as u64) << shamt;
@@ -423,7 +430,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Slt{rd, rs1, rs2} => {
+            DecodedInstr::Slt{ raw: _, rd, rs1, rs2} => {
                 // "slt"
                 self.regs[rd] = if (rs1 as i64) < (rs2 as i64) { 1 } else { 0 };
                 self.mark_as_dest(rd);
@@ -431,7 +438,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Sltu{rd, rs1, rs2} => {
+            DecodedInstr::Sltu{ raw: _, rd, rs1, rs2} => {
                 // "sltu"
                 self.regs[rd] = if (rs1 as u64) < (rs2 as u64) { 1 } else { 0 };
                 self.mark_as_dest(rd);
@@ -439,7 +446,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Xor{rd, rs1, rs2} => {
+            DecodedInstr::Xor{ raw: _, rd, rs1, rs2} => {
                 // "xor"
                 self.regs[rd] = self.regs[rs1] ^ self.regs[rs2];
                 self.mark_as_dest(rd);
@@ -447,7 +454,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Srl{rd, rs1, rs2} => {
+            DecodedInstr::Srl{ raw: _, rd, rs1, rs2} => {
                 // "srl"
                 let shamt = self.regs[rs2] & 0x1f;
                 self.regs[rd] = self.regs[rs1] as u64 >> shamt;
@@ -456,7 +463,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Sra{rd, rs1, rs2} => {
+            DecodedInstr::Sra{ raw: _, rd, rs1, rs2} => {
                 // "sra"
                 let shamt = self.regs[rs2] & 0x1f;
                 self.regs[rd] = (self.regs[rs1] as i64 as u64) >> shamt;
@@ -465,7 +472,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Or{rd, rs1, rs2} => {
+            DecodedInstr::Or{ raw: _, rd, rs1, rs2} => {
                 // "or"
                 self.regs[rd] = self.regs[rs1] | self.regs[rs2];
                 self.mark_as_dest(rd);
@@ -473,7 +480,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::And{rd, rs1, rs2} => {
+            DecodedInstr::And{ raw: _, rd, rs1, rs2} => {
                 // "and"
                 self.regs[rd] = self.regs[rs1] & self.regs[rs2];
                 self.mark_as_dest(rd);
@@ -481,7 +488,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Mul{rd, rs1, rs2} => {
+            DecodedInstr::Mul{ raw: _, rd, rs1, rs2} => {
                 // "mul"
                 self.regs[rd] = self.regs[rs1].wrapping_mul(self.regs[rs2]);
                 self.mark_as_dest(rd);
@@ -489,7 +496,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Mulh{rd, rs1, rs2} => {
+            DecodedInstr::Mulh{ raw: _, rd, rs1, rs2} => {
                 // "mulh"
                 let mul = (self.regs[rs1] as i64 as i128)
                     .wrapping_mul(self.regs[rs2] as i64 as i128);
@@ -499,7 +506,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Mulhsu{rd, rs1, rs2} => {
+            DecodedInstr::Mulhsu{ raw: _, rd, rs1, rs2} => {
                 // "mulhsu"
                 let mul = (self.regs[rs1] as i64 as i128)
                     .wrapping_mul(self.regs[rs2] as u128 as i128);
@@ -509,7 +516,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Mulhu{rd, rs1, rs2} => {
+            DecodedInstr::Mulhu{ raw: _, rd, rs1, rs2} => {
                 // "mulhu"
                 let mul = (self.regs[rs1] as u128).wrapping_mul(self.regs[rs2] as u128);
                 self.regs[rd] = (mul >> 64) as u64;
@@ -518,7 +525,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Div{rd, rs1, rs2} => {
+            DecodedInstr::Div{ raw: _, rd, rs1, rs2} => {
                 // "div"
                 self.regs[rd] = self.regs[rs1] / self.regs[rs2];
                 self.mark_as_dest(rd);
@@ -526,7 +533,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Divu{rd, rs1, rs2} => {
+            DecodedInstr::Divu{ raw: _, rd, rs1, rs2} => {
                 // "divu"
                 self.regs[rd] = ((self.regs[rs1] as i64) / (self.regs[rs2] as i64)) as u64;
                 self.mark_as_dest(rd);
@@ -534,7 +541,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Rem{rd, rs1, rs2} => {
+            DecodedInstr::Rem{ raw: _, rd, rs1, rs2} => {
                 // "rem"
                 self.regs[rd] = self.regs[rs1] % self.regs[rs2];
                 self.mark_as_dest(rd);
@@ -542,7 +549,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Remu{rd, rs1, rs2} => {
+            DecodedInstr::Remu{ raw: _, rd, rs1, rs2} => {
                 // "remu"
                 self.regs[rd] = ((self.regs[rs1] as i64) % (self.regs[rs2] as i64)) as u64;
                 self.mark_as_dest(rd);
@@ -550,14 +557,14 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Addi{rd, rs1, imm} => {
+            DecodedInstr::Addi{ raw: _, rd, rs1, imm} => {
                 // "addi"
                 self.regs[rd] = self.regs[rs1].wrapping_add(imm);
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Slti{rd, rs1, imm} => {
+            DecodedInstr::Slti{ raw: _, rd, rs1, imm} => {
                 // "slti"
                 let result = if (self.regs[rs1] as i32 as i64) < (imm as i64) {
                     1
@@ -569,7 +576,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Sltiu{rd, rs1, imm} => {
+            DecodedInstr::Sltiu{ raw: _, rd, rs1, imm} => {
                 // "sltiu"
                 let result = if (self.regs[rs1] as i32 as i64 as u64) < imm {
                     1
@@ -581,7 +588,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Xori{rd, rs1, imm} => {
+            DecodedInstr::Xori{ raw: _, rd, rs1, imm} => {
                 // "xori"
                 let val = ((self.regs[rs1] as i32) ^ (imm as i32)) as u64;
                 self.regs[rd] = val;
@@ -589,7 +596,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Ori{rd, rs1, imm} => {
+            DecodedInstr::Ori{ raw: _, rd, rs1, imm} => {
                 // "ori"
                 let val = ((self.regs[rs1] as i32) | (imm as i32)) as u64;
                 self.regs[rd] = val;
@@ -597,7 +604,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Andi{rd, rs1, imm} => {
+            DecodedInstr::Andi{ raw: _, rd, rs1, imm} => {
                 // "andi"
                 let val = ((self.regs[rs1] as i32) & (imm as i32)) as u64;
                 self.regs[rd] = val;
@@ -605,7 +612,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Slli{rd, rs1, imm} => {
+            DecodedInstr::Slli{ raw: _, rd, rs1, imm} => {
                 // "slli"
                 let shamt = (imm & 0x3f) as u64;
                 self.regs[rd] = (self.regs[rs1] as u64) << shamt;
@@ -613,7 +620,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Srli{rd, rs1, imm} => {
+            DecodedInstr::Srli{ raw: _, rd, rs1, imm} => {
                 // "srli/
                 let shamt = (imm & 0x3f) as u64;
                 let logical_shift = imm >> 5;
@@ -626,7 +633,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Lb {rd, rs1, imm} => {
+            DecodedInstr::Lb { raw: _, rd, rs1, imm} => {
                 // "lb"
                 let addr = self.regs[rs1].wrapping_add(imm as u64);
                 let val = self.load(addr, 8)?;
@@ -635,7 +642,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Lh {rd, rs1, imm} => {
+            DecodedInstr::Lh { raw: _, rd, rs1, imm} => {
                 // "lh"
                 let addr = self.regs[rs1].wrapping_add(imm as u64);
                 let val = self.load(addr, 16)?;
@@ -644,7 +651,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Lw {rd, rs1, imm} => {
+            DecodedInstr::Lw { raw: _, rd, rs1, imm} => {
                 // "lw"
                 let addr = self.regs[rs1].wrapping_add(imm as u64);
                 let val = self.load(addr, 32)?;
@@ -653,7 +660,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Ld {rd, rs1, imm} => {
+            DecodedInstr::Ld { raw: _, rd, rs1, imm} => {
                 // "ld"
                 let addr = self.regs[rs1].wrapping_add(imm as u64);
                 let val = self.load(addr, 64)?;
@@ -662,7 +669,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Lbu {rd, rs1, imm} => {
+            DecodedInstr::Lbu { raw: _, rd, rs1, imm} => {
                 // "lbu"
                 let addr = self.regs[rs1].wrapping_add(imm as u64);
                 let val = self.load(addr, 8)?;
@@ -671,7 +678,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Lhu {rd, rs1, imm} => {
+            DecodedInstr::Lhu { raw: _, rd, rs1, imm} => {
                 // "lhu"
                 let addr = self.regs[rs1].wrapping_add(imm as u64);
                 let val = self.load(addr, 16)?;
@@ -680,7 +687,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Lwu {rd, rs1, imm} => {
+            DecodedInstr::Lwu { raw: _, rd, rs1, imm} => {
                 // "lwu"
                 let addr = self.regs[rs1].wrapping_add(imm as u64);
                 let val = self.load(addr, 32)?;
@@ -689,7 +696,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Sb { rs1, rs2, imm } => {
+            DecodedInstr::Sb { raw: _, rs1, rs2, imm } => {
                 // store instructions
                 let addr = self.regs[rs1].wrapping_add(imm as i32 as i64 as u64);
                 self.store(addr, 8, self.regs[rs2])?;
@@ -697,7 +704,7 @@ impl Cpu {
                 self.mark_as_dest(rs2);
                 Ok(())
             }
-            DecodedInstr::Sh { rs1, rs2, imm } => {
+            DecodedInstr::Sh { raw: _, rs1, rs2, imm } => {
                 // store instructions
                 let addr = self.regs[rs1].wrapping_add(imm as i32 as i64 as u64);
                 self.store(addr, 16, self.regs[rs2])?;
@@ -705,7 +712,7 @@ impl Cpu {
                 self.mark_as_dest(rs2);
                 Ok(())
             }
-            DecodedInstr::Sw { rs1, rs2, imm } => {
+            DecodedInstr::Sw { raw: _, rs1, rs2, imm } => {
                 // store instructions
                 let addr = self.regs[rs1].wrapping_add(imm as i32 as i64 as u64);
                 self.store(addr, 32, self.regs[rs2])?;
@@ -713,7 +720,7 @@ impl Cpu {
                 self.mark_as_dest(rs2);
                 Ok(())
             }
-            DecodedInstr::Sd { rs1, rs2, imm } => {
+            DecodedInstr::Sd { raw: _, rs1, rs2, imm } => {
                 // store instructions
                 let addr = self.regs[rs1].wrapping_add(imm as i32 as i64 as u64);
                 self.store(addr, 64, self.regs[rs2])?;
@@ -721,14 +728,14 @@ impl Cpu {
                 self.mark_as_dest(rs2);
                 Ok(())
             }
-            DecodedInstr::Jal { rd, imm } => {
+            DecodedInstr::Jal { raw: _, rd, imm } => {
                 // jal
                 self.regs[rd] = self.pc.wrapping_add(4);
                 self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4); // subtract 4 because 4 will be added
                 self.mark_as_dest(rd);
                 Ok(())
             }
-            DecodedInstr::Jalr {rd, rs1, imm} => {
+            DecodedInstr::Jalr { raw: _, rd, rs1, imm} => {
                 // "jalr"
                 let return_addr = self.pc.wrapping_add(4);
                 let next_pc = self.regs[rs1].wrapping_add(imm as u64).wrapping_sub(4);
@@ -739,7 +746,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Addiw {rd, rs1, imm } => {
+            DecodedInstr::Addiw { raw: _, rd, rs1, imm } => {
                 // addiw
                 let src = self.regs[rs1] as i32;
                 let val = src.wrapping_add(imm as i32);
@@ -748,7 +755,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Slliw {rd, rs1, shamt } => {
+            DecodedInstr::Slliw { raw: _, rd, rs1, shamt } => {
                 // slliw
                 let src = self.regs[rs1] as u32;
                 let val = src << shamt;
@@ -757,7 +764,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Srliw {rd, rs1, shamt } => {
+            DecodedInstr::Srliw { raw: _, rd, rs1, shamt } => {
                 // srliw
                 let src = self.regs[rs1] as u32;
                 let val = src >> shamt;
@@ -766,7 +773,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Sraiw {rd, rs1, shamt } => {
+            DecodedInstr::Sraiw { raw: _, rd, rs1, shamt } => {
                 // sraiw
                 let src = self.regs[rs1] as i32;
                 let val = src >> shamt;
@@ -775,7 +782,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Beq {rs1, rs2, imm } => {
+            DecodedInstr::Beq { raw: _, rs1, rs2, imm } => {
                 // "beq"
                 if self.regs[rs1] == self.regs[rs2] {
                     self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
@@ -784,7 +791,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Bne {rs1, rs2, imm } => {
+            DecodedInstr::Bne { raw: _, rs1, rs2, imm } => {
                 // "bne"
                 if self.regs[rs1] != self.regs[rs2] {
                     self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
@@ -793,7 +800,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Blt {rs1, rs2, imm } => {
+            DecodedInstr::Blt { raw: _, rs1, rs2, imm } => {
                 // "blt"
                 if (self.regs[rs1] as i64) < (self.regs[rs2] as i64) {
                     self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
@@ -802,7 +809,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Bge {rs1, rs2, imm } => {
+            DecodedInstr::Bge { raw: _, rs1, rs2, imm } => {
                 // "bge"
                 if (self.regs[rs1] as i64) >= (self.regs[rs2] as i64) {
                     self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
@@ -811,7 +818,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Bltu {rs1, rs2, imm } => {
+            DecodedInstr::Bltu { raw: _, rs1, rs2, imm } => {
                 // "bltu"
                 if self.regs[rs1] < self.regs[rs2] {
                     self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
@@ -820,7 +827,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Bgeu {rs1, rs2, imm } => {
+            DecodedInstr::Bgeu { raw: _, rs1, rs2, imm } => {
                 // "bgeu"
                 if self.regs[rs1] >= self.regs[rs2] {
                     self.pc = self.pc.wrapping_add(imm as u64).wrapping_sub(4);
@@ -829,7 +836,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Addw {rd, rs1, rs2} => {
+            DecodedInstr::Addw { raw: _, rd, rs1, rs2} => {
                 // "addw"
                 let add_val = (self.regs[rs1] as i32).wrapping_add(self.regs[rs2] as i32);
                 self.regs[rd] = add_val as i64 as u64;
@@ -838,7 +845,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Subw {rd, rs1, rs2}  => {
+            DecodedInstr::Subw { raw: _, rd, rs1, rs2}  => {
                 // "subw"
                 let add_val = (self.regs[rs1] as i32).wrapping_sub(self.regs[rs2] as i32);
                 self.regs[rd] = add_val as i64 as u64;
@@ -847,7 +854,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Sllw {rd, rs1, rs2} => {
+            DecodedInstr::Sllw { raw: _, rd, rs1, rs2} => {
                 // "sllw"
                 let shamt = (self.regs[rs2] as u64) & 0x1f;
                 self.regs[rd] = ((self.regs[rs1] as u32) << shamt) as u64;
@@ -856,7 +863,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Srlw {rd, rs1, rs2} => {
+            DecodedInstr::Srlw { raw: _, rd, rs1, rs2} => {
                 // "srlw"
                 let shamt = (self.regs[rs2] as u64) & 0x1f;
                 self.regs[rd] = ((self.regs[rs1] as u32) >> shamt) as u64;
@@ -865,7 +872,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Sraw {rd, rs1, rs2}  => {
+            DecodedInstr::Sraw { raw: _, rd, rs1, rs2}  => {
                 // "sraw"
                 let shamt = (self.regs[rs2] as u64) & 0x1f;
                 self.regs[rd] = ((self.regs[rs1] as i32) >> shamt) as i64 as u64;
@@ -874,7 +881,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Mulw {rd, rs1, rs2} => {
+            DecodedInstr::Mulw { raw: _, rd, rs1, rs2} => {
                 // "mulw"
                 let mul = (self.regs[rs2] as u32) * (self.regs[rs2] as u32);
                 self.regs[rd] = mul as i32 as i64 as u64;
@@ -883,7 +890,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Divw {rd, rs1, rs2} => {
+            DecodedInstr::Divw { raw: _, rd, rs1, rs2} => {
                 // "divw"
                 let rem = (self.regs[rs2] as u32) / (self.regs[rs2] as u32);
                 self.regs[rd] = rem as u64;
@@ -892,7 +899,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Divuw {rd, rs1, rs2} => {
+            DecodedInstr::Divuw { raw: _, rd, rs1, rs2} => {
                 // "divuw"
                 let rem = (self.regs[rs2] as i32) / (self.regs[rs2] as i32);
                 self.regs[rd] = rem as i64 as u64;
@@ -901,7 +908,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Remw {rd, rs1, rs2} => {
+            DecodedInstr::Remw { raw: _, rd, rs1, rs2} => {
                 // "remw"
                 let rem = (self.regs[rs2] as i32) % (self.regs[rs2] as i32);
                 self.regs[rd] = rem as i64 as u64;
@@ -910,7 +917,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Remuw {rd, rs1, rs2} => {
+            DecodedInstr::Remuw { raw: _, rd, rs1, rs2} => {
                 // "remuw"
                 let rem = (self.regs[rs2] as u32) % (self.regs[rs2] as u32);
                 self.regs[rd] = rem as u64;
@@ -919,35 +926,45 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(())
             }
-            DecodedInstr::Lui { rd, imm } => {
+            DecodedInstr::Lui { raw: _, rd, imm } => {
                 // "lui"
                 self.regs[rd] = imm as u64;
                 self.mark_as_dest(rd);
                 Ok(())
             }
-            DecodedInstr::Auipc { rd, imm } => {
+            DecodedInstr::Auipc { raw: _, rd, imm } => {
                 // "auipc"
                 self.regs[rd] = self.pc + imm;
                 self.mark_as_dest(rd);
                 Ok(())
             }
-            DecodedInstr::Ecall => {
+            DecodedInstr::Ecall { raw: _ } => {
                 Exception::EnvironmentalCallFromMMode.take_trap(self);
                 Ok(())
             }
-            DecodedInstr::Ebreak => {
+            DecodedInstr::Ebreak { raw: _ } => {
                 // Optional: implement EBREAK behavior
                 Ok(())
             }
-            DecodedInstr::Sret | DecodedInstr::Mret => {
-                self.return_from_trap();
+            DecodedInstr::Sret { raw } => {
+                if self.mode < S_MODE {
+                    return Err(Exception::IllegalInstruction(raw));
+                }
+                self.return_from_supervisor_trap();
                 Ok(())
             }
-            DecodedInstr::Wfi => {
+            DecodedInstr::Mret { raw } => {
+                if self.mode < M_MODE {
+                    return Err(Exception::IllegalInstruction(raw));
+                }
+                self.return_from_machine_trap();
+                Ok(())
+            }
+            DecodedInstr::Wfi { raw: _ } => {
                 self.wait_for_interrupt();
                 Ok(())
             }
-            DecodedInstr::Csrrw { rd, rs1, csr } => {
+            DecodedInstr::Csrrw { raw: _, rd, rs1, csr } => {
                 if rd != 0 {
                     self.regs[rd] = self.csr.load_csrs(csr) as u64;
                 }
@@ -956,7 +973,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(()) 
             }
-            DecodedInstr::Csrrs { rd, rs1, csr } => {
+            DecodedInstr::Csrrs { raw: _, rd, rs1, csr } => {
                 let old = self.csr.load_csrs(csr) as u64;
                 self.regs[rd] = old;
                 if rs1 != 0 {
@@ -966,7 +983,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(())
             }
-            DecodedInstr::Csrrc { rd, rs1, csr } => {
+            DecodedInstr::Csrrc { raw: _, rd, rs1, csr } => {
                 let old = self.csr.load_csrs(csr) as u64;
                 self.regs[rd] = old;
                 if rs1 != 0 {
@@ -976,7 +993,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(()) 
             }
-            DecodedInstr::Csrrwi { rd, rs1, csr, uimm } => {
+            DecodedInstr::Csrrwi { raw: _, rd, rs1, csr, uimm } => {
                 if rd != 0 {
                     self.regs[rd] = self.csr.load_csrs(csr);
                 }
@@ -985,7 +1002,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(()) 
             }
-            DecodedInstr::Csrrsi { rd, rs1, csr, uimm } => {
+            DecodedInstr::Csrrsi { raw: _, rd, rs1, csr, uimm } => {
                 let old_val = self.csr.load_csrs(csr) as u64;
                 self.regs[rd] = old_val;
                 if rs1 != 0 {
@@ -995,7 +1012,7 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(()) 
             }
-            DecodedInstr::Csrrci { rd, rs1, csr, uimm } => {
+            DecodedInstr::Csrrci { raw: _, rd, rs1, csr, uimm } => {
                 let old_val = self.csr.load_csrs(csr) as u64;
                 self.regs[rd] = old_val;
                 if rs1 != 0 {
@@ -1005,15 +1022,15 @@ impl Cpu {
                 self.mark_as_src1(rs1);
                 Ok(()) 
             }
-            DecodedInstr::Sfence => {
+            DecodedInstr::Sfence { raw: _ } => {
                 self.address_translation_cache.clear();
                 Ok(())
             }
-            DecodedInstr::Fence => {
+            DecodedInstr::Fence { raw: _ } => {
                 // 実際には no-op（または memory ordering のために記録する）
                 Ok(())
             }
-            DecodedInstr::Amoswap { rd, rs1, rs2 } => {
+            DecodedInstr::Amoswap { raw: _, rd, rs1, rs2 } => {
                 let addr = self.regs[rs1];
                 let val = self.load(addr, 32)?;              // メモリからロード
                 let src = self.regs[rs2];
@@ -1025,7 +1042,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(()) 
             }
-            DecodedInstr::Amoadd { rd, rs1, rs2 } => {
+            DecodedInstr::Amoadd { raw: _, rd, rs1, rs2 } => {
                 let addr = self.regs[rs1];
                 let val = self.load(addr, 32)?;
                 let result = val.wrapping_add(self.regs[rs2]);
@@ -1036,7 +1053,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(()) 
             }
-            DecodedInstr::Amoxor { rd, rs1, rs2 } => {
+            DecodedInstr::Amoxor { raw: _, rd, rs1, rs2 } => {
                 let addr = self.regs[rs1];
                 let val = self.load(addr, 32)?;
                 let result = val ^ self.regs[rs2];
@@ -1047,7 +1064,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(()) 
             }
-            DecodedInstr::Amoand { rd, rs1, rs2 } => {
+            DecodedInstr::Amoand { raw: _, rd, rs1, rs2 } => {
                 let addr = self.regs[rs1];
                 let val = self.load(addr, 32)?;
                 let result = val & self.regs[rs2];
@@ -1058,7 +1075,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(()) 
             }
-            DecodedInstr::Amoor { rd, rs1, rs2 } => {
+            DecodedInstr::Amoor { raw: _, rd, rs1, rs2 } => {
                 let addr = self.regs[rs1];
                 let val = self.load(addr, 32)?;
                 let result = val | self.regs[rs2];
@@ -1069,7 +1086,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(()) 
             }
-            DecodedInstr::Amomin { rd, rs1, rs2 } => {
+            DecodedInstr::Amomin { raw: _, rd, rs1, rs2 } => {
                 // "amomin.
                 let addr = self.regs[rs1];
                 let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
@@ -1085,7 +1102,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(()) 
             }
-            DecodedInstr::Amomax { rd, rs1, rs2 } => {
+            DecodedInstr::Amomax { raw: _, rd, rs1, rs2 } => {
                 // "amomax.
                 let addr = self.regs[rs1];
                 let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
@@ -1100,7 +1117,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(()) 
             }
-            DecodedInstr::Amominu { rd, rs1, rs2 } => {
+            DecodedInstr::Amominu { raw: _, rd, rs1, rs2 } => {
                 // "amominu.
                 let addr = self.regs[rs1];
                 let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;
@@ -1116,7 +1133,7 @@ impl Cpu {
                 self.mark_as_src2(rs2);
                 Ok(()) 
             }
-            DecodedInstr::Amomaxu { rd, rs1, rs2 } => {
+            DecodedInstr::Amomaxu { raw: _, rd, rs1, rs2 } => {
                 // "amomaxu.
                 let addr = self.regs[rs1];
                 let loaded_value = self.load(addr, 32)? as i32 as i64 as u64;

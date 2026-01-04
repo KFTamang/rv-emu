@@ -58,6 +58,7 @@ pub struct Cpu {
     clint: Clint,
     interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>,
     address_translation_cache: std::collections::HashMap<u64, u64>,
+    block_cache: std::collections::HashMap<u64, BasicBlock>,
 }
 
 impl Cpu {
@@ -82,6 +83,7 @@ impl Cpu {
             cycle,
             interrupt_list,
             address_translation_cache: std::collections::HashMap::new(),
+            block_cache: std::collections::HashMap::new(),
         }
     }
 
@@ -117,6 +119,7 @@ impl Cpu {
             cycle,
             interrupt_list: interrupt_list,
             address_translation_cache: snapshot.address_translation_cache,
+            block_cache: std::collections::HashMap::new(),
         };
         cpu.clear_reg_marks();
         cpu
@@ -1033,6 +1036,7 @@ impl Cpu {
             }
             DecodedInstr::Sfence { raw: _ } => {
                 self.address_translation_cache.clear();
+                self.block_cache.clear();
                 Ok(())
             }
             DecodedInstr::Fence { raw: _ } => {
@@ -1228,6 +1232,10 @@ impl Cpu {
         let mut instrs = Vec::new();
         let mut pc = self.pc;
 
+        if self.block_cache.contains_key(&pc) {
+            return self.block_cache.get(&pc).unwrap().clone();
+        }
+
         loop {
             let inst = match self.fetch(pc) {
                 Ok(inst) => inst,
@@ -1247,11 +1255,13 @@ impl Cpu {
             pc = pc.wrapping_add(4);
         }
         
-        BasicBlock {
+        let block = BasicBlock {
             start_pc: self.pc,
             end_pc: pc,
             instrs,
-        }
+        };
+        self.block_cache.insert(self.pc, block.clone());
+        block
     }
 
     pub fn run_block(&mut self, block: &BasicBlock) -> u64 {

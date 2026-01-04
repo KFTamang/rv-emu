@@ -97,16 +97,14 @@ impl Emu {
             ExecMode::Step => RunEvent::Event(self.step().unwrap_or(Event::DoneStep)),
             ExecMode::Continue => {
 
-                let mut block_cache = std::collections::HashMap::<u64, BasicBlock>::new();
                 let mut last_cycle_before_snapshot: u64 = 0;
                 while !poll_incoming_data() {
                     self.cpu.trap_interrupt();
                     {
                         self.virtio.borrow_mut().disk_access();
                     }
-                    let pc = self.cpu.pc;
-                    let block = block_cache.entry(pc).or_insert_with(|| self.cpu.build_basic_block());
-                    let cycle = self.cpu.run_block(block);
+                    let block = self.cpu.build_basic_block();
+                    let cycle = self.cpu.run_block(&block);
                     last_cycle_before_snapshot += cycle;
                     if last_cycle_before_snapshot > self.snapshot_interval {
                         let path = std::path::PathBuf::from(format!("log/snapshot_{}.bin", self.cycle));

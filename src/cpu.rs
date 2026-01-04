@@ -40,7 +40,6 @@ pub struct CpuSnapshot {
     pub clint: Clint,
     pub interrupt_list: BTreeSet<Interrupt>,
     pub address_translation_cache: std::collections::HashMap<u64, u64>,
-    basic_block_cache: std::collections::HashMap<u64, BasicBlock>,
 }
 
 pub struct Cpu {
@@ -79,7 +78,7 @@ impl Cpu {
             dump_count: _dump_count,
             dump_interval: _dump_count,
             inst_string: String::from(""),
-        clint: Clint::new(0x200_0000, 0x10000),
+            clint: Clint::new(0x200_0000, 0x10000),
             cycle,
             interrupt_list,
             address_translation_cache: std::collections::HashMap::new(),
@@ -96,7 +95,6 @@ impl Cpu {
             clint: self.clint.clone(),
             interrupt_list: self.interrupt_list.borrow().clone(),
             address_translation_cache: self.address_translation_cache.clone(),
-            basic_block_cache: std::collections::HashMap::new(), // not needed for snapshot
         }
     }
 
@@ -131,7 +129,10 @@ impl Cpu {
         }
     }
 
-
+    pub fn set_dump_count(&mut self, count: u64) {
+        self.dump_count = count;
+        self.dump_interval = count;
+    }
 
     fn mark_as_dest(&mut self, reg: usize) {
         self.dest = reg;
@@ -1258,6 +1259,15 @@ impl Cpu {
             self.regs[0] = 0; // x0 is always zero
             self.pc = self.pc.wrapping_add(4);
             *self.cycle.borrow_mut() += 1;
+            if self.dump_count > 0 {
+                self.dump_count -= 1;
+                if self.dump_count == 0 {
+                    self.dump_count = self.dump_interval;
+                    debug!("Block executed up to pc={:x}, cycle={}", self.pc, *self.cycle.borrow());
+                    debug!("{}", self.dump_registers());
+                    debug!("CSR: {}", self.csr.dump());
+                }
+            }
             cycle += 1;
         }
         cycle

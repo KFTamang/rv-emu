@@ -74,6 +74,7 @@ fn main() -> io::Result<()> {
     let mut emu = if cli.snapshot.is_some() {
         let path = cli.snapshot.unwrap();
         let mut emu = Emu::load_snapshot(path).unwrap();
+        emu.cpu.set_dump_count(reg_dump_count as u64);
         emu.snapshot_interval = cli.snapshot_interval;
         emu
     } else {

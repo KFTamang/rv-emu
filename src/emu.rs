@@ -99,7 +99,7 @@ impl Emu {
 
                 let mut block_cache = std::collections::HashMap::<u64, BasicBlock>::new();
                 let mut last_cycle_before_snapshot: u64 = 0;
-                while self.cpu.pc != 0 {
+                while !poll_incoming_data() {
                     self.cpu.trap_interrupt();
                     {
                         self.virtio.borrow_mut().disk_access();

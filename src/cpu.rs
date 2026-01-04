@@ -357,6 +357,7 @@ impl Cpu {
         // mstatus.MPP <~ 00(U-mode) [always]
         // pc(program counter) <~ mepc CSR
         info!("mret instruction from mode {}", self.mode);
+        debug!("{}", self.dump_registers());
         debug!("{}", self.csr.dump());
         // machine mode is guaranteed here
         let pp = self.csr.get_mstatus_bit(MASK_MPP, BIT_MPP);
@@ -369,6 +370,7 @@ impl Cpu {
         self.mode = pp;
         info!("back to privilege {} from machine mode by mret", pp);
         debug!("return from trap");
+        debug!("PC: 0x{:x}", previous_pc);
         debug!("csr dump");
         debug!("{}", self.csr.dump());
     }
@@ -380,6 +382,7 @@ impl Cpu {
         // mstatus.MPP <~ 00(U-mode) [always]
         // pc(program counter) <~ mepc CSR
         debug!("sret instruction from mode {}", self.mode);
+        debug!("{}", self.dump_registers());
         debug!("{}", self.csr.dump());
         let pp = self.csr.get_sstatus_bit(MASK_SPP, BIT_SPP);
         let pie = self.csr.get_sstatus_bit(MASK_SPIE, BIT_SPIE);
@@ -391,7 +394,7 @@ impl Cpu {
         self.mode = pp;
         info!("back to privilege {} from supervisor mode by sret", pp);
         debug!("return from trap");
-        debug!("PC: 0x{:x}", self.pc);
+        debug!("PC: 0x{:x}", previous_pc);
         debug!("csr dump");
         debug!("{}", self.csr.dump());
     }
@@ -940,7 +943,12 @@ impl Cpu {
                 Ok(())
             }
             DecodedInstr::Ecall { raw: _ } => {
-                Exception::EnvironmentalCallFromMMode.take_trap(self);
+                match self.mode {
+                    M_MODE => Exception::EnvironmentalCallFromMMode.take_trap(self),
+                    S_MODE => Exception::EnvironmentalCallFromSMode.take_trap(self),
+                    U_MODE => Exception::EnvironmentalCallFromUMode.take_trap(self),
+                    _ => panic!("ecall is executed with mode: {}", self.mode),
+                }
                 Ok(())
             }
             DecodedInstr::Ebreak { raw: _ } => {
@@ -1249,6 +1257,7 @@ impl Cpu {
     pub fn run_block(&mut self, block: &BasicBlock) -> u64 {
         self.pc = block.start_pc;
         let mut cycle: u64 = 0;
+        // info!("Block execution: 0x{:x} to 0x{:x}", block.start_pc, block.end_pc);
         for instr in &block.instrs {
             let result = self.execute(instr.clone());
             if let Err(mut e) = result {

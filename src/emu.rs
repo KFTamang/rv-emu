@@ -98,13 +98,20 @@ impl Emu {
             ExecMode::Continue => {
 
                 let mut last_cycle_before_snapshot: u64 = 0;
+                let mut cycle = 1;
                 while !poll_incoming_data() {
                     self.cpu.trap_interrupt();
                     {
                         self.virtio.borrow_mut().disk_access();
                     }
-                    let block = self.cpu.build_basic_block();
-                    let cycle = self.cpu.run_block(&block);
+                    match self.cpu.build_basic_block() {
+                        Ok(block) => {
+                            cycle = self.cpu.run_block(&block);
+                        },
+                        Err(exception) => {
+                            exception.take_trap(&mut self.cpu);
+                        }
+                    }
                     last_cycle_before_snapshot += cycle;
                     if last_cycle_before_snapshot > self.snapshot_interval {
                         let path = std::path::PathBuf::from(format!("log/snapshot_{}.bin", self.cycle));
@@ -114,7 +121,6 @@ impl Emu {
                     }
                     self.cycle += cycle;
                 }
-
                 if self.breakpoints.contains(&self.cpu.pc) {
                     RunEvent::Event(Event::Break)
                 } else if poll_incoming_data() {

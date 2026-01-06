@@ -1227,13 +1227,13 @@ impl Cpu {
         }
     }
 
-    pub fn build_basic_block(&mut self) -> BasicBlock {
+    pub fn build_basic_block(&mut self) -> Result<BasicBlock, Exception> {
         // Build a basic block for the current instruction
         let mut instrs = Vec::new();
         let mut pc = self.pc;
 
         if self.block_cache.contains_key(&pc) {
-            return self.block_cache.get(&pc).unwrap().clone();
+            return Ok(self.block_cache.get(&pc).unwrap().clone());
         }
 
         loop {
@@ -1241,10 +1241,13 @@ impl Cpu {
                 Ok(inst) => inst,
                 Err(e) => {
                     error!("Failed to fetch instruction at pc={:x}: {:?}", pc, e);
+                    if instrs.is_empty() {
+                        // If we cannot fetch the first instruction, return an empty block
+                        return Err(Exception::InstructionAccessFault);
+                    }
                     break;
                 }
             };
-
             let decoded_inst = DecodedInstr::decode(inst);
             instrs.push(decoded_inst.clone());
 
@@ -1261,7 +1264,7 @@ impl Cpu {
             instrs,
         };
         self.block_cache.insert(self.pc, block.clone());
-        block
+        Ok(block)
     }
 
     pub fn run_block(&mut self, block: &BasicBlock) -> u64 {

@@ -217,7 +217,7 @@ impl Exception {
         1 << self.code()
     }
 
-    pub fn take_trap(&mut self, cpu: &mut Cpu) {
+    pub fn take_trap(&self, cpu: &mut Cpu) {
         let cause = self.code();
         let target_mode = self.get_target_mode(cpu);
         let xtval = match self {

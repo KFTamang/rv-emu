@@ -60,7 +60,7 @@ impl Interrupt {
                 cpu.csr
                     .set_mstatus_bit(if mie > 0 { 1 } else { 0 }, MASK_MPIE, BIT_MPIE);
                 cpu.csr.set_mstatus_bit(0, MASK_MIE, MASK_MIE);
-
+                cpu.mode = target_mode.unwrap();
                 let mtvec = cpu.csr.load_csrs(MTVEC);
                 debug!("MEPC is 0x{:x}", cpu.csr.load_csrs(MEPC));
                 debug!("MCAUSE is 0x{:x}", cpu.csr.load_csrs(MCAUSE));
@@ -86,7 +86,7 @@ impl Interrupt {
                 cpu.csr
                     .set_sstatus_bit(if sie > 0 { 1 } else { 0 }, MASK_SPIE, BIT_SPIE);
                 cpu.csr.set_sstatus_bit(0, MASK_SIE, BIT_SIE);
-
+                cpu.mode = target_mode.unwrap();
                 let stvec = cpu.csr.load_csrs(STVEC);
                 debug!("SEPC is 0x{:x}", cpu.csr.load_csrs(SEPC));
                 debug!("SCAUSE is 0x{:x}", cpu.csr.load_csrs(SCAUSE));
@@ -95,7 +95,7 @@ impl Interrupt {
                 debug!("enter S mode");
                 match stvec & 0x3 {
                     0x0 => {
-                        cpu.pc = stvec & 0xfffffffc;
+                        cpu.pc = stvec & 0xffff_ffff_ffff_fffc;
                     }
                     0x1 => {}
                     _ => {
@@ -236,7 +236,7 @@ impl Exception {
                     .set_mstatus_bit(if mie > 0 { 1 } else { 0 }, MASK_MPIE, BIT_MPIE);
                 cpu.csr.set_mstatus_bit(0, MASK_MIE, MASK_MIE);
                 cpu.csr.store_csrs(MTVAL, xtval);
-
+                cpu.mode = target_mode;
                 let mtvec = cpu.csr.load_csrs(MTVEC);
                 debug!("mtvec is 0x{:x}", mtvec);
                 debug!("enter M mode");
@@ -260,13 +260,13 @@ impl Exception {
                     .set_sstatus_bit(if sie > 0 { 1 } else { 0 }, MASK_SPIE, BIT_SPIE);
                 cpu.csr.set_sstatus_bit(0, MASK_SIE, BIT_SIE);
                 cpu.csr.store_csrs(STVAL, xtval);
-
+                cpu.mode = target_mode;
                 let stvec = cpu.csr.load_csrs(STVEC);
                 debug!("stvec is 0x{:x}", stvec);
                 debug!("enter S mode");
                 match stvec & 0x3 {
                     0x0 => {
-                        cpu.pc = (stvec & 0xfffffffc).wrapping_sub(4);
+                        cpu.pc = (stvec & 0xffff_ffff_ffff_fffc).wrapping_sub(4);
                     }
                     0x1 => {}
                     _ => {

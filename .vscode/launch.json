@@ -35,7 +35,7 @@
             ],
             "cwd": "${workspaceFolder}",
             "env": {
-                "RUST_LOG": "info"
+                "RUST_LOG": "debug"
             },
             "initCommands": [
                 "settings set target.disable-aslr false"
@@ -49,7 +49,8 @@
                 "args": [
                     "build",
                     "--bin=rv-emu",
-                    "--package=rv-emu"
+                    "--package=rv-emu",
+                    "--release"
                 ],
                 "filter": {
                     "name": "rv-emu",
@@ -62,8 +63,8 @@
                 "--base-addr",
                 "2147483648",
                 "--loop-on",
-                "-c",
-                "100000",
+                "--dump",
+                "100000000",
                 "-o",
                 "log/output_kernel.log",
                 "--snapshot",

@@ -1,5 +1,5 @@
 
-fib.bin:     file format binary
+apps/fib.bin:     file format binary
 
 
 Disassembly of section .data:
@@ -10,7 +10,7 @@ Disassembly of section .data:
    8:	00813023          	sd	s0,0(sp)
    c:	01010413          	addi	s0,sp,16
   10:	00a00513          	li	a0,10
-  14:	01c000ef          	jal	ra,0x30
+  14:	01c000ef          	jal	0x30
   18:	00050793          	mv	a5,a0
   1c:	00078513          	mv	a0,a5
   20:	00813083          	ld	ra,8(sp)
@@ -37,14 +37,14 @@ Disassembly of section .data:
   74:	fff7879b          	addiw	a5,a5,-1
   78:	0007879b          	sext.w	a5,a5
   7c:	00078513          	mv	a0,a5
-  80:	fb1ff0ef          	jal	ra,0x30
+  80:	fb1ff0ef          	jal	0x30
   84:	00050793          	mv	a5,a0
   88:	00078493          	mv	s1,a5
   8c:	fdc42783          	lw	a5,-36(s0)
   90:	ffe7879b          	addiw	a5,a5,-2
   94:	0007879b          	sext.w	a5,a5
   98:	00078513          	mv	a0,a5
-  9c:	f95ff0ef          	jal	ra,0x30
+  9c:	f95ff0ef          	jal	0x30
   a0:	00050793          	mv	a5,a0
   a4:	00f487bb          	addw	a5,s1,a5
   a8:	0007879b          	sext.w	a5,a5

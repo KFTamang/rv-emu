@@ -2,6 +2,7 @@ use crate::cpu::*;
 use crate::csr::*;
 use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
+use core::panic;
 use std::process::exit;
 
 pub const INTERRUPT_BIT: u64 = 1 << 63;
@@ -104,7 +105,14 @@ impl Interrupt {
                     }
                 }
             }
-            _ => {}
+            _ => {
+                error!("Interrupt Error, this should not be reached!");
+                error!("pc=0x{:x}", cpu.pc);
+                error!("current mode: {:?}, target_mode: {:?}", cpu.mode, target_mode);
+                error!("CSR dump");
+                error!("{}", cpu.csr.dump());
+                panic!("Interrupt Error, this should not be reached!");
+            }
         }
         debug!("Interrupt:{:?} occurred!", self);
     }
@@ -275,7 +283,14 @@ impl Exception {
                     }
                 }
             }
-            _ => {}
+            _ => {
+                error!("Exception Error, this should not be reached!");
+                error!("pc=0x{:x}", cpu.pc);
+                error!("current mode: {:?}, target_mode: {:?}", cpu.mode, target_mode);
+                error!("CSR dump");
+                error!("{}", cpu.csr.dump());
+                panic!("Exception Error, this should not be reached!");
+            }
         }
         info!("Exception:{} occurred!", self.code());
     }

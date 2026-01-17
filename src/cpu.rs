@@ -1273,8 +1273,8 @@ impl Cpu {
         // info!("Block execution: 0x{:x} to 0x{:x}", block.start_pc, block.end_pc);
         for instr in &block.instrs {
             let result = self.execute(instr.clone());
-            if let Err(mut e) = result {
-                error!("Execution failed in block at pc={:x}: {:?}", self.pc, e);
+            if let Err(e) = result {
+                error!("Execution failed in block at pc={:x}: {:?}, mode={}", self.pc, e, self.mode);
                 e.take_trap(self);
                 break;
             }
@@ -1307,7 +1307,7 @@ impl Cpu {
 
         let decoded_inst =  DecodedInstr::decode(inst);
 
-        let result = self.execute(decoded_inst).map_err(|mut e| e.take_trap(self));
+        let result = self.execute(decoded_inst).map_err(|e| e.take_trap(self));
         if let Err(e) = result {
             error!("Execution failed!");
             error!("Exception: {:?}", e);

@@ -20,7 +20,7 @@ exception:apps/exception.s ${src}
 	RUST_LOG=debug cargo run apps/exception.elf --elf -c 100 -d 1 > log/output_exception.log 2>&1
 
 xv6:apps/xv6-riscv/kernel/kernel ${src}
-	cargo run --release apps/xv6-riscv/kernel/kernel --elf --base-addr 2147483648 --loop-on --dump 100000000 --image apps/xv6-riscv/fs.img
+	cargo run --release apps/xv6-riscv/kernel/kernel --elf --base-addr 2147483648 --loop-on --dump 100000000 --image apps/xv6-riscv/fs.img --snapshot-interval 100000000
 
 xv6-gdb:apps/xv6-riscv/kernel/kernel ${src}
 	cargo run --release apps/xv6-riscv/kernel/kernel --elf --base-addr 2147483648 --loop-on --dump 100000000 --image apps/xv6-riscv/fs.img --gdb

@@ -155,7 +155,7 @@ impl Cpu {
         self.src2 = REG_NUM;
     }
 
-    fn load(&mut self, va: u64, size: u64) -> Result<u64, Exception> {
+    pub fn load(&mut self, va: u64, size: u64) -> Result<u64, Exception> {
         trace!("Load access to 0x{:x}", va);
         match self.translate(va, AccessMode::Load) {
             Ok(pa) => {
@@ -171,7 +171,7 @@ impl Cpu {
         }
     }
 
-    fn store(&mut self, va: u64, size: u64, value: u64) -> Result<(), Exception> {
+    pub fn store(&mut self, va: u64, size: u64, value: u64) -> Result<(), Exception> {
         match self.translate(va, AccessMode::Store) {
             Ok(pa) => {
                 if self.clint.is_accessible(pa) {

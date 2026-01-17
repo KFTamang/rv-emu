@@ -92,6 +92,18 @@ impl Emu {
         None
     }
 
+    fn run_block_with_breakpoints(&mut self, block: &mut BasicBlock) -> u64 {
+        for breakpoint in &self.breakpoints {
+            if block.start_pc <= *breakpoint && *breakpoint < block.end_pc {
+                block.end_pc = *breakpoint;
+                break;
+            }
+        }
+        let cycles = self.cpu.run_block(block);
+        self.cycle += cycles;
+        cycles
+    }
+
     pub fn run(&mut self, mut poll_incoming_data: impl FnMut() -> bool) -> RunEvent {
         match self.exec_mode {
             ExecMode::Step => RunEvent::Event(self.step().unwrap_or(Event::DoneStep)),
@@ -105,8 +117,8 @@ impl Emu {
                         self.virtio.borrow_mut().disk_access();
                     }
                     match self.cpu.build_basic_block() {
-                        Ok(block) => {
-                            cycle = self.cpu.run_block(&block);
+                        Ok(mut block) => {
+                            cycle = self.run_block_with_breakpoints(&mut block);
                         },
                         Err(exception) => {
                             exception.take_trap(&mut self.cpu);
@@ -120,14 +132,13 @@ impl Emu {
                         last_cycle_before_snapshot %= self.snapshot_interval;
                     }
                     self.cycle += cycle;
+                    if self.breakpoints.contains(&self.cpu.pc) {
+                        return RunEvent::Event(Event::Break);
+                    } else if poll_incoming_data() {
+                        return RunEvent::IncomingData;
+                    }
                 }
-                if self.breakpoints.contains(&self.cpu.pc) {
-                    RunEvent::Event(Event::Break)
-                } else if poll_incoming_data() {
-                    RunEvent::IncomingData
-                } else {
-                    RunEvent::Event(Event::DoneStep)
-                }
+                RunEvent::Event(Event::DoneStep)
             }
         }
     }

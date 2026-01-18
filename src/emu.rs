@@ -64,7 +64,7 @@ impl Emu {
         bus.borrow_mut().virtio = Some(Rc::clone(&virtio));
         virtio.borrow_mut().set_bus(Rc::clone(&bus));
         Self {
-            breakpoints: vec![0; 32 as usize],
+            breakpoints: Vec::new(),
             exec_mode: ExecMode::Continue,
             cpu: Cpu::new(Rc::clone(&bus), base_addr, _dump_count as u64, interrupt_list),
             bus: Rc::clone(&bus),
@@ -134,11 +134,13 @@ impl Emu {
                     self.cycle += cycle;
                     if self.breakpoints.contains(&self.cpu.pc) {
                         return RunEvent::Event(Event::Break);
-                    } else if poll_incoming_data() {
-                        return RunEvent::IncomingData;
                     }
                 }
-                RunEvent::Event(Event::DoneStep)
+                if poll_incoming_data() {
+                    RunEvent::IncomingData
+                }else {
+                    RunEvent::Event(Event::DoneStep)
+                }
             }
         }
     }
@@ -177,7 +179,7 @@ impl Emu {
         virtio.borrow_mut().set_bus(Rc::clone(&bus));
         info!("emu is made from snapshot!");
         Self {
-            breakpoints: vec![0; 32 as usize],
+            breakpoints: Vec::new(),
             exec_mode: ExecMode::Continue,
             cpu: cpu,
             bus: Rc::clone(&bus),

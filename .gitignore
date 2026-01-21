@@ -9,3 +9,5 @@ venv/*
 flamegraph.svg
 perf.data*
 test.log
+tool/*/dist/*
+tool/*/node_modules/*

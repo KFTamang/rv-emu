@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>RV Log Viewer</title>
+    <script src="/htmx.min.js"></script>
+    <style>
+      html, body { height: 100%; margin: 0; font-family: ui-sans-serif, system-ui, -apple-system; }
+      .layout { display: grid; grid-template-columns: 1fr 1fr; height: 100%; }
+      .pane { border-right: 1px solid #ddd; overflow: auto; padding: 12px; }
+      .pane:last-child { border-right: none; }
+      .title { font-weight: 700; margin: 0 0 8px 0; }
+      .muted { color: #666; font-size: 12px; }
+      .logLine {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 8px 10px;
+        margin: 0 0 6px 0;
+        border: 1px solid #e5e5e5;
+        border-radius: 10px;
+        background: #fff;
+        cursor: pointer;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+      .logLine:hover { background: #f7f7f7; }
+      .disasm { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.35; }
+      .hl { background: #fff3a0; border-radius: 4px; padding: 1px 2px; }
+      .hint { margin-top: 8px; }
+      .logLine.selected {
+        outline: 2px solid #999;
+        background: #f3f4f6;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="layout">
+      <section class="pane">
+        <h3 class="title">実行ログ</h3>
+        <div class="muted">`Block execution: X to Y` の行をクリックすると右側をハイライトします。</div>
+
+        <div
+          id="logPanel"
+          class="hint"
+          hx-get="/api/logs"
+          hx-trigger="load"
+          hx-swap="innerHTML"
+        >
+          <div class="muted">Loading...</div>
+        </div>
+      </section>
+
+      <section class="pane">
+        <h3 class="title">逆アセンブリ</h3>
+        <div id="disasmPanel" hx-get="/api/disasm" hx-trigger="load" hx-swap="innerHTML">
+          <div class="muted">Loading...</div>
+        </div>
+      </section>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

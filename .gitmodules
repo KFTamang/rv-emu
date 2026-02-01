@@ -1,3 +1,6 @@
 [submodule "apps/xv6-riscv"]
 	path = apps/xv6-riscv
 	url = https://github.com/KFTamang/xv6-riscv.git
+[submodule "apps/riscv-tests"]
+	path = apps/riscv-tests
+	url = git@github.com:riscv-software-src/riscv-tests.git

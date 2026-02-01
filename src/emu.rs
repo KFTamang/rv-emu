@@ -145,6 +145,42 @@ impl Emu {
         }
     }
 
+    pub fn run_for(&mut self, interation: u64) -> RunEvent {
+        match self.exec_mode {
+            ExecMode::Step => RunEvent::Event(self.step().unwrap_or(Event::DoneStep)),
+            ExecMode::Continue => {
+
+                let mut last_cycle_before_snapshot: u64 = 0;
+                let mut cycle = 1;
+                while self.cycle < interation {
+                    self.cpu.trap_interrupt();
+                    {
+                        self.virtio.borrow_mut().disk_access();
+                    }
+                    match self.cpu.build_basic_block() {
+                        Ok(mut block) => {
+                            cycle = self.run_block_with_breakpoints(&mut block);
+                        },
+                        Err(exception) => {
+                            exception.take_trap(&mut self.cpu);
+                        }
+                    }
+                    last_cycle_before_snapshot += cycle;
+                    if last_cycle_before_snapshot > self.snapshot_interval {
+                        let path = std::path::PathBuf::from(format!("log/snapshot_{}.bin", self.cycle));
+                        self.save_snapshot(path.clone());
+                        info!("Snapshot saved to {}", path.clone().display());
+                        last_cycle_before_snapshot %= self.snapshot_interval;
+                    }
+                    self.cycle += cycle;
+                    if self.breakpoints.contains(&self.cpu.pc) {
+                        return RunEvent::Event(Event::Break);
+                    }
+                }
+                RunEvent::Event(Event::DoneStep)}
+        }
+    }
+
     pub fn set_entry_point(&mut self, entry_addr: u64) {
         self.cpu.pc = entry_addr;
     }

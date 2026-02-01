@@ -34,7 +34,7 @@ struct Cli {
     #[clap(short, long)]
     dump: Option<i64>,
     #[clap(short, long)]
-    count: Option<i64>,
+    count: Option<u64>,
     #[clap(short, long, parse(from_flag))]
     elf: bool,
     #[clap(long)]
@@ -51,6 +51,8 @@ struct Cli {
     snapshot_interval: u64,
     #[clap(long)]
     image: Option<std::path::PathBuf>,
+    #[clap(long)]
+    test_result_addr: Option<u64>,
 }
 
 fn main() -> io::Result<()> {
@@ -130,15 +132,35 @@ fn main() -> io::Result<()> {
                 }
             }
         }
+        Ok(())
     } else {
         info!("No GDB");
         emu.exec_mode = emu::ExecMode::Continue;
-        emu.run(|| false);
+
+        if let Some(count) = cli.count {
+            emu.run_for(count as u64);
+        } else {
+            emu.run(|| false);
+        }
+        
+        if cli.test_result_addr.is_some() {
+            let addr = cli.test_result_addr.unwrap();
+            info!("Checking test result at address {:>#x}", addr);
+            let result = emu.cpu.bus.borrow_mut().load(addr, 8).unwrap();
+            if result & 1 == 1 {
+                info!("TEST PASSED");
+                Ok(())
+            } else {
+                info!("TEST FAILED with code {}", result);
+                Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    format!("Test failed with code {}", result),
+                ))
+            }
+        } else {
+            Ok(())
+        }
     }
-
-    // cpu.bus.dump("log/memory.dump");
-
-    Ok(())
 }
 
 // fn free_run(cpu: &Cpu, mut poll_incoming_data: impl FnMut() -> bool) -> RunEvent {

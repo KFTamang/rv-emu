@@ -23,3 +23,10 @@ debug = true
 
 [profile.release]
 debug = true
+
+[workspace]
+members = [
+  ".",
+  "xtask",
+]
+resolver = "2"

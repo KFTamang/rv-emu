@@ -1,7 +1,9 @@
 use anyhow::{anyhow, bail, Context, Result};
 use clap::{Parser, Subcommand};
 use std::{
+    collections::BTreeMap,
     ffi::OsStr,
+    fs,
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
@@ -26,9 +28,10 @@ struct TestRiscvArgs {
     #[arg(long, default_value = "apps/riscv-tests")]
     riscv_tests: PathBuf,
 
-    /// Which ISA subset to run (e.g. rv64ui-p, rv64mi-p, rv64si-p)
-    #[arg(long, default_value = "rv64ui-p")]
-    suite: String,
+    /// Which ISA subsets to run (repeatable)
+    /// Example: --suite rv64ui-p --suite rv64mi-p --suite rv64si-p
+    #[arg(long = "suite", required = true)]
+    suites: Vec<String>,
 
     /// Path to your emulator binary
     #[arg(long)]
@@ -52,6 +55,38 @@ struct TestRiscvArgs {
     ///   xtask test-riscv --suite rv64ui-p --emulator target/release/rv-emu -- --base-addr 0x80000000
     #[arg(trailing_var_arg = true)]
     emu_args: Vec<String>,
+
+    /// Print each emulator command line before running (debug)
+    #[arg(long, default_value_t = false)]
+    print_cmd: bool,
+
+    /// Mark failure if stdout/stderr contains these substrings (repeatable).
+    /// Useful when emulator returns exit code 0 but prints an error.
+    #[arg(long = "fail-on-output")]
+    fail_on_output: Vec<String>,
+
+    /// Directory to write per-test logs (default: target/xtask-logs)
+    #[arg(long, default_value = "target/xtask-logs")]
+    log_dir: PathBuf,
+
+    /// If set, keep logs even for passed tests (default: false)
+    #[arg(long, default_value_t = false)]
+    keep_pass_logs: bool,
+}
+
+#[derive(Default)]
+struct SuiteSummary {
+    passed: usize,
+    failed: Vec<Failure>,
+}
+
+struct Failure {
+    suite: String,
+    test_name: String,
+    test_path: PathBuf,
+    code: i32, // -1 means "could not run / no exit code"
+    reason: String,
+    log_path: PathBuf,
 }
 
 fn main() -> Result<()> {
@@ -64,13 +99,21 @@ fn main() -> Result<()> {
 fn test_riscv(args: TestRiscvArgs) -> Result<()> {
     let TestRiscvArgs {
         riscv_tests,
-        suite,
+        suites,
         emulator,
         build,
         filter,
         timeout_sec: _,
         emu_args,
+        print_cmd,
+        fail_on_output,
+        log_dir,
+        keep_pass_logs,
     } = args;
+
+    if suites.is_empty() {
+        bail!("no suites specified. Use --suite rv64ui-p (repeatable).");
+    }
 
     // 1) Ensure emulator exists
     if !emulator.exists() {
@@ -80,7 +123,7 @@ fn test_riscv(args: TestRiscvArgs) -> Result<()> {
         );
     }
 
-    // 2) Build riscv-tests
+    // 2) Build riscv-tests (suite targets first, fallback to `isa` once)
     if !riscv_tests.exists() {
         bail!(
             "riscv-tests repo not found at {:?}. Add it (submodule/vendor) or pass --riscv-tests.",
@@ -93,11 +136,20 @@ fn test_riscv(args: TestRiscvArgs) -> Result<()> {
 
     if build {
         eprintln!(
-            "[xtask] building riscv-tests (suite={suite}) with RISCV_PREFIX={prefix} ..."
+            "[xtask] building riscv-tests suites={:?} with RISCV_PREFIX={prefix} ...",
+            suites
         );
-        if build_suite(&riscv_tests, &prefix, &suite).is_err() {
+
+        let mut any_failed = false;
+        for suite in &suites {
+            if build_suite(&riscv_tests, &prefix, suite).is_err() {
+                any_failed = true;
+            }
+        }
+
+        if any_failed {
             eprintln!(
-                "[xtask] suite target build failed; falling back to `make -C riscv-tests isa` ..."
+                "[xtask] some suite target builds failed; falling back to `make -C riscv-tests isa` ..."
             );
             run(Command::new("make")
                 .arg("-C")
@@ -109,76 +161,201 @@ fn test_riscv(args: TestRiscvArgs) -> Result<()> {
         eprintln!("[xtask] build skipped (--build=false)");
     }
 
-    // 3) Discover tests
+    // 3) Discover tests per suite
     let isa_dir = riscv_tests.join("isa");
     if !isa_dir.exists() {
         bail!("expected riscv-tests build dir at {:?}. Build may have failed.", isa_dir);
     }
 
-    let tests = discover_tests(&isa_dir, &suite, filter.as_deref())?;
-    if tests.is_empty() {
-        bail!("no tests found under {:?} for suite={suite}", isa_dir);
-    }
+    // Default output markers (tuned to your example)
+    let mut markers = vec![
+        "Execution failed".to_string(),
+        "IllegalInstruction".to_string(),
+        "Test failed".to_string(),
+        "panic".to_string(),
+        "ERROR".to_string(),
+    ];
+    markers.extend(fail_on_output);
 
-    eprintln!("[xtask] discovered {} tests", tests.len());
+    // Prepare log dir
+    fs::create_dir_all(&log_dir)
+        .with_context(|| format!("failed to create log dir {:?}", log_dir))?;
 
-    // 4) Run tests
-    let mut passed = 0usize;
-    let mut failed = Vec::new();
+    let mut summaries: BTreeMap<String, SuiteSummary> = BTreeMap::new();
 
-    for t in &tests {
-        let name = t.file_name().and_then(OsStr::to_str).unwrap_or("<nonutf8>");
-        eprint!("[xtask] RUN  {name} ... ");
-
-        let mut cmd = Command::new(&emulator);
-
-        // xtask controls which test ELF is executed
-        cmd.arg("--elf").arg(t);
-
-        // pass user-specified args verbatim
-        for a in &emu_args {
-            cmd.arg(a);
-        }
-
-        cmd.stdout(Stdio::piped());
-        cmd.stderr(Stdio::piped());
-
-        let out = cmd
-            .output()
-            .with_context(|| format!("failed to spawn emulator for {name}"))?;
-
-        if out.status.success() {
-            passed += 1;
-            eprintln!("ok");
+    for suite in &suites {
+        let tests = discover_tests(&isa_dir, suite, filter.as_deref())?;
+        if tests.is_empty() {
+            eprintln!("[xtask] WARN: no tests found for suite={suite} under {:?}", isa_dir);
         } else {
+            eprintln!("[xtask] suite={suite}: discovered {} tests", tests.len());
+        }
+
+        let entry = summaries.entry(suite.clone()).or_default();
+
+        // 4) Run tests (sequential, keep going)
+        for t in tests {
+            let test_name = t.file_name().and_then(OsStr::to_str).unwrap_or("<nonutf8>").to_string();
+            eprint!("[xtask] RUN  {suite}/{test_name} ... ");
+
+            let mut cmd = Command::new(&emulator);
+            cmd.arg("--elf").arg(&t);
+            for a in &emu_args {
+                cmd.arg(a);
+            }
+            cmd.stdout(Stdio::piped());
+            cmd.stderr(Stdio::piped());
+
+            if print_cmd {
+                eprintln!("\n[xtask] cmd: {:?}", cmd);
+                eprint!("[xtask] RUN  {suite}/{test_name} ... ");
+            }
+
+            // Run emulator; never `?` here; record and continue.
+            let out = match cmd.output() {
+                Ok(out) => out,
+                Err(e) => {
+                    let lp = write_log(
+                        &log_dir,
+                        suite,
+                        &test_name,
+                        &format!("spawn error: {e}\n"),
+                        "",
+                        &cmd,
+                    )?;
+                    entry.failed.push(Failure {
+                        suite: suite.clone(),
+                        test_name,
+                        test_path: t.clone(),
+                        code: -1,
+                        reason: format!("failed to spawn/run emulator: {e}"),
+                        log_path: lp,
+                    });
+                    eprintln!("FAIL (spawn error)");
+                    continue;
+                }
+            };
+
             let code = out.status.code().unwrap_or(-1);
-            eprintln!("FAIL (code={code})");
+            let stdout = String::from_utf8_lossy(&out.stdout).into_owned();
+            let stderr = String::from_utf8_lossy(&out.stderr).into_owned();
 
-            let stdout = String::from_utf8_lossy(&out.stdout);
-            let stderr = String::from_utf8_lossy(&out.stderr);
+            let mut is_fail = !out.status.success();
 
-            failed.push((t.clone(), code, stdout.into_owned(), stderr.into_owned()));
+            // If emulator sometimes exits 0 but prints error, treat as failure by markers.
+            if !is_fail {
+                let hay = format!("{stderr}\n{stdout}");
+                if markers.iter().any(|m| hay.contains(m)) {
+                    is_fail = true;
+                }
+            }
+
+            if !is_fail {
+                entry.passed += 1;
+                eprintln!("ok");
+
+                if keep_pass_logs {
+                    let _ = write_log(&log_dir, suite, &test_name, &stdout, &stderr, &cmd)?;
+                }
+            } else {
+                let reason = if !out.status.success() {
+                    format!("non-zero exit (code={code})")
+                } else {
+                    "matched failure marker in output".to_string()
+                };
+
+                let lp = write_log(&log_dir, suite, &test_name, &stdout, &stderr, &cmd)?;
+
+                entry.failed.push(Failure {
+                    suite: suite.clone(),
+                    test_name,
+                    test_path: t.clone(),
+                    code,
+                    reason,
+                    log_path: lp,
+                });
+
+                eprintln!("FAIL");
+            }
         }
     }
 
-    // 5) Summary
-    eprintln!("\n[xtask] summary: passed={passed}, failed={}", failed.len());
-    if !failed.is_empty() {
-        eprintln!("[xtask] failures:");
-        for (path, code, stdout, stderr) in &failed {
-            let name = path.file_name().and_then(OsStr::to_str).unwrap_or("<nonutf8>");
-            eprintln!("--- {name} (code={code}) ---");
-            if !stdout.trim().is_empty() {
-                eprintln!("[stdout]\n{stdout}");
-            }
-            if !stderr.trim().is_empty() {
-                eprintln!("[stderr]\n{stderr}");
+    // 5) Summary (suite + total)
+    let mut total_passed = 0usize;
+    let mut total_failed = 0usize;
+
+    eprintln!("\n[xtask] suite summary:");
+    for (suite, s) in &summaries {
+        total_passed += s.passed;
+        total_failed += s.failed.len();
+        eprintln!("  {suite}: passed={} failed={}", s.passed, s.failed.len());
+    }
+
+    eprintln!("\n[xtask] total: passed={total_passed} failed={total_failed}");
+
+    if total_failed > 0 {
+        eprintln!("\n[xtask] failed tests (logs written under {:?}):", log_dir);
+        for (suite, s) in &summaries {
+            for f in &s.failed {
+                eprintln!(
+                    "  {}/{} ({}, code={}) log={}",
+                    suite,
+                    f.test_name,
+                    f.reason,
+                    f.code,
+                    f.log_path.display()
+                );
             }
         }
         bail!("some tests failed");
     }
 
     Ok(())
+}
+
+fn write_log(
+    log_dir: &Path,
+    suite: &str,
+    test_name: &str,
+    stdout: &str,
+    stderr: &str,
+    cmd: &Command,
+) -> Result<PathBuf> {
+    let suite_dir = log_dir.join(sanitize(suite));
+    fs::create_dir_all(&suite_dir)
+        .with_context(|| format!("failed to create suite log dir {:?}", suite_dir))?;
+
+    let file = suite_dir.join(format!("{}.log", sanitize(test_name)));
+    let mut content = String::new();
+
+    content.push_str("# command\n");
+    content.push_str(&format!("{:?}\n\n", cmd));
+    content.push_str("# stdout\n");
+    content.push_str(stdout);
+    if !stdout.ends_with('\n') {
+        content.push('\n');
+    }
+    content.push_str("\n# stderr\n");
+    content.push_str(stderr);
+    if !stderr.ends_with('\n') {
+        content.push('\n');
+    }
+
+    fs::write(&file, content).with_context(|| format!("failed to write log {:?}", file))?;
+    Ok(file)
+}
+
+fn sanitize(s: &str) -> String {
+    // Keep it simple: replace problematic path chars with '_'
+    s.chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect()
 }
 
 fn build_suite(riscv_tests: &Path, prefix: &str, suite: &str) -> Result<()> {

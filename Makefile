@@ -32,3 +32,7 @@ run:apps/test.bin apps/fib.bin ${src}
 	RUST_LOG=debug cargo run apps/exception.elf --elf -c 1000 -d 100 -o log/output_exception.log
 
 all:fib test
+
+# Run in docker container
+test-suite:
+	cargo run -p xtask -- test-riscv --suite rv64mi-p --suite rv64ui-p --emulator target/release/rv-emu -- --base-addr 2147483648 --count 100000 --test-result-addr 2147487744

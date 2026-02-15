@@ -25,6 +25,23 @@ pub struct Bus {
 }
 
 impl Bus {
+        /// Load from memory only (DRAM), not peripherals
+        pub fn load_memory(&self, addr: u64, size: u64) -> Result<u64, Exception> {
+            if self.dram.dram_base <= addr {
+                self.dram.load(addr, size)
+            } else {
+                Err(Exception::LoadAccessFault)
+            }
+        }
+
+        /// Store to memory only (DRAM), not peripherals
+        pub fn store_memory(&mut self, addr: u64, size: u64, value: u64) -> Result<(), Exception> {
+            if self.dram.dram_base <= addr {
+                self.dram.store(addr, size, value)
+            } else {
+                Err(Exception::StoreAMOAccessFault)
+            }
+        }
     pub fn new(
         code: Vec<u8>,
         base_addr: u64,

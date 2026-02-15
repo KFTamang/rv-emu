@@ -215,16 +215,16 @@ impl Virtio {
         // avail[1] tells the device how far to look in avail[2...].
         // info!("virtio: disk access, desc_addr: {:x}, avail_addr: {:x}, used_addr: {:x}",
             // desc_addr, avail_addr, used_addr);
-        let offset = bus.load(avail_addr.wrapping_add(2), 16)
+        let offset = bus.load_memory(avail_addr.wrapping_add(2), 16)
             .unwrap_or(0) as u64;
         // avail[2...] are desc[] indices the device should process.
         // we only tell device the first index in our chain of descriptors.
-        let index = bus.load(avail_addr.wrapping_add(offset % DESC_NUM).wrapping_add(2), 16)
+        let index = bus.load_memory(avail_addr.wrapping_add(offset % DESC_NUM).wrapping_add(2), 16)
             .expect("failed to read index");
 
         // Read `VRingDesc`, virtio descriptors.
         let desc_addr0 = desc_addr + VRING_DESC_SIZE * index;
-        let addr0 = bus.load(desc_addr0, 64)
+        let addr0 = bus.load_memory(desc_addr0, 64)
             .expect("failed to read an address field in a descriptor");
         // Add 14 because of `VRingDesc` structure.
         // struct VRingDesc {
@@ -234,16 +234,16 @@ impl Virtio {
         //   uint16 next
         // };
         // The `next` field can be accessed by offset 14 (8 + 4 + 2) bytes.
-        let next0 = bus.load(desc_addr0.wrapping_add(14), 16)
+        let next0 = bus.load_memory(desc_addr0.wrapping_add(14), 16)
             .expect("failed to read a next field in a descripor");
 
         // Read `VRingDesc` again, virtio descriptors.
         let desc_addr1 = desc_addr + VRING_DESC_SIZE * next0;
-        let addr1 = bus.load(desc_addr1, 64)
+        let addr1 = bus.load_memory(desc_addr1, 64)
             .expect("failed to read an address field in a descriptor");
-        let len1 = bus.load(desc_addr1.wrapping_add(8), 32)
+        let len1 = bus.load_memory(desc_addr1.wrapping_add(8), 32)
             .expect("failed to read a length field in a descriptor");
-        let flags1 = bus.load(desc_addr1.wrapping_add(12), 16)
+        let flags1 = bus.load_memory(desc_addr1.wrapping_add(12), 16)
             .expect("failed to read a flags field in a descriptor");
 
         // Read `virtio_blk_outhdr`. Add 8 because of its structure.
@@ -252,7 +252,7 @@ impl Virtio {
         //   uint32 reserved;
         //   uint64 sector;
         // } buf0;
-        let blk_sector = bus.load(addr0.wrapping_add(8), 64)
+        let blk_sector = bus.load_memory(addr0.wrapping_add(8), 64)
             .expect("failed to read a sector field in a virtio_blk_outhdr");
 
         // Write to a device if the second bit `flag1` is set.
@@ -261,15 +261,13 @@ impl Virtio {
                 // Read memory data and write it to a disk directly (DMA).
                 let mut buffer = Vec::with_capacity(len1 as usize);
                 for i in 0..len1 as u64 {
-                    let data = bus.load(addr1 + i, 8)
+                    let data = bus.load_memory(addr1 + i, 8)
                         .expect("failed to read from memory") as u8;
                     buffer.push(data);
                 }
                 for (i, data) in buffer.into_iter().enumerate() {
-                    // self.write_disk(blk_sector * 512 + i as u64, data);
                     let index = blk_sector * 512 + i as u64;
                     self.disk[index as usize] = data;
-
                 }
             }
             false => {
@@ -277,7 +275,7 @@ impl Virtio {
                 info!("Reading from disk sector: {}", blk_sector);
                 for i in 0..len1 as u64 {
                     let data = self.read_disk(blk_sector * 512 + i) as u64;
-                    bus.store(addr1 + i, 8, data)
+                    bus.store_memory(addr1 + i, 8, data)
                         .expect("failed to write to memory");
                 }
             }
@@ -287,10 +285,10 @@ impl Virtio {
             .expect("failed to read a next field in a descripor");
         let desc_addr2= desc_addr + VRING_DESC_SIZE * next1;
         let addr2 = bus.load(desc_addr2, 64)
-        .expect("failed to read an address field in a descriptor");
+            .expect("failed to read an address field in a descriptor");
         // Set 'status' in the next descriptor
         info!("Setting status in the next descriptor: {}", addr2);
-        bus.store(addr2, 16, 0)
+        bus.store_memory(addr2, 16, 0)
             .expect("failed to write to memory");
 
         // Write id to `UsedArea`. Add 2 because of its structure.
@@ -301,7 +299,7 @@ impl Virtio {
         // };
         self.id = self.id.wrapping_add(1);
         let new_id = self.id as u64;
-        bus.store(used_addr.wrapping_add(2), 16, new_id % 8)
+        bus.store_memory(used_addr.wrapping_add(2), 16, new_id % 8)
             .expect("failed to write to memory");
     }
 

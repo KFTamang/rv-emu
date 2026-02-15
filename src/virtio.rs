@@ -186,122 +186,155 @@ impl Virtio {
         self.disk[addr as usize]
     }
 
-    /// Access the disk via virtio. This is an associated function which takes a `cpu` object to
-    /// read and write with a memory directly (DMA).
-    pub fn disk_access(&mut self) {
-        if self.queue_notify == 9999 {
-            return;
-        }
-
-        self.queue_notify = 9999; // reset notify
-
-        let mut bus = self.bus.as_ref().expect("No bus").borrow_mut();
-
-        // See more information in
-        // https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/virtio_disk.c
-
-        // the spec says that legacy block operations use three
-        // descriptors: one for type/reserved/sector, one for
-        // the data, one for a 1-byte status result.
-
-        // desc = pages -- num * VRingDesc
-        // avail = pages + 0x40 -- 2 * uint16, then num * uint16
-        // used = pages + 4096 -- 2 * uint16, then num * vRingUsedElem
-        let desc_addr = self.desc_addr;
-        let avail_addr = self.avail_addr;
-        let used_addr = self.used_addr;
-
-        // avail[0] is flags
-        // avail[1] tells the device how far to look in avail[2...].
-        // info!("virtio: disk access, desc_addr: {:x}, avail_addr: {:x}, used_addr: {:x}",
-            // desc_addr, avail_addr, used_addr);
-        let offset = bus.load_memory(avail_addr.wrapping_add(2), 16)
-            .unwrap_or(0) as u64;
-        // avail[2...] are desc[] indices the device should process.
-        // we only tell device the first index in our chain of descriptors.
-        let index = bus.load_memory(avail_addr.wrapping_add(offset % DESC_NUM).wrapping_add(2), 16)
-            .expect("failed to read index");
-
-        // Read `VRingDesc`, virtio descriptors.
-        let desc_addr0 = desc_addr + VRING_DESC_SIZE * index;
-        let addr0 = bus.load_memory(desc_addr0, 64)
-            .expect("failed to read an address field in a descriptor");
-        // Add 14 because of `VRingDesc` structure.
-        // struct VRingDesc {
-        //   uint64 addr;
-        //   uint32 len;
-        //   uint16 flags;
-        //   uint16 next
-        // };
-        // The `next` field can be accessed by offset 14 (8 + 4 + 2) bytes.
-        let next0 = bus.load_memory(desc_addr0.wrapping_add(14), 16)
-            .expect("failed to read a next field in a descripor");
-
-        // Read `VRingDesc` again, virtio descriptors.
-        let desc_addr1 = desc_addr + VRING_DESC_SIZE * next0;
-        let addr1 = bus.load_memory(desc_addr1, 64)
-            .expect("failed to read an address field in a descriptor");
-        let len1 = bus.load_memory(desc_addr1.wrapping_add(8), 32)
-            .expect("failed to read a length field in a descriptor");
-        let flags1 = bus.load_memory(desc_addr1.wrapping_add(12), 16)
-            .expect("failed to read a flags field in a descriptor");
-
-        // Read `virtio_blk_outhdr`. Add 8 because of its structure.
-        // struct virtio_blk_outhdr {
-        //   uint32 type;
-        //   uint32 reserved;
-        //   uint64 sector;
-        // } buf0;
-        let blk_sector = bus.load_memory(addr0.wrapping_add(8), 64)
-            .expect("failed to read a sector field in a virtio_blk_outhdr");
-
-        // Write to a device if the second bit `flag1` is set.
-        match (flags1 & 2) == 0 {
-            true => {
-                // Read memory data and write it to a disk directly (DMA).
-                let mut buffer = Vec::with_capacity(len1 as usize);
-                for i in 0..len1 as u64 {
-                    let data = bus.load_memory(addr1 + i, 8)
-                        .expect("failed to read from memory") as u8;
-                    buffer.push(data);
-                }
-                for (i, data) in buffer.into_iter().enumerate() {
-                    let index = blk_sector * 512 + i as u64;
-                    self.disk[index as usize] = data;
-                }
-            }
-            false => {
-                // Read disk data and write it to memory directly (DMA).
-                info!("Reading from disk sector: {}", blk_sector);
-                for i in 0..len1 as u64 {
-                    let data = self.read_disk(blk_sector * 512 + i) as u64;
-                    bus.store_memory(addr1 + i, 8, data)
-                        .expect("failed to write to memory");
-                }
-            }
-        };
-        // The `next` field can be accessed by offset 14 (8 + 4 + 2) bytes.
-        let next1 = bus.load(desc_addr1.wrapping_add(14), 16)
-            .expect("failed to read a next field in a descripor");
-        let desc_addr2= desc_addr + VRING_DESC_SIZE * next1;
-        let addr2 = bus.load(desc_addr2, 64)
-            .expect("failed to read an address field in a descriptor");
-        // Set 'status' in the next descriptor
-        info!("Setting status in the next descriptor: {}", addr2);
-        bus.store_memory(addr2, 16, 0)
-            .expect("failed to write to memory");
-
-        // Write id to `UsedArea`. Add 2 because of its structure.
-        // struct UsedArea {
-        //   uint16 flags;
-        //   uint16 id;
-        //   struct VRingUsedElem elems[NUM];
-        // };
-        self.id = self.id.wrapping_add(1);
-        let new_id = self.id as u64;
-        bus.store_memory(used_addr.wrapping_add(2), 16, new_id % 8)
-            .expect("failed to write to memory");
+/// Access the disk via virtio. This function performs DMA against *guest physical memory*.
+/// It must not call Bus::load/store that may re-enter virtio/MMIO routing; use *_memory variants.
+///
+/// Assumptions:
+/// - desc_addr/avail_addr/used_addr are guest-physical addresses of the vring structures.
+/// - VRING_DESC_SIZE is 16 bytes.
+/// - DESC_NUM is the ring size (NUM).
+pub fn disk_access(&mut self) {
+    if self.queue_notify == 9999 {
+        return;
     }
+    self.queue_notify = 9999; // reset notify
+
+    let mut bus = self.bus.as_ref().expect("No bus").borrow_mut();
+
+    // Layout (legacy virtio ring):
+    // desc  = pages
+    // avail = pages + 0x40
+    // used  = pages + 0x1000 (4096)
+    let desc_addr = self.desc_addr;
+    let avail_addr = self.avail_addr;
+    let used_addr = self.used_addr;
+
+    // ---- Read avail.idx and select the latest entry ----
+    // struct VRingAvail { u16 flags; u16 idx; u16 ring[NUM]; ... }
+    let avail_idx = match bus.load_memory(avail_addr + 2, 16) {
+        Ok(v) => v as u16,
+        Err(_) => return, // can't read -> nothing we can do safely
+    };
+    if avail_idx == 0 {
+        return; // nothing submitted yet
+    }
+
+    // Process the most recently published ring entry.
+    // (xv6 submits one request at a time; this is sufficient for now)
+    let ring_pos = ((avail_idx - 1) as u64) % (DESC_NUM as u64);
+    let head = bus
+        .load_memory(avail_addr + 4 + ring_pos * 2, 16)
+        .expect("failed to read avail.ring entry") as u16;
+
+    // ---- Descriptor 0 ----
+    // struct VRingDesc { u64 addr; u32 len; u16 flags; u16 next; }
+    let desc0 = desc_addr + VRING_DESC_SIZE * (head as u64);
+    let addr0 = bus
+        .load_memory(desc0 + 0, 64)
+        .expect("failed to read desc0.addr");
+    let _len0 = bus
+        .load_memory(desc0 + 8, 32)
+        .expect("failed to read desc0.len") as u32;
+    let _flags0 = bus
+        .load_memory(desc0 + 12, 16)
+        .expect("failed to read desc0.flags") as u16;
+    let next0 = bus
+        .load_memory(desc0 + 14, 16)
+        .expect("failed to read desc0.next") as u16;
+
+    // ---- Descriptor 1 ----
+    let desc1 = desc_addr + VRING_DESC_SIZE * (next0 as u64);
+    let addr1 = bus
+        .load_memory(desc1 + 0, 64)
+        .expect("failed to read desc1.addr");
+    let len1 = bus
+        .load_memory(desc1 + 8, 32)
+        .expect("failed to read desc1.len") as u32;
+    let flags1 = bus
+        .load_memory(desc1 + 12, 16)
+        .expect("failed to read desc1.flags") as u16;
+    let next1 = bus
+        .load_memory(desc1 + 14, 16)
+        .expect("failed to read desc1.next") as u16;
+
+    // ---- Descriptor 2 (status) ----
+    let desc2 = desc_addr + VRING_DESC_SIZE * (next1 as u64);
+    let addr2 = bus
+        .load_memory(desc2 + 0, 64)
+        .expect("failed to read desc2.addr");
+    let _len2 = bus
+        .load_memory(desc2 + 8, 32)
+        .expect("failed to read desc2.len") as u32;
+    let _flags2 = bus
+        .load_memory(desc2 + 12, 16)
+        .expect("failed to read desc2.flags") as u16;
+
+    // ---- Read virtio_blk_outhdr.sector ----
+    // struct virtio_blk_outhdr { u32 type; u32 reserved; u64 sector; }
+    let blk_sector = bus.load_memory(addr0 + 8, 64).expect(&format!(
+        "failed to read virtio_blk_outhdr.sector: addr0=0x{:x} (sector@0x{:x})",
+        addr0,
+        addr0 + 8
+    ));
+
+    info!("virtio: head={} desc=0x{:x} avail=0x{:x} used=0x{:x}", head, desc_addr, avail_addr, used_addr);
+    info!("virtio: addr0=0x{:x} addr1=0x{:x} len1=0x{:x} flags1=0x{:x} addr2=0x{:x} sector={}",
+      addr0, addr1, len1, flags1, addr2, blk_sector);
+
+    // flags1 bit1 == VIRTQ_DESC_F_WRITE (device writes to buffer)
+    let device_writes = (flags1 & 2) != 0;
+
+    if !device_writes {
+        // Guest -> Disk (write): device reads from guest buffer (addr1..addr1+len1)
+        let mut buffer = Vec::with_capacity(len1 as usize);
+        for i in 0..(len1 as u64) {
+            let b = bus
+                .load_memory(addr1 + i, 8)
+                .expect(&format!(
+                    "failed DMA read: guest addr=0x{:x}",
+                    addr1 + i
+                )) as u8;
+            buffer.push(b);
+        }
+        for (i, b) in buffer.into_iter().enumerate() {
+            let disk_index = blk_sector * 512 + (i as u64);
+            self.disk[disk_index as usize] = b;
+        }
+    } else {
+        // Disk -> Guest (read): device writes to guest buffer (addr1..addr1+len1)
+        info!("Reading from disk sector: {}", blk_sector);
+        for i in 0..(len1 as u64) {
+            let b = self.read_disk(blk_sector * 512 + i) as u64;
+            bus.store_memory(addr1 + i, 8, b)
+                .expect("failed DMA write to guest memory");
+        }
+    }
+
+    // ---- Write status byte (1 byte) ----
+    // xv6 expects status=0 on success.
+    bus.store_memory(addr2, 8, 0)
+        .expect("failed to write status byte");
+
+    // ---- Update used ring ----
+    // struct VRingUsed { u16 flags; u16 idx; struct { u32 id; u32 len; } elems[NUM]; }
+    let used_idx = bus
+        .load_memory(used_addr + 2, 16)
+        .unwrap_or(0) as u16;
+
+    let used_pos = (used_idx as u64) % (DESC_NUM as u64);
+    let used_elem = used_addr + 4 + used_pos * 8;
+
+    // id = head descriptor index, len = number of bytes written (for block device reads),
+    // for writes len is typically 0 or len1 depending on implementation; xv6 doesn't rely heavily on len.
+    bus.store_memory(used_elem + 0, 32, head as u64)
+        .expect("failed to write used.elems[].id");
+    bus.store_memory(used_elem + 4, 32, len1 as u64)
+        .expect("failed to write used.elems[].len");
+
+    // bump used.idx
+    bus.store_memory(used_addr + 2, 16, (used_idx.wrapping_add(1)) as u64)
+        .expect("failed to write used.idx");
+}
 
     pub fn to_snapshot(&self) -> VirtioSnapshot {
         VirtioSnapshot {

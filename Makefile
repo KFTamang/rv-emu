@@ -35,4 +35,5 @@ all:fib test
 
 # Run in docker container
 test-suite:
-	cargo run -p xtask -- test-riscv --suite rv64mi-p --suite rv64ui-p --suite rv64si-p --emulator target/release/rv-emu -- --base-addr 2147483648 --count 100000 --test-result-addr 2147487744
+	cargo run -p xtask -- test-riscv --build --suite rv64si-p --suite rv64mi-p --suite rv64ui-p --emulator target/release/rv-emu -- --base-addr 2147483648 --count 100000 --test-result-addr 2147487744
+# 	cargo run -p xtask -- test-riscv --suite rv64mi-p --suite rv64ui-p --emulator target/release/rv-emu -- --base-addr 2147483648 --count 100000 --test-result-addr 2147487744

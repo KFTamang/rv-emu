@@ -574,6 +574,10 @@ impl DecodedInstr {
             | DecodedInstr::Mret{..}
         )
     }
+
+    pub fn is_illegal(&self) -> bool {
+        matches!(self, DecodedInstr::IllegalInstruction { .. })
+    }
 }
 
 

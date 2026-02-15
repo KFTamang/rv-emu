@@ -22,6 +22,7 @@ pub const CPU_FREQUENCY: u64 = 200_000_000; // 200MHz
 
 #[derive(PartialEq)]
 enum AccessMode {
+    Fetch,
     Load,
     Store,
 }
@@ -39,7 +40,7 @@ pub struct CpuSnapshot {
     pub cycle: u64,
     pub clint: Clint,
     pub interrupt_list: BTreeSet<Interrupt>,
-    pub address_translation_cache: std::collections::HashMap<u64, u64>,
+    pub address_translation_cache: std::collections::HashMap<(u64,u64,u64), u64>, // (satp_ppn, asid, va_page) -> pa_page
 }
 
 pub struct Cpu {
@@ -57,7 +58,7 @@ pub struct Cpu {
     pub cycle: Rc<RefCell<u64>>,
     clint: Clint,
     interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>,
-    address_translation_cache: std::collections::HashMap<u64, u64>,
+    address_translation_cache: std::collections::HashMap<(u64,u64,u64), u64>,
     block_cache: std::collections::HashMap<u64, BasicBlock>,
 }
 
@@ -125,10 +126,15 @@ impl Cpu {
         cpu
     }
 
-    pub fn fetch(&mut self, addr: u64) -> Result<u32, ()> {
-        match self.load(addr, 32) {
-            Ok(inst) => Ok(inst as u32),
-            Err(_) => Err(()),
+    pub fn fetch(&mut self, addr: u64) -> Result<u32, Exception> {
+        match self.translate(addr, AccessMode::Fetch) {
+            Ok(pa) => {
+                self.bus
+                .borrow_mut()
+                .load(pa, 32)
+                .map(|v| v as u32)
+            }
+            Err(e) => Err(e),
         }
     }
 
@@ -186,76 +192,223 @@ impl Cpu {
         }
     }
 
-    fn translate(&mut self, va: u64, acc_mode: AccessMode) -> Result<u64, Exception> {
-        const PAGESIZE: u64 = 4096;
-        const PTESIZE: u64 = 8; // 64bit
-        const LEVEL: u64 = 3;
-        let satp = self.csr.load_csrs(SATP);
-        let mode = satp >> 63;
-        let _asid = (satp >> 22) & 0x1ff;
-        if mode == 0 {
-            return Ok(va);
-        }
-        // store address translation cache by a unit of 4kB
-        let va_cache_entry = va >> 12; // 4kB aligned
-        if self.address_translation_cache.contains_key(&va_cache_entry) {
-            let pa_base = *self.address_translation_cache.get(&va_cache_entry).unwrap() << 12;
-            return Ok(pa_base | (va & 0xfff));
-        }
-        let vpn = [(va >> 12) & 0x1ff, (va >> 21) & 0x1ff, (va >> 30) & 0x1ff];
-        let mut pt_addr = 0;
-        let mut i = (LEVEL - 1) as i64;
-        let mut pte = 0;
-        let mut ppn = satp & 0xfff_ffff_ffff;
-        while i >= 0 {
-            pt_addr = ppn * PAGESIZE + vpn[i as usize] * PTESIZE;
-            if let Ok(val) = self.bus.as_ref()
-                .borrow_mut()
-                .load(pt_addr, 64) {
-                pte = val;
-                let v = bit(pte, 0);
-                let r = bit(pte, 1);
-                let w = bit(pte, 2);
-                let x = bit(pte, 3);
-                let _u = bit(pte, 4);
-                let _g = bit(pte, 5);
-                if (v == 0) || ((r == 0) && (w == 1)) {
-                    return match acc_mode {
-                        AccessMode::Load => Err(Exception::LoadPageFault(va as u32)),
-                        AccessMode::Store => Err(Exception::StoreAMOPageFault(va as u32)),
-                    };
-                }
-                if (r == 1) || (x == 1) {
-                    break;
-                }
-                ppn = (pte >> 10) & 0xfff_ffff_ffff;
-                i = i - 1;
-                if i < 0 {
-                    return match acc_mode {
-                        AccessMode::Load => Err(Exception::LoadPageFault(va as u32)),
-                        AccessMode::Store => Err(Exception::StoreAMOPageFault(va as u32)),
-                    };
-                }
-            } else {
-                return Err(Exception::LoadPageFault(va as u32));
-            }
-        }
-        let a = bit(pte, 6);
-        let d = bit(pte, 7);
-        if (a == 0) || ((d == 0) && (acc_mode == AccessMode::Store)) {
-            self.bus
-                .borrow_mut()
-                .store(pt_addr, 64, pte | (1 << 6))?;
-        }
-        let pa = match i {
-            0 => ((pte << 2) & 0xfffffffffff000) | (va & 0x00000fff),
-            1 => ((pte << 2) & 0xffffffffe00000) | (va & 0x001fffff),
-            2 => ((pte << 2) & 0xffffffc0000000) | (va & 0x3fffffff),
-            _ => panic!("something goes wrong at MMU! va: 0x{:x}, Level: {}", va, i),
-        };
-        self.address_translation_cache.insert(va >> 12, pa >> 12); // store 4kB aligned
-        Ok(pa)
+/// SV39 page-table walk + permission check + A/D handling + simple TLB keyed by (satp_ppn, asid, va_page).
+///
+/// Notes:
+/// - This is RV64 Sv39 only (satp.mode == 8). Other modes return page fault (or Ok(va) for Bare).
+/// - Implements canonical VA check.
+/// - Implements leaf detection and misaligned-superpage checks.
+/// - Implements basic R/W/X + U checks; SUM/MXR are left as TODO hooks (depends on how you model S/U).
+/// - Implements A/D as hardware-updated bits (common for emulators). If you want "software-managed A/D",
+///   change the A/D section to raise page fault instead of writing PTE.
+/// - TLB is flushed when satp changes (you should also call mmu.sfence_vma(...) from your SFENCE.VMA).
+fn translate(&mut self, va: u64, acc: AccessMode) -> Result<u64, Exception> {
+    const PAGESIZE: u64 = 4096;
+    const PTESIZE: u64 = 8;
+
+    // ---- satp decode (Sv39) ----
+    let satp = self.csr.load_csrs(SATP);
+    let mode = (satp >> 60) & 0xF; // [63:60]
+    let asid = (satp >> 44) & 0xFFFF; // [59:44]
+    let satp_ppn = satp & ((1u64 << 44) - 1); // [43:0]
+
+    // Bare
+    if mode == 0 {
+        return Ok(va);
     }
+    // Only Sv39 supported here
+    if mode != 8 {
+        return match acc {
+            AccessMode::Fetch => Err(Exception::InstructionPageFault(va as u32)),
+            AccessMode::Load => Err(Exception::LoadPageFault(va as u32)),
+            AccessMode::Store => Err(Exception::StoreAMOPageFault(va as u32)),
+        };
+    }
+
+    // ---- canonical VA check for Sv39 ----
+    // VA[63:39] must all equal VA[38]
+    let sign = (va >> 38) & 1;
+    let upper = va >> 39;
+    if (sign == 0 && upper != 0) || (sign == 1 && upper != ((1u64 << 25) - 1)) {
+        return match acc {
+            AccessMode::Fetch => Err(Exception::InstructionPageFault(va as u32)),
+            AccessMode::Load => Err(Exception::LoadPageFault(va as u32)),
+            AccessMode::Store => Err(Exception::StoreAMOPageFault(va as u32)),
+        };
+    }
+
+    // ---- TLB lookup (keyed by satp_ppn + asid + va_page) ----
+    // You must clear/flush this cache on SFENCE.VMA and/or satp writes.
+    let va_page = va >> 12;
+    let tlb_key = (satp_ppn, asid, va_page);
+    if let Some(&pa_page) = self.address_translation_cache.get(&tlb_key) {
+        return Ok((pa_page << 12) | (va & 0xFFF));
+    }
+
+    // ---- VPN parts ----
+    let vpn0 = (va >> 12) & 0x1FF;
+    let vpn1 = (va >> 21) & 0x1FF;
+    let vpn2 = (va >> 30) & 0x1FF;
+    let vpn = [vpn0, vpn1, vpn2];
+
+    // ---- walk ----
+    // a = root page table physical address
+    let mut a = satp_ppn * PAGESIZE;
+    let mut level: i32 = 2; // Sv39: levels 2,1,0
+
+    let mut pte_addr: u64 = 0;
+    let mut pte: u64 = 0;
+
+    loop {
+        pte_addr = a + vpn[level as usize] * PTESIZE;
+        pte = self
+            .bus
+            .borrow_mut()
+            .load(pte_addr, 64)
+            .map_err(|_| match acc {
+                AccessMode::Fetch => Exception::InstructionPageFault(va as u32),
+                AccessMode::Load => Exception::LoadPageFault(va as u32),
+                AccessMode::Store => Exception::StoreAMOPageFault(va as u32),
+            })?;
+
+        let v = bit(pte, 0);
+        let r = bit(pte, 1);
+        let w = bit(pte, 2);
+        let x = bit(pte, 3);
+        let u = bit(pte, 4);
+        // let g = bit(pte, 5);
+        let a_bit = bit(pte, 6);
+        let d_bit = bit(pte, 7);
+
+        // Invalid PTE or reserved combo
+        if v == 0 || (r == 0 && w == 1) {
+            return match acc {
+                AccessMode::Fetch => Err(Exception::InstructionPageFault(va as u32)),
+                AccessMode::Load => Err(Exception::LoadPageFault(va as u32)),
+                AccessMode::Store => Err(Exception::StoreAMOPageFault(va as u32)),
+            };
+        }
+
+        let is_leaf = (r == 1) || (x == 1);
+        if is_leaf {
+            // ---- permission check ----
+            // NOTE: You likely also need S/U privilege, SUM/MXR, etc.
+            match acc {
+                AccessMode::Fetch => {
+                    if x == 0 {
+                        return Err(Exception::InstructionPageFault(va as u32));
+                    }
+                }
+                AccessMode::Load => {
+                    // MXR: if sstatus.MXR=1 and x=1 then load may be allowed; TODO if you model MXR.
+                    if r == 0 {
+                        return Err(Exception::LoadPageFault(va as u32));
+                    }
+                }
+                AccessMode::Store => {
+                    if w == 0 {
+                        return Err(Exception::StoreAMOPageFault(va as u32));
+                    }
+                }
+            }
+
+            // U bit check (if you model current privilege)
+            // Here we assume you have self.priv_level() returning enum {User, Supervisor, Machine}.
+            // If not, replace with your own check or remove.
+            if self.mode == U_MODE && u == 0 {
+                return match acc {
+                    AccessMode::Fetch => Err(Exception::InstructionPageFault(va as u32)),
+                    AccessMode::Load => Err(Exception::LoadPageFault(va as u32)),
+                    AccessMode::Store => Err(Exception::StoreAMOPageFault(va as u32)),
+                };
+            }
+
+            // ---- A/D bits (hardware-updated model) ----
+            // Set A on any access; set D on store.
+            let mut new_pte = pte;
+            if a_bit == 0 {
+                new_pte |= 1 << 6;
+            }
+            if matches!(acc, AccessMode::Store) && d_bit == 0 {
+                new_pte |= 1 << 7;
+            }
+            if new_pte != pte {
+                self.bus
+                    .borrow_mut()
+                    .store(pte_addr, 64, new_pte)
+                    .map_err(|_| match acc {
+                        AccessMode::Fetch => Exception::InstructionPageFault(va as u32),
+                        AccessMode::Load => Exception::LoadPageFault(va as u32),
+                        AccessMode::Store => Exception::StoreAMOPageFault(va as u32),
+                    })?;
+                pte = new_pte;
+            }
+
+            // ---- misaligned superpage check ----
+            // If leaf at level=2 (1GiB), PTE.PPN[1:0] must be 0.
+            // If leaf at level=1 (2MiB), PTE.PPN[0] must be 0.
+            let ppn0 = (pte >> 10) & 0x1FF;
+            let ppn1 = (pte >> 19) & 0x1FF;
+            let ppn2 = (pte >> 28) & 0x3FF_FFFF; // remaining bits
+            if level == 2 {
+                if ppn0 != 0 || ppn1 != 0 {
+                    return match acc {
+                        AccessMode::Fetch => Err(Exception::InstructionPageFault(va as u32)),
+                        AccessMode::Load => Err(Exception::LoadPageFault(va as u32)),
+                        AccessMode::Store => Err(Exception::StoreAMOPageFault(va as u32)),
+                    };
+                }
+            } else if level == 1 {
+                if ppn0 != 0 {
+                    return match acc {
+                        AccessMode::Fetch => Err(Exception::InstructionPageFault(va as u32)),
+                        AccessMode::Load => Err(Exception::LoadPageFault(va as u32)),
+                        AccessMode::Store => Err(Exception::StoreAMOPageFault(va as u32)),
+                    };
+                }
+            }
+
+            // ---- physical address composition ----
+            let page_off = va & 0xFFF;
+            let pa: u64 = match level {
+                // 4KiB page: PA = {PPN2,PPN1,PPN0,off}
+                0 => {
+                    let ppn = (pte >> 10) & ((1u64 << 44) - 1);
+                    (ppn << 12) | page_off
+                }
+                // 2MiB page: PA = {PPN2,PPN1, VPN0, off}
+                1 => {
+                    let ppn = ((ppn2 << 18) | (ppn1 << 9) | vpn0) & ((1u64 << 44) - 1);
+                    (ppn << 12) | page_off
+                }
+                // 1GiB page: PA = {PPN2, VPN1, VPN0, off}
+                2 => {
+                    let ppn = ((ppn2 << 18) | (vpn1 << 9) | vpn0) & ((1u64 << 44) - 1);
+                    (ppn << 12) | page_off
+                }
+                _ => unreachable!(),
+            };
+
+            // Update TLB entry at 4KiB granularity (ok even for superpages, but less effective).
+            self.address_translation_cache.insert(tlb_key, pa >> 12);
+
+            return Ok(pa);
+        }
+
+        // Non-leaf: next level
+        if level == 0 {
+            return match acc {
+                AccessMode::Fetch => Err(Exception::InstructionPageFault(va as u32)),
+                AccessMode::Load => Err(Exception::LoadPageFault(va as u32)),
+                AccessMode::Store => Err(Exception::StoreAMOPageFault(va as u32)),
+            };
+        }
+
+        let next_ppn = (pte >> 10) & ((1u64 << 44) - 1);
+        a = next_ppn * PAGESIZE;
+        level -= 1;
+    }
+}
 
     fn wait_for_interrupt(&mut self) {
         // wait for a message that notifies an interrupt on the interrupt channel
@@ -946,6 +1099,7 @@ impl Cpu {
                 Ok(())
             }
             DecodedInstr::Ecall { raw: _ } => {
+                info!("ecall instruction from mode {}", self.mode);
                 match self.mode {
                     M_MODE => Exception::EnvironmentalCallFromMMode.take_trap(self),
                     S_MODE => Exception::EnvironmentalCallFromSMode.take_trap(self),
@@ -1041,6 +1195,8 @@ impl Cpu {
             }
             DecodedInstr::Fence { raw: _ } => {
                 // 実際には no-op（または memory ordering のために記録する）
+                self.address_translation_cache.clear();
+                self.block_cache.clear();
                 Ok(())
             }
             DecodedInstr::Amoswap { raw: _, rd, rs1, rs2 } => {
@@ -1251,7 +1407,7 @@ impl Cpu {
             let decoded_inst = DecodedInstr::decode(inst);
             instrs.push(decoded_inst.clone());
 
-            if decoded_inst.is_branch() || decoded_inst.is_jump() {
+            if decoded_inst.is_branch() || decoded_inst.is_jump()  || decoded_inst.is_illegal(){
                 break;
             }
 
@@ -1270,12 +1426,13 @@ impl Cpu {
     pub fn run_block(&mut self, block: &BasicBlock) -> u64 {
         self.pc = block.start_pc;
         let mut cycle: u64 = 0;
-        // info!("Block execution: 0x{:x} to 0x{:x}", block.start_pc, block.end_pc);
+        info!("Block execution: 0x{:x} to 0x{:x}", block.start_pc, block.end_pc);
         for instr in &block.instrs {
             let result = self.execute(instr.clone());
             if let Err(e) = result {
                 error!("Execution failed in block at pc={:x}: {:?}, mode={}", self.pc, e, self.mode);
                 e.take_trap(self);
+                self.pc = self.pc.wrapping_add(4);
                 break;
             }
             self.regs[0] = 0; // x0 is always zero

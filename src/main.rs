@@ -229,14 +229,14 @@ fn load_elf(code: &mut Vec<u8>, file: &mut File, base_addr: usize) -> io::Result
         info!("Offset:{:>#x}, Entry:{}, segment offset: {:>#x}, va:{:>#x}, filesize:{:>#x}, memsize:{:>#x}",
                  entry_offset, entry, segment, va, filesize, memsize);
         info!("Code length: {}", code.len());
-        if p_type != 0x1 {
-            continue;
-        }
+        // if p_type != 0x1 {
+        //     continue;
+        // }
         if base_addr > va {
-            panic!(
-                "Base address {:>#x} is larger than virtual address {:>#x}\n",
-                base_addr, va
+            info!("Skipping segment: {}, Base address {:>#x} is larger than virtual address {:>#x}\n",
+                entry, base_addr, va
             );
+            continue;
         }
         if code.len() <= (va - base_addr) {
             code.extend(vec![0; va - base_addr - code.len()].iter());
@@ -249,10 +249,11 @@ fn load_elf(code: &mut Vec<u8>, file: &mut File, base_addr: usize) -> io::Result
                     .collect::<Vec<u8>>(),
             );
         } else if code.len() > va - base_addr + memsize {
-            code[va..va + memsize].copy_from_slice(&elf[segment..segment + memsize]);
+            code[va - base_addr..va - base_addr + memsize].copy_from_slice(&elf[segment..segment + memsize]);
         } else {
             panic!("Code must have been loaded wrong!");
         }
+        info!("Loaded segment at virtual address {:>#x}, code length: {}({:>#x})", va, code.len(), code.len());
     }
     Ok(entry)
 }

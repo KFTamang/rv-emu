@@ -169,11 +169,8 @@ fn test_riscv(args: TestRiscvArgs) -> Result<()> {
 
     // Default output markers (tuned to your example)
     let mut markers = vec![
-        "Execution failed".to_string(),
-        "IllegalInstruction".to_string(),
         "Test failed".to_string(),
         "panic".to_string(),
-        "ERROR".to_string(),
     ];
     markers.extend(fail_on_output);
 

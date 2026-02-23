@@ -206,6 +206,18 @@ fn translate(&mut self, va: u64, acc: AccessMode) -> Result<u64, Exception> {
     const PAGESIZE: u64 = 4096;
     const PTESIZE: u64 = 8;
 
+    if matches!(acc, AccessMode::Fetch) {
+        if self.mode == M_MODE {
+            return Ok(va);
+        }
+    }
+    if matches!(acc, AccessMode::Load | AccessMode::Store) {
+        if self.mode == M_MODE && self.csr.get_mstatus_bit(MASK_MPRV, BIT_MPRV) == 0 {
+            return Ok(va);
+        }
+        // MPRV=1なら effective_priv = MPP で判定
+    }
+
     // ---- satp decode (Sv39) ----
     let satp = self.csr.load_csrs(SATP);
     let mode = (satp >> 60) & 0xF; // [63:60]

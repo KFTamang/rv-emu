@@ -1419,7 +1419,7 @@ fn translate(&mut self, va: u64, acc: AccessMode) -> Result<u64, Exception> {
             let decoded_inst = DecodedInstr::decode(inst);
             instrs.push(decoded_inst.clone());
 
-            if decoded_inst.is_branch() || decoded_inst.is_jump()  || decoded_inst.is_illegal(){
+            if decoded_inst.is_building_block_end() {
                 break;
             }
 

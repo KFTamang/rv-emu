@@ -555,7 +555,7 @@ impl DecodedInstr {
         }
     }
 
-    pub fn is_branch(&self) -> bool {
+    fn is_branch(&self) -> bool {
         matches!(self, DecodedInstr::Beq { .. }
             | DecodedInstr::Bne { .. }
             | DecodedInstr::Blt { .. }
@@ -564,7 +564,7 @@ impl DecodedInstr {
             | DecodedInstr::Bgeu { .. })
     }
 
-    pub fn is_jump(&self) -> bool {
+    fn is_jump(&self) -> bool {
         matches!(self, DecodedInstr::Jal { .. }
             | DecodedInstr::Jalr { .. }
             | DecodedInstr::Ecall{..}
@@ -575,8 +575,16 @@ impl DecodedInstr {
         )
     }
 
-    pub fn is_illegal(&self) -> bool {
+    fn is_illegal(&self) -> bool {
         matches!(self, DecodedInstr::IllegalInstruction { .. })
+    }
+
+    fn is_cache_op(&self) -> bool {
+        matches!(self, DecodedInstr::Sfence { .. } | DecodedInstr::Fence { .. })
+    }
+
+    pub fn is_building_block_end(&self) -> bool {
+        self.is_branch() || self.is_jump() || self.is_illegal() || self.is_cache_op()
     }
 }
 

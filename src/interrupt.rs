@@ -70,7 +70,7 @@ impl Interrupt {
                 debug!("enter M mode");
                 match mtvec & 0x3 {
                     0x0 => {
-                        cpu.pc = (mtvec & 0xfffffffc).wrapping_sub(4);
+                        cpu.pc = (mtvec & 0xffff_ffff_ffff_fffc);
                     }
                     0x1 => {}
                     _ => {
@@ -96,7 +96,7 @@ impl Interrupt {
                 debug!("enter S mode");
                 match stvec & 0x3 {
                     0x0 => {
-                        cpu.pc = stvec & 0xffff_ffff_ffff_fffc;
+                        cpu.pc = (stvec & 0xffff_ffff_ffff_fffc);
                     }
                     0x1 => {}
                     _ => {
@@ -250,7 +250,7 @@ impl Exception {
                 debug!("enter M mode");
                 match mtvec & 0x3 {
                     0x0 => {
-                        cpu.pc = (mtvec & 0xfffffffc).wrapping_sub(4);
+                        cpu.pc = (mtvec & 0xffff_ffff_ffff_fffc).wrapping_sub(4);
                     }
                     0x1 => {}
                     _ => {

@@ -202,7 +202,7 @@ fn u8_slice_to_u64(barry: &[u8]) -> u64 {
     u64::from_le_bytes(barry.try_into().expect("slice with incorrect length"))
 }
 
-fn load_elf(code: &mut Vec<u8>, file: &mut File, base_addr: usize) -> io::Result<u64> {
+pub(crate) fn load_elf(code: &mut Vec<u8>, file: &mut File, base_addr: usize) -> io::Result<u64> {
     let mut elf = Vec::new();
     file.read_to_end(&mut elf)?;
     let entry = u8_slice_to_u64(&elf[E_ENTRY_POS..E_ENTRY_POS + 8]) as u64;

@@ -336,6 +336,11 @@ pub fn disk_access(&mut self) {
         .expect("failed to write used.idx");
 }
 
+    /// Returns a clone of the disk image (used in tests to verify preservation).
+    pub fn disk_snapshot(&self) -> Vec<u8> {
+        self.disk.clone()
+    }
+
     pub fn to_snapshot(&self) -> VirtioSnapshot {
         VirtioSnapshot {
             start_addr: self.start_addr,

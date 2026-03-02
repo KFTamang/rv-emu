@@ -10,7 +10,7 @@ use std::rc::Rc;
 #[derive(Serialize, Deserialize)]
 pub struct CsrSnapshot {
     #[serde(with = "BigArray")]
-    csr: [u64; 4096],
+    pub csr: [u64; 4096],
 }
 
 pub struct Csr {

@@ -101,8 +101,11 @@ impl Cpu {
         }
     }
 
-    pub fn from_snapshot(snapshot: CpuSnapshot, bus: Rc<RefCell<Bus>>) -> Self {
-        let interrupt_list = Rc::new(RefCell::new(snapshot.interrupt_list));
+    pub fn from_snapshot(snapshot: CpuSnapshot, bus: Rc<RefCell<Bus>>, interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>) -> Self {
+        // Populate the provided shared interrupt_list with the snapshot's pending interrupts.
+        // The caller must pass the same Rc that was given to Bus/PLIC, so new interrupts
+        // from peripherals are visible to the CPU.
+        *interrupt_list.borrow_mut() = snapshot.interrupt_list;
         let cycle = Rc::new(RefCell::new(snapshot.cycle));
         let mut cpu = Self {
             regs: snapshot.regs,

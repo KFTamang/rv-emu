@@ -1412,8 +1412,9 @@ fn translate(&mut self, va: u64, acc: AccessMode) -> Result<u64, Exception> {
                 Err(e) => {
                     error!("Failed to fetch instruction at pc={:x}: {:?}", pc, e);
                     if instrs.is_empty() {
-                        // If we cannot fetch the first instruction, return an empty block
-                        return Err(Exception::InstructionAccessFault);
+                        // Propagate the real exception (e.g. InstructionPageFault) so the
+                        // kernel's medeleg/mtvec routing handles it correctly.
+                        return Err(e);
                     }
                     break;
                 }

@@ -607,7 +607,7 @@ fn translate(&mut self, va: u64, acc: AccessMode) -> Result<u64, Exception> {
             }
             DecodedInstr::Slt{ raw: _, rd, rs1, rs2} => {
                 // "slt"
-                self.regs[rd] = if (rs1 as i64) < (rs2 as i64) { 1 } else { 0 };
+                self.regs[rd] = if (self.regs[rs1] as i64) < (self.regs[rs2] as i64) { 1 } else { 0 };
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
@@ -615,7 +615,7 @@ fn translate(&mut self, va: u64, acc: AccessMode) -> Result<u64, Exception> {
             }
             DecodedInstr::Sltu{ raw: _, rd, rs1, rs2} => {
                 // "sltu"
-                self.regs[rd] = if (rs1 as u64) < (rs2 as u64) { 1 } else { 0 };
+                self.regs[rd] = if self.regs[rs1] < self.regs[rs2] { 1 } else { 0 };
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);
                 self.mark_as_src2(rs2);
@@ -1219,7 +1219,6 @@ fn translate(&mut self, va: u64, acc: AccessMode) -> Result<u64, Exception> {
                 let val = self.load(addr, 32)?;              // メモリからロード
                 let src = self.regs[rs2];
                 self.regs[rd] = val;                             // rd に old val
-                self.regs[rs2] = val;                            // swap
                 self.store(addr, 32, src)?;                   // 書き戻し
                 self.mark_as_dest(rd);
                 self.mark_as_src1(rs1);

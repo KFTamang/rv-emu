@@ -121,7 +121,7 @@ impl Cpu {
             inst_string: String::from(""),
             clint: snapshot.clint,
             cycle,
-            interrupt_list: interrupt_list,
+            interrupt_list,
             address_translation_cache: snapshot.address_translation_cache,
             block_cache: std::collections::HashMap::new(),
         };

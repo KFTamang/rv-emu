@@ -103,19 +103,16 @@ impl Plic {
                     self.regs[INTERRUPT_PENDING_BITS as usize / 4] &= !(1 << id);
                     // Remove the interrupt from the external list
                     self.external_interrupt_list.remove(&interrupt);
-                    // Clear the interrupt pending bit in the interrupt list
-                    self.interrupt_list.borrow_mut().remove(&Interrupt::SupervisorExternalInterrupt);
+                    // Only clear SupervisorExternalInterrupt if no more external interrupts pending
+                    if self.external_interrupt_list.is_empty() {
+                        self.interrupt_list.borrow_mut().remove(&Interrupt::SupervisorExternalInterrupt);
+                    }
                     // Return the ID of the claimed interrupt
                     Ok(id as u64)
                 } else {
                     // No pending interrupts, return 0
                     Ok(0)
                 };
-
-                // Clear pending bit of External Interrupt
-                if self.external_interrupt_list.is_empty() {
-                    
-                }
                 result
             },
             _ => Ok(self.regs[(relative_addr / 4) as usize] as u64),

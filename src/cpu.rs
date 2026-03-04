@@ -1441,7 +1441,7 @@ fn translate(&mut self, va: u64, acc: AccessMode) -> Result<u64, Exception> {
     pub fn run_block(&mut self, block: &BasicBlock) -> u64 {
         self.pc = block.start_pc;
         let mut cycle: u64 = 0;
-        info!("Block execution: 0x{:x} to 0x{:x}", block.start_pc, block.end_pc);
+        trace!("Block execution: 0x{:x} to 0x{:x}", block.start_pc, block.end_pc);
         for instr in &block.instrs {
             let result = self.execute(instr.clone());
             if let Err(e) = result {

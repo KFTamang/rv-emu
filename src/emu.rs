@@ -120,6 +120,9 @@ impl Emu {
                         },
                         Err(exception) => {
                             exception.take_trap(&mut self.cpu);
+                            // take_trap subtracts 4 from pc expecting run_block's +4 to compensate;
+                            // the fetch-fault path has no such +4, so we apply it here.
+                            self.cpu.pc = self.cpu.pc.wrapping_add(4);
                         }
                     }
                     last_cycle_before_snapshot += cycle;
@@ -161,6 +164,7 @@ impl Emu {
                         },
                         Err(exception) => {
                             exception.take_trap(&mut self.cpu);
+                            self.cpu.pc = self.cpu.pc.wrapping_add(4);
                         }
                     }
                     last_cycle_before_snapshot += cycle;

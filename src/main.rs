@@ -5,11 +5,11 @@ mod csr;
 mod debugger;
 mod dram;
 mod emu;
+mod instruction;
 mod interrupt;
 mod plic;
 mod uart;
 mod virtio;
-mod instruction;
 use clap::Parser; // command-line option parser
 
 use crate::debugger::{wait_for_gdb_connection, MyGdbBlockingEventLoop};
@@ -142,7 +142,7 @@ fn main() -> io::Result<()> {
         } else {
             emu.run(|| false);
         }
-        
+
         if cli.test_result_addr.is_some() {
             let addr = cli.test_result_addr.unwrap();
             info!("Checking test result at address {:>#x}", addr);
@@ -233,7 +233,8 @@ pub(crate) fn load_elf(code: &mut Vec<u8>, file: &mut File, base_addr: usize) ->
         //     continue;
         // }
         if base_addr > va {
-            info!("Skipping segment: {}, Base address {:>#x} is larger than virtual address {:>#x}\n",
+            info!(
+                "Skipping segment: {}, Base address {:>#x} is larger than virtual address {:>#x}\n",
                 entry, base_addr, va
             );
             continue;
@@ -249,11 +250,17 @@ pub(crate) fn load_elf(code: &mut Vec<u8>, file: &mut File, base_addr: usize) ->
                     .collect::<Vec<u8>>(),
             );
         } else if code.len() > va - base_addr + memsize {
-            code[va - base_addr..va - base_addr + memsize].copy_from_slice(&elf[segment..segment + memsize]);
+            code[va - base_addr..va - base_addr + memsize]
+                .copy_from_slice(&elf[segment..segment + memsize]);
         } else {
             panic!("Code must have been loaded wrong!");
         }
-        info!("Loaded segment at virtual address {:>#x}, code length: {}({:>#x})", va, code.len(), code.len());
+        info!(
+            "Loaded segment at virtual address {:>#x}, code length: {}({:>#x})",
+            va,
+            code.len(),
+            code.len()
+        );
     }
     Ok(entry)
 }

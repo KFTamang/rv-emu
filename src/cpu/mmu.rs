@@ -2,7 +2,12 @@ use super::*;
 
 impl Cpu {
     /// SV39 page-table walk + permission check + A/D handling + simple TLB keyed by (satp_ppn, asid, va_page).
-    pub(crate) fn translate(&mut self, bus: &mut Bus, va: u64, acc: AccessMode) -> Result<u64, Exception> {
+    pub(crate) fn translate(
+        &mut self,
+        bus: &mut Bus,
+        va: u64,
+        acc: AccessMode,
+    ) -> Result<u64, Exception> {
         const PAGESIZE: u64 = 4096;
         const PTESIZE: u64 = 8;
 
@@ -62,13 +67,11 @@ impl Cpu {
 
         loop {
             pte_addr = a + vpn[level as usize] * PTESIZE;
-            pte = bus
-                .load(pte_addr, 64)
-                .map_err(|_| match acc {
-                    AccessMode::Fetch => Exception::InstructionPageFault(va as u32),
-                    AccessMode::Load => Exception::LoadPageFault(va as u32),
-                    AccessMode::Store => Exception::StoreAMOPageFault(va as u32),
-                })?;
+            pte = bus.load(pte_addr, 64).map_err(|_| match acc {
+                AccessMode::Fetch => Exception::InstructionPageFault(va as u32),
+                AccessMode::Load => Exception::LoadPageFault(va as u32),
+                AccessMode::Store => Exception::StoreAMOPageFault(va as u32),
+            })?;
 
             let v = bit(pte, 0);
             let r = bit(pte, 1);
@@ -122,12 +125,11 @@ impl Cpu {
                     new_pte |= 1 << 7;
                 }
                 if new_pte != pte {
-                    bus.store(pte_addr, 64, new_pte)
-                        .map_err(|_| match acc {
-                            AccessMode::Fetch => Exception::InstructionPageFault(va as u32),
-                            AccessMode::Load => Exception::LoadPageFault(va as u32),
-                            AccessMode::Store => Exception::StoreAMOPageFault(va as u32),
-                        })?;
+                    bus.store(pte_addr, 64, new_pte).map_err(|_| match acc {
+                        AccessMode::Fetch => Exception::InstructionPageFault(va as u32),
+                        AccessMode::Load => Exception::LoadPageFault(va as u32),
+                        AccessMode::Store => Exception::StoreAMOPageFault(va as u32),
+                    })?;
                     pte = new_pte;
                 }
 

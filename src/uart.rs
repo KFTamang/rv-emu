@@ -87,10 +87,8 @@ impl Uart {
         let interrupt_notifier = Arc::new(interrupt_notifier);
         let recv_buf = Arc::new(Mutex::new(VecDeque::<u8>::new()));
 
-        let input_thread = spawn_input_thread(
-            Arc::clone(&recv_buf),
-            Arc::clone(&interrupt_notifier),
-        );
+        let input_thread =
+            spawn_input_thread(Arc::clone(&recv_buf), Arc::clone(&interrupt_notifier));
 
         Self {
             start_addr: _start_addr,
@@ -150,10 +148,8 @@ impl Uart {
         let interrupt_notifier = Arc::new(interrupt_notifier);
         let recv_buf = Arc::new(Mutex::new(VecDeque::<u8>::new()));
 
-        let input_thread = spawn_input_thread(
-            Arc::clone(&recv_buf),
-            Arc::clone(&interrupt_notifier),
-        );
+        let input_thread =
+            spawn_input_thread(Arc::clone(&recv_buf), Arc::clone(&interrupt_notifier));
 
         Self {
             start_addr: snapshot.start_addr,

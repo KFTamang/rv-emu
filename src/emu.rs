@@ -1,12 +1,12 @@
-use crate::cpu::*;
-use crate::instruction::*;
 use crate::bus::*;
-use crate::interrupt::*;
-use crate::virtio::*;
-use crate::plic::ExternalInterrupt;
+use crate::cpu::*;
 use crate::dram::Dram;
-use crate::uart::UartSnapshot;
+use crate::instruction::*;
+use crate::interrupt::*;
+use crate::plic::ExternalInterrupt;
 use crate::plic::PlicSnapshot;
+use crate::uart::UartSnapshot;
+use crate::virtio::*;
 
 use bincode;
 use log::info;
@@ -107,9 +107,10 @@ impl Emu {
                     }
                     last_cycle_before_snapshot += cycle;
                     if last_cycle_before_snapshot > self.snapshot_interval {
-                        let path = std::path::PathBuf::from(
-                            format!("log/snapshot_{}.bin", self.cpu.cycle),
-                        );
+                        let path = std::path::PathBuf::from(format!(
+                            "log/snapshot_{}.bin",
+                            self.cpu.cycle
+                        ));
                         self.save_snapshot(path.clone());
                         info!("Snapshot saved to {}", path.clone().display());
                         last_cycle_before_snapshot %= self.snapshot_interval;
@@ -147,9 +148,10 @@ impl Emu {
                     }
                     last_cycle_before_snapshot += cycle;
                     if last_cycle_before_snapshot > self.snapshot_interval {
-                        let path = std::path::PathBuf::from(
-                            format!("log/snapshot_{}.bin", self.cpu.cycle),
-                        );
+                        let path = std::path::PathBuf::from(format!(
+                            "log/snapshot_{}.bin",
+                            self.cpu.cycle
+                        ));
                         self.save_snapshot(path.clone());
                         info!("Snapshot saved to {}", path.clone().display());
                         last_cycle_before_snapshot %= self.snapshot_interval;
@@ -177,7 +179,8 @@ impl Emu {
             dram: self.bus.dram.clone(),
             uart: self.bus.uart.to_snapshot(),
             plic: self.bus.plic.to_snapshot(),
-            virtio: self.bus
+            virtio: self
+                .bus
                 .virtio
                 .as_ref()
                 .map(|v| v.to_snapshot())
@@ -201,8 +204,9 @@ impl Emu {
 
     pub fn from_snapshot(snapshot: EmuSnapshot) -> Self {
         let mut bus = Bus::from_snapshot(snapshot.dram, snapshot.uart, snapshot.plic);
-        let virtio_notificator =
-            bus.plic.get_interrupt_notificator(ExternalInterrupt::VirtioDiskIO);
+        let virtio_notificator = bus
+            .plic
+            .get_interrupt_notificator(ExternalInterrupt::VirtioDiskIO);
         bus.virtio = Some(Virtio::from_snapshot(snapshot.virtio, virtio_notificator));
         let cpu = Cpu::from_snapshot(snapshot.cpu);
         info!("emu is made from snapshot!");
@@ -297,8 +301,7 @@ mod tests {
 
     #[test]
     fn test_snapshot_virtio_disk_preserved() {
-        let binary = std::fs::read("apps/fib.bin")
-            .expect("apps/fib.bin must exist");
+        let binary = std::fs::read("apps/fib.bin").expect("apps/fib.bin must exist");
 
         let disk_size = 512 * 4;
         let disk_image: Vec<u8> = (0..disk_size as u8).collect();
@@ -312,13 +315,15 @@ mod tests {
 
         let emu2 = Emu::from_snapshot(snap);
         let disk2 = emu2.bus.virtio.as_ref().unwrap().disk_snapshot();
-        assert_eq!(disk2, disk_image, "disk image corrupted through snapshot/restore");
+        assert_eq!(
+            disk2, disk_image,
+            "disk image corrupted through snapshot/restore"
+        );
     }
 
     #[test]
     fn test_snapshot_file_roundtrip() {
-        let binary = std::fs::read("apps/fib.bin")
-            .expect("apps/fib.bin must exist");
+        let binary = std::fs::read("apps/fib.bin").expect("apps/fib.bin must exist");
 
         let mut emu = make_emu(binary, 0);
         emu.run_for(30);
@@ -348,8 +353,8 @@ mod tests {
         let entry = crate::load_elf(&mut code, &mut kernel_file, BASE_ADDR as usize)
             .expect("failed to load xv6 kernel ELF");
 
-        let disk_image = std::fs::read("apps/xv6-riscv/fs.img")
-            .expect("apps/xv6-riscv/fs.img must exist");
+        let disk_image =
+            std::fs::read("apps/xv6-riscv/fs.img").expect("apps/xv6-riscv/fs.img must exist");
 
         let mut emu1 = Emu::new(code.clone(), BASE_ADDR, 0, u64::MAX);
         emu1.set_entry_point(entry);

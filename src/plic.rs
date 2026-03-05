@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
 
-use crate::interrupt::{Interrupt, Exception};
+use crate::interrupt::{Exception, Interrupt};
 use serde::{Deserialize, Serialize};
 
 use log::info;

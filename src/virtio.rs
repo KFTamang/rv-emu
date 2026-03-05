@@ -204,12 +204,8 @@ impl Virtio {
             .expect("failed to read avail.ring entry") as u16;
 
         let desc0 = desc_addr + VRING_DESC_SIZE * (head as u64);
-        let addr0 = dram
-            .load(desc0 + 0, 64)
-            .expect("failed to read desc0.addr");
-        let _len0 = dram
-            .load(desc0 + 8, 32)
-            .expect("failed to read desc0.len") as u32;
+        let addr0 = dram.load(desc0 + 0, 64).expect("failed to read desc0.addr");
+        let _len0 = dram.load(desc0 + 8, 32).expect("failed to read desc0.len") as u32;
         let _flags0 = dram
             .load(desc0 + 12, 16)
             .expect("failed to read desc0.flags") as u16;
@@ -218,12 +214,8 @@ impl Virtio {
             .expect("failed to read desc0.next") as u16;
 
         let desc1 = desc_addr + VRING_DESC_SIZE * (next0 as u64);
-        let addr1 = dram
-            .load(desc1 + 0, 64)
-            .expect("failed to read desc1.addr");
-        let len1 = dram
-            .load(desc1 + 8, 32)
-            .expect("failed to read desc1.len") as u32;
+        let addr1 = dram.load(desc1 + 0, 64).expect("failed to read desc1.addr");
+        let len1 = dram.load(desc1 + 8, 32).expect("failed to read desc1.len") as u32;
         let flags1 = dram
             .load(desc1 + 12, 16)
             .expect("failed to read desc1.flags") as u16;
@@ -232,12 +224,8 @@ impl Virtio {
             .expect("failed to read desc1.next") as u16;
 
         let desc2 = desc_addr + VRING_DESC_SIZE * (next1 as u64);
-        let addr2 = dram
-            .load(desc2 + 0, 64)
-            .expect("failed to read desc2.addr");
-        let _len2 = dram
-            .load(desc2 + 8, 32)
-            .expect("failed to read desc2.len") as u32;
+        let addr2 = dram.load(desc2 + 0, 64).expect("failed to read desc2.addr");
+        let _len2 = dram.load(desc2 + 8, 32).expect("failed to read desc2.len") as u32;
         let _flags2 = dram
             .load(desc2 + 12, 16)
             .expect("failed to read desc2.flags") as u16;
@@ -248,9 +236,14 @@ impl Virtio {
             addr0 + 8
         ));
 
-        info!("virtio: head={} desc=0x{:x} avail=0x{:x} used=0x{:x}", head, desc_addr, avail_addr, used_addr);
-        info!("virtio: addr0=0x{:x} addr1=0x{:x} len1=0x{:x} flags1=0x{:x} addr2=0x{:x} sector={}",
-          addr0, addr1, len1, flags1, addr2, blk_sector);
+        info!(
+            "virtio: head={} desc=0x{:x} avail=0x{:x} used=0x{:x}",
+            head, desc_addr, avail_addr, used_addr
+        );
+        info!(
+            "virtio: addr0=0x{:x} addr1=0x{:x} len1=0x{:x} flags1=0x{:x} addr2=0x{:x} sector={}",
+            addr0, addr1, len1, flags1, addr2, blk_sector
+        );
 
         let device_writes = (flags1 & 2) != 0;
 
@@ -316,7 +309,10 @@ impl Virtio {
         }
     }
 
-    pub fn from_snapshot(snapshot: VirtioSnapshot, notificator: Box<dyn Fn() + Send + Sync>) -> Self {
+    pub fn from_snapshot(
+        snapshot: VirtioSnapshot,
+        notificator: Box<dyn Fn() + Send + Sync>,
+    ) -> Self {
         Self {
             start_addr: snapshot.start_addr,
             notificator,

@@ -1,8 +1,8 @@
 use crate::cpu::*;
 use crate::csr::*;
+use core::panic;
 use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
-use core::panic;
 use std::process::exit;
 
 pub const INTERRUPT_BIT: u64 = 1 << 63;
@@ -63,9 +63,18 @@ impl Interrupt {
                 cpu.csr.set_mstatus_bit(0, MASK_MIE, MASK_MIE);
                 cpu.mode = target_mode.unwrap();
                 let mtvec = cpu.csr.load_csrs(MTVEC, cpu.cycle, &cpu.interrupt_list);
-                debug!("MEPC is 0x{:x}", cpu.csr.load_csrs(MEPC, cpu.cycle, &cpu.interrupt_list));
-                debug!("MCAUSE is 0x{:x}", cpu.csr.load_csrs(MCAUSE, cpu.cycle, &cpu.interrupt_list));
-                debug!("MSTATUS is 0x{:x}", cpu.csr.load_csrs(MSTATUS, cpu.cycle, &cpu.interrupt_list));
+                debug!(
+                    "MEPC is 0x{:x}",
+                    cpu.csr.load_csrs(MEPC, cpu.cycle, &cpu.interrupt_list)
+                );
+                debug!(
+                    "MCAUSE is 0x{:x}",
+                    cpu.csr.load_csrs(MCAUSE, cpu.cycle, &cpu.interrupt_list)
+                );
+                debug!(
+                    "MSTATUS is 0x{:x}",
+                    cpu.csr.load_csrs(MSTATUS, cpu.cycle, &cpu.interrupt_list)
+                );
                 debug!("MTVEC is 0x{:x}", mtvec);
                 debug!("enter M mode");
                 match mtvec & 0x3 {
@@ -89,9 +98,18 @@ impl Interrupt {
                 cpu.csr.set_sstatus_bit(0, MASK_SIE, BIT_SIE);
                 cpu.mode = target_mode.unwrap();
                 let stvec = cpu.csr.load_csrs(STVEC, cpu.cycle, &cpu.interrupt_list);
-                debug!("SEPC is 0x{:x}", cpu.csr.load_csrs(SEPC, cpu.cycle, &cpu.interrupt_list));
-                debug!("SCAUSE is 0x{:x}", cpu.csr.load_csrs(SCAUSE, cpu.cycle, &cpu.interrupt_list));
-                debug!("SSTATUS is 0x{:x}", cpu.csr.load_csrs(SSTATUS, cpu.cycle, &cpu.interrupt_list));
+                debug!(
+                    "SEPC is 0x{:x}",
+                    cpu.csr.load_csrs(SEPC, cpu.cycle, &cpu.interrupt_list)
+                );
+                debug!(
+                    "SCAUSE is 0x{:x}",
+                    cpu.csr.load_csrs(SCAUSE, cpu.cycle, &cpu.interrupt_list)
+                );
+                debug!(
+                    "SSTATUS is 0x{:x}",
+                    cpu.csr.load_csrs(SSTATUS, cpu.cycle, &cpu.interrupt_list)
+                );
                 debug!("STVEC is 0x{:x}", stvec);
                 debug!("enter S mode");
                 match stvec & 0x3 {
@@ -108,7 +126,10 @@ impl Interrupt {
             _ => {
                 error!("Interrupt Error, this should not be reached!");
                 error!("pc=0x{:x}", cpu.pc);
-                error!("current mode: {:?}, target_mode: {:?}", cpu.mode, target_mode);
+                error!(
+                    "current mode: {:?}, target_mode: {:?}",
+                    cpu.mode, target_mode
+                );
                 error!("CSR dump");
                 error!("{}", cpu.csr.dump());
                 panic!("Interrupt Error, this should not be reached!");
@@ -269,7 +290,10 @@ impl Exception {
             _ => {
                 error!("Exception Error, this should not be reached!");
                 error!("pc=0x{:x}", cpu.pc);
-                error!("current mode: {:?}, target_mode: {:?}", cpu.mode, target_mode);
+                error!(
+                    "current mode: {:?}, target_mode: {:?}",
+                    cpu.mode, target_mode
+                );
                 error!("CSR dump");
                 error!("{}", cpu.csr.dump());
                 panic!("Exception Error, this should not be reached!");

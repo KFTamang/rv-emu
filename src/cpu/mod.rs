@@ -1,12 +1,12 @@
-mod mmu;
 mod execute;
+mod mmu;
 
 use crate::bus::*;
 use crate::clint::*;
 use crate::csr::*;
 use crate::dram::*;
-use crate::interrupt::*;
 use crate::instruction::*;
+use crate::interrupt::*;
 
 use log::{debug, error, info, trace};
 
@@ -41,7 +41,7 @@ pub struct CpuSnapshot {
     pub cycle: u64,
     pub clint: Clint,
     pub interrupt_list: BTreeSet<Interrupt>,
-    pub address_translation_cache: std::collections::HashMap<(u64,u64,u64), u64>,
+    pub address_translation_cache: std::collections::HashMap<(u64, u64, u64), u64>,
 }
 
 pub struct Cpu {
@@ -58,7 +58,7 @@ pub struct Cpu {
     pub cycle: u64,
     pub(crate) clint: Clint,
     pub interrupt_list: BTreeSet<Interrupt>,
-    pub(crate) address_translation_cache: std::collections::HashMap<(u64,u64,u64), u64>,
+    pub(crate) address_translation_cache: std::collections::HashMap<(u64, u64, u64), u64>,
     pub(crate) block_cache: std::collections::HashMap<u64, BasicBlock>,
 }
 
@@ -166,7 +166,13 @@ impl Cpu {
         }
     }
 
-    pub fn store(&mut self, bus: &mut Bus, va: u64, size: u64, value: u64) -> Result<(), Exception> {
+    pub fn store(
+        &mut self,
+        bus: &mut Bus,
+        va: u64,
+        size: u64,
+        value: u64,
+    ) -> Result<(), Exception> {
         match self.translate(bus, va, AccessMode::Store) {
             Ok(pa) => {
                 if self.clint.is_accessible(pa) {
@@ -293,7 +299,8 @@ impl Cpu {
             debug!("Cycle: {}", self.cycle);
         }
 
-        bus.plic.process_pending_interrupts(&mut self.interrupt_list);
+        bus.plic
+            .process_pending_interrupts(&mut self.interrupt_list);
 
         self.update_pending_interrupts();
 
@@ -345,11 +352,18 @@ impl Cpu {
     pub fn run_block(&mut self, bus: &mut Bus, block: &BasicBlock) -> u64 {
         self.pc = block.start_pc;
         let mut cycle: u64 = 0;
-        trace!("Block execution: 0x{:x} to 0x{:x}", block.start_pc, block.end_pc);
+        trace!(
+            "Block execution: 0x{:x} to 0x{:x}",
+            block.start_pc,
+            block.end_pc
+        );
         for instr in &block.instrs {
             let result = self.execute(bus, instr.clone());
             if let Err(e) = result {
-                error!("Execution failed in block at pc={:x}: {:?}, mode={}", self.pc, e, self.mode);
+                error!(
+                    "Execution failed in block at pc={:x}: {:?}, mode={}",
+                    self.pc, e, self.mode
+                );
                 e.take_trap(self);
                 self.pc = self.pc.wrapping_add(4);
                 break;
@@ -361,7 +375,10 @@ impl Cpu {
                 self.dump_count -= 1;
                 if self.dump_count == 0 {
                     self.dump_count = self.dump_interval;
-                    debug!("Block executed up to pc={:x}, cycle={}", self.pc, self.cycle);
+                    debug!(
+                        "Block executed up to pc={:x}, cycle={}",
+                        self.pc, self.cycle
+                    );
                     debug!("{}", self.dump_registers());
                     debug!("CSR: {}", self.csr.dump());
                 }
@@ -383,7 +400,9 @@ impl Cpu {
 
         let decoded_inst = DecodedInstr::decode(inst);
 
-        let result = self.execute(bus, decoded_inst).map_err(|e| e.take_trap(self));
+        let result = self
+            .execute(bus, decoded_inst)
+            .map_err(|e| e.take_trap(self));
         if let Err(e) = result {
             error!("Execution failed!");
             error!("Exception: {:?}", e);
@@ -413,7 +432,9 @@ impl Cpu {
     }
 
     fn update_pending_interrupts(&mut self) {
-        let stimecmp = self.csr.load_csrs(STIMECMP, self.cycle, &self.interrupt_list);
+        let stimecmp = self
+            .csr
+            .load_csrs(STIMECMP, self.cycle, &self.interrupt_list);
         let current_counter = self.cycle * TIMER_FREQ / CPU_FREQUENCY;
         if current_counter % 10000 == 0 {
             if current_counter % 1000000 == 0 {
@@ -423,9 +444,11 @@ impl Cpu {
                 );
             }
             if (stimecmp > 0) && (current_counter >= stimecmp) {
-                self.interrupt_list.insert(Interrupt::SupervisorTimerInterrupt);
+                self.interrupt_list
+                    .insert(Interrupt::SupervisorTimerInterrupt);
             } else {
-                self.interrupt_list.remove(&Interrupt::SupervisorTimerInterrupt);
+                self.interrupt_list
+                    .remove(&Interrupt::SupervisorTimerInterrupt);
             }
         }
     }

@@ -89,9 +89,12 @@ impl SingleThreadBase for Emu {
             }
         }
         while data.len() - wrote_size > 0 {
-            if let Ok(_) =
-                cpu.store(bus, start_addr + wrote_size as u64, 8, data[wrote_size] as u64)
-            {
+            if let Ok(_) = cpu.store(
+                bus,
+                start_addr + wrote_size as u64,
+                8,
+                data[wrote_size] as u64,
+            ) {
                 wrote_size += 1;
             } else {
                 return Err(TargetError::NonFatal);

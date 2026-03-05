@@ -146,7 +146,7 @@ fn main() -> io::Result<()> {
         if cli.test_result_addr.is_some() {
             let addr = cli.test_result_addr.unwrap();
             info!("Checking test result at address {:>#x}", addr);
-            let result = emu.cpu.bus.borrow_mut().load(addr, 8).unwrap();
+            let result = emu.bus.load(addr, 8).unwrap();
             if result & 1 == 1 {
                 info!("TEST PASSED");
                 Ok(())

@@ -3,9 +3,7 @@ use crate::interrupt::*;
 use log::trace;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
-use std::cell::RefCell;
 use std::collections::BTreeSet;
-use std::rc::Rc;
 
 #[derive(Serialize, Deserialize)]
 pub struct CsrSnapshot {
@@ -15,8 +13,6 @@ pub struct CsrSnapshot {
 
 pub struct Csr {
     csr: [u64; 4096],
-    cycle: Rc<RefCell<u64>>,
-    interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>,
 }
 
 pub const SSTATUS: usize = 0x100;
@@ -79,51 +75,37 @@ const SSTATUS_MASK: u64 = !(MASK_SXL
 pub const TIMER_FREQ: u64 = 10000000; // 10 MHz
 
 impl Csr {
-    pub fn new(interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>, cycle: Rc<RefCell<u64>>) -> Self {
-        Self {
-            csr: [0; 4096],
-            interrupt_list,
-            cycle,
-        }
+    pub fn new() -> Self {
+        Self { csr: [0; 4096] }
     }
 
     pub fn to_snapshot(&self) -> CsrSnapshot {
         CsrSnapshot { csr: self.csr }
     }
 
-    pub fn from_snapshot(
-        snapshot: CsrSnapshot,
-        interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>,
-        cycle: Rc<RefCell<u64>>,
-    ) -> Self {
-        Self {
-            csr: snapshot.csr,
-            interrupt_list,
-            cycle,
-        }
+    pub fn from_snapshot(snapshot: CsrSnapshot) -> Self {
+        Self { csr: snapshot.csr }
     }
 
-    pub fn load_csrs(&self, addr: usize) -> u64 {
+    pub fn load_csrs(&self, addr: usize, cycle: u64, interrupts: &BTreeSet<Interrupt>) -> u64 {
         match addr {
             SSTATUS => self.csr[MSTATUS] & SSTATUS_MASK,
             SIE => self.csr[MIE] & self.csr[MIDELEG],
             SIP => {
-                let mut sip = 0 as u64;
-                let interrupts = self.interrupt_list.borrow();
+                let mut sip = 0u64;
                 for interrupt in interrupts.iter() {
                     sip |= interrupt.bit_code() | INTERRUPT_BIT;
                 }
                 sip & self.csr[MIDELEG]
-            },
-            TIME => self.get_time_ms() * TIMER_FREQ / 1000,
+            }
+            TIME => cycle * 1000 / CPU_FREQUENCY * TIMER_FREQ / 1000,
             MIP => {
-                let mut mip = 0 as u64;
-                let interrupts = self.interrupt_list.borrow();
+                let mut mip = 0u64;
                 for interrupt in interrupts.iter() {
                     mip |= interrupt.bit_code() | INTERRUPT_BIT;
                 }
                 mip
-            },
+            }
             _ => self.csr[addr],
         }
     }
@@ -142,7 +124,6 @@ impl Csr {
             }
             STIMECMP => {
                 self.csr[STIMECMP] = val;
-                // self.set_timer_interrupt(val);
             }
             _ => {
                 self.csr[addr] = val;
@@ -151,31 +132,27 @@ impl Csr {
     }
 
     pub fn set_mstatus_bit(&mut self, val: u64, mask: u64, bit: u64) {
-        let mut current = self.load_csrs(MSTATUS);
+        let mut current = self.csr[MSTATUS];
         current &= !mask;
         current |= ((val as u64) << bit) & mask;
         self.store_csrs(MSTATUS, current);
     }
 
     pub fn get_mstatus_bit(&self, mask: u64, bit: u64) -> u64 {
-        let status = self.load_csrs(MSTATUS);
+        let status = self.csr[MSTATUS];
         (status & mask) >> bit
     }
 
     pub fn set_sstatus_bit(&mut self, val: u64, mask: u64, bit: u64) {
-        let mut current = self.load_csrs(SSTATUS);
+        let mut current = self.csr[MSTATUS] & SSTATUS_MASK;
         current &= !mask;
         current |= ((val as u64) << bit) & mask;
         self.store_csrs(SSTATUS, current);
     }
 
     pub fn get_sstatus_bit(&self, mask: u64, bit: u64) -> u64 {
-        let status = self.load_csrs(SSTATUS);
+        let status = self.csr[MSTATUS] & SSTATUS_MASK;
         (status & mask) >> bit
-    }
-
-    fn get_time_ms(&self) -> u64 {
-        *self.cycle.borrow() * 1000 / CPU_FREQUENCY
     }
 
     pub fn dump(&self) -> String {
@@ -188,14 +165,5 @@ impl Csr {
         }
         result.push_str("\n");
         result
-    }
-}
-
-impl Drop for Csr {
-    fn drop(&mut self) {
-        // self.duration_sender.send(Option::None).unwrap();
-        // if let Some(thread) = self.timer_thread.take() {
-        //     thread.join().unwrap();
-        // }
     }
 }

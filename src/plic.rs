@@ -1,19 +1,18 @@
 use std::collections::BTreeSet;
-use std::sync::mpsc::{channel, Receiver, Sender};
-use std::rc::Rc;
-use std::cell::RefCell;
-use std::vec;
+use std::sync::{Arc, Mutex};
 
 use crate::interrupt::{Interrupt, Exception};
 use serde::{Deserialize, Serialize};
 
-use log::{error, info};
+use log::info;
 
 const PLIC_SIZE: u64 = 0x4000000;
 
 const INTERRUPT_SOURCE_PRIORITIES: u64 = 0x000000;
 const INTERRUPT_PENDING_BITS: u64 = 0x001000;
+#[allow(unused)]
 const INTERRUPT_ENABLES: u64 = 0x002000;
+#[allow(unused)]
 const PRIORITY_THRESHOLDS: u64 = 0x200000;
 const CLAIM_COMPLETE: u64 = 0x201004;
 
@@ -42,43 +41,37 @@ impl ExternalInterrupt {
 pub struct Plic {
     start_addr: u64,
     regs: Vec<u32>,
-    receiver: Receiver<ExternalInterrupt>,
-    sender: Sender<ExternalInterrupt>,
-    interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>,
+    pending_queue: Arc<Mutex<Vec<ExternalInterrupt>>>,
     external_interrupt_list: BTreeSet<ExternalInterrupt>,
 }
 
 impl Plic {
-    pub fn new(_start_addr: u64, interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>) -> Plic {
-        let (sender, receiver) = channel();
+    pub fn new(start_addr: u64) -> Plic {
         Self {
-            start_addr: _start_addr,
+            start_addr,
             regs: vec![0; PLIC_SIZE as usize / 8],
-            sender: sender,
-            receiver: receiver,
-            interrupt_list: interrupt_list,
+            pending_queue: Arc::new(Mutex::new(Vec::new())),
             external_interrupt_list: BTreeSet::new(),
         }
     }
 
     pub fn get_interrupt_notificator(&self, id: ExternalInterrupt) -> Box<dyn Fn() + Send + Sync> {
-        // This function should return a closure that notifies the PLIC of an interrupt of ID `id`.
-        let sender_clone = self.sender.clone();
+        let queue = Arc::clone(&self.pending_queue);
         Box::new(move || {
             info!("Notifying PLIC of interrupt ID: {:?}", id);
-            if let Err(e) = sender_clone.send(id) {
-                error!("Failed to send interrupt notification: {}", e);
-            }
+            queue.lock().unwrap().push(id);
         })
     }
 
-    pub fn process_pending_interrupts(&mut self) {
-        while let Ok(interrupt) = self.receiver.try_recv() {
+    pub fn process_pending_interrupts(&mut self, interrupts: &mut BTreeSet<Interrupt>) {
+        let pending: Vec<ExternalInterrupt> =
+            self.pending_queue.lock().unwrap().drain(..).collect();
+        for interrupt in pending {
             info!("Processing interrupt ID: {:?}", interrupt);
-            self.interrupt_list.borrow_mut().insert(Interrupt::SupervisorExternalInterrupt);
+            interrupts.insert(Interrupt::SupervisorExternalInterrupt);
             self.regs[INTERRUPT_PENDING_BITS as usize / 4] |= 1 << interrupt.id();
             info!("Updated pending bits for interrupt ID: {:?}", interrupt);
-            self.external_interrupt_list.insert(interrupt.clone());
+            self.external_interrupt_list.insert(interrupt);
         }
     }
 
@@ -86,35 +79,35 @@ impl Plic {
         (addr >= self.start_addr) && (addr < self.start_addr + PLIC_SIZE)
     }
 
-    pub fn load(&mut self, _addr: u64, _size: u64) -> Result<u64, Exception> {
-        let relative_addr = _addr - self.start_addr;
+    pub fn load(
+        &mut self,
+        addr: u64,
+        _size: u64,
+        interrupts: &mut BTreeSet<Interrupt>,
+    ) -> Result<u64, Exception> {
+        let relative_addr = addr - self.start_addr;
         match relative_addr {
             CLAIM_COMPLETE => {
-                // Search for the highest priority pending interrupt
-                let max_interrupt = self.external_interrupt_list
+                let max_interrupt = self
+                    .external_interrupt_list
                     .iter()
                     .max_by_key(|&interrupt| {
-                        self.regs[INTERRUPT_SOURCE_PRIORITIES as usize / 4 + interrupt.id() as usize]
+                        self.regs
+                            [INTERRUPT_SOURCE_PRIORITIES as usize / 4 + interrupt.id() as usize]
                     })
                     .cloned();
-                let result = if let Some(interrupt) = max_interrupt {
+                if let Some(interrupt) = max_interrupt {
                     let id = interrupt.id();
-                    // Clear the pending bit for this interrupt
                     self.regs[INTERRUPT_PENDING_BITS as usize / 4] &= !(1 << id);
-                    // Remove the interrupt from the external list
                     self.external_interrupt_list.remove(&interrupt);
-                    // Only clear SupervisorExternalInterrupt if no more external interrupts pending
                     if self.external_interrupt_list.is_empty() {
-                        self.interrupt_list.borrow_mut().remove(&Interrupt::SupervisorExternalInterrupt);
+                        interrupts.remove(&Interrupt::SupervisorExternalInterrupt);
                     }
-                    // Return the ID of the claimed interrupt
                     Ok(id as u64)
                 } else {
-                    // No pending interrupts, return 0
                     Ok(0)
-                };
-                result
-            },
+                }
+            }
             _ => Ok(self.regs[(relative_addr / 4) as usize] as u64),
         }
     }
@@ -123,17 +116,11 @@ impl Plic {
         Ok(())
     }
 
-    pub fn from_snapshot(
-        snapshot: PlicSnapshot,
-        interrupt_list: Rc<RefCell<BTreeSet<Interrupt>>>,
-    ) -> Plic {
-        let (sender, receiver) = channel();
+    pub fn from_snapshot(snapshot: PlicSnapshot) -> Plic {
         Plic {
             start_addr: snapshot.start_addr,
             regs: snapshot.regs,
-            interrupt_list,
-            receiver: receiver,
-            sender: sender,
+            pending_queue: Arc::new(Mutex::new(Vec::new())),
             external_interrupt_list: snapshot.external_interrupt_list,
         }
     }

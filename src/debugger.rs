@@ -55,11 +55,10 @@ impl SingleThreadBase for Emu {
     }
 
     fn read_addrs(&mut self, start_addr: u64, data: &mut [u8]) -> TargetResult<usize, Self> {
+        let Emu { cpu, bus, .. } = self;
         let mut read_size = 0;
         while data.len() - read_size >= 8 {
-            // load 64 bytes at a time, copy to data
-            if let Ok(source_slice) = self.cpu
-                .load(start_addr + read_size as u64, 64) {
+            if let Ok(source_slice) = cpu.load(bus, start_addr + read_size as u64, 64) {
                 data[read_size..read_size + 8].copy_from_slice(&source_slice.to_le_bytes());
                 read_size += 8;
             } else {
@@ -67,8 +66,7 @@ impl SingleThreadBase for Emu {
             }
         }
         while data.len() - read_size > 0 {
-            if let Ok(source_slice) = self.cpu
-                .load(start_addr + read_size as u64, 8) {
+            if let Ok(source_slice) = cpu.load(bus, start_addr + read_size as u64, 8) {
                 data[read_size] = source_slice as u8;
                 read_size += 1;
             } else {
@@ -79,25 +77,20 @@ impl SingleThreadBase for Emu {
     }
 
     fn write_addrs(&mut self, start_addr: u64, data: &[u8]) -> TargetResult<(), Self> {
+        let Emu { cpu, bus, .. } = self;
         let mut wrote_size = 0;
         while data.len() - wrote_size >= 8 {
-            // convert data[wrote_size..wrote_size + 8] into one integer `data_8byte`
             let data_8byte =
                 u64::from_le_bytes(data[wrote_size..wrote_size + 8].try_into().unwrap());
-            // store 64 bytes at a time, copy to data
-            if let Ok(_source_slice) =
-                self.cpu
-                    .store(start_addr + wrote_size as u64, data_8byte, 64)
-            {
+            if let Ok(_) = cpu.store(bus, start_addr + wrote_size as u64, 64, data_8byte) {
                 wrote_size += 8;
             } else {
                 return Err(TargetError::NonFatal);
             }
         }
         while data.len() - wrote_size > 0 {
-            if let Ok(_source_slice) =
-                self.cpu
-                    .store(start_addr + wrote_size as u64, data[wrote_size] as u64, 8)
+            if let Ok(_) =
+                cpu.store(bus, start_addr + wrote_size as u64, 8, data[wrote_size] as u64)
             {
                 wrote_size += 1;
             } else {

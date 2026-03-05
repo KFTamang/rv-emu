@@ -1,8 +1,7 @@
-use crate::{bus::Bus, interrupt::*};
+use crate::dram::Dram;
+use crate::interrupt::*;
 use log::info;
 use serde::{Deserialize, Serialize};
-use std::cell::RefCell;
-use std::rc::Rc;
 
 const VIRTIO_SIZE: u64 = 0x1000; // size of virtio mmio device
 const VRING_DESC_SIZE: u64 = 16;
@@ -40,25 +39,24 @@ const VIRTIO_MMIO_DEVICE_DESC_HIGH: usize = 0x0a4;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct VirtioSnapshot {
-    start_addr: u64,
-    id: u8,
-    driver_features: u64,
-    page_size: u64,
-    queue_sel: u64,
-    queue_num: u64,
-    queue_pfn: u64,
-    queue_notify: u64,
-    desc_addr: u64,
-    avail_addr: u64,
-    used_addr: u64,
-    status: u64,
-    disk: Vec<u8>,
+    pub start_addr: u64,
+    pub id: u8,
+    pub driver_features: u64,
+    pub page_size: u64,
+    pub queue_sel: u64,
+    pub queue_num: u64,
+    pub queue_pfn: u64,
+    pub queue_notify: u64,
+    pub desc_addr: u64,
+    pub avail_addr: u64,
+    pub used_addr: u64,
+    pub status: u64,
+    pub disk: Vec<u8>,
 }
 
 pub struct Virtio {
     start_addr: u64,
     notificator: Box<dyn Fn() + Send + Sync>,
-    bus: Option<Rc<RefCell<Bus>>>,
     id: u8,
     driver_features: u64,
     page_size: u64,
@@ -74,11 +72,10 @@ pub struct Virtio {
 }
 
 impl Virtio {
-    pub fn new(_start_addr: u64, notificator: Box<dyn Fn() + Send + Sync>) -> Virtio {
+    pub fn new(start_addr: u64, notificator: Box<dyn Fn() + Send + Sync>) -> Virtio {
         Self {
-            start_addr: _start_addr,
+            start_addr,
             notificator,
-            bus: None,
             id: 0,
             driver_features: 0,
             page_size: 0,
@@ -88,7 +85,7 @@ impl Virtio {
             desc_addr: 0,
             avail_addr: 0,
             used_addr: 0,
-            queue_notify: 9999, // TODO: what is the correct initial value?
+            queue_notify: 9999,
             status: 0,
             disk: Vec::new(),
         }
@@ -105,7 +102,7 @@ impl Virtio {
             VIRTIO_MMIO_VERSION => 0x2,
             VIRTIO_MMIO_DEVICE_ID => 0x2,
             VIRTIO_MMIO_VENDOR_ID => 0x554d4551,
-            VIRTIO_MMIO_DEVICE_FEATURES => 0, // TODO: what should it return?
+            VIRTIO_MMIO_DEVICE_FEATURES => 0,
             VIRTIO_MMIO_DRIVER_FEATURES => self.driver_features,
             VIRTIO_MMIO_QUEUE_NUM_MAX => 8,
             VIRTIO_MMIO_QUEUE_PFN => self.queue_pfn,
@@ -143,7 +140,6 @@ impl Virtio {
             VIRTIO_MMIO_QUEUE_PFN => self.queue_pfn = value,
             VIRTIO_MMIO_QUEUE_NOTIFY => {
                 self.queue_notify = value;
-                // Notify the virtio device that a queue is ready.
                 info!("virtio: queue notify called with value: {}", value);
                 if value != 9999 {
                     (self.notificator)();
@@ -151,7 +147,7 @@ impl Virtio {
             }
             VIRTIO_MMIO_STATUS => self.status = value,
             VIRTIO_MMIO_QUEUE_DESC_LOW => {
-                self.desc_addr = value & 0xFFFFFFFF; // lower 32 bits
+                self.desc_addr = value & 0xFFFFFFFF;
             }
             VIRTIO_MMIO_QUEUE_DESC_HIGH => {
                 self.desc_addr |= (value & 0xFFFFFFFF) << 32;
@@ -173,10 +169,6 @@ impl Virtio {
         Ok(())
     }
 
-    pub fn set_bus(&mut self, bus: Rc<RefCell<Bus>>) {
-        self.bus = Some(bus);
-    }
-
     /// Set the binary in the virtio disk.
     pub fn set_disk_image(&mut self, binary: Vec<u8>) {
         self.disk.extend(binary.iter().cloned());
@@ -186,155 +178,120 @@ impl Virtio {
         self.disk[addr as usize]
     }
 
-/// Access the disk via virtio. This function performs DMA against *guest physical memory*.
-/// It must not call Bus::load/store that may re-enter virtio/MMIO routing; use *_memory variants.
-///
-/// Assumptions:
-/// - desc_addr/avail_addr/used_addr are guest-physical addresses of the vring structures.
-/// - VRING_DESC_SIZE is 16 bytes.
-/// - DESC_NUM is the ring size (NUM).
-pub fn disk_access(&mut self) {
-    if self.queue_notify == 9999 {
-        return;
-    }
-    self.queue_notify = 9999; // reset notify
-
-    let mut bus = self.bus.as_ref().expect("No bus").borrow_mut();
-
-    // Layout (legacy virtio ring):
-    // desc  = pages
-    // avail = pages + 0x40
-    // used  = pages + 0x1000 (4096)
-    let desc_addr = self.desc_addr;
-    let avail_addr = self.avail_addr;
-    let used_addr = self.used_addr;
-
-    // ---- Read avail.idx and select the latest entry ----
-    // struct VRingAvail { u16 flags; u16 idx; u16 ring[NUM]; ... }
-    let avail_idx = match bus.load_memory(avail_addr + 2, 16) {
-        Ok(v) => v as u16,
-        Err(_) => return, // can't read -> nothing we can do safely
-    };
-    if avail_idx == 0 {
-        return; // nothing submitted yet
-    }
-
-    // Process the most recently published ring entry.
-    // (xv6 submits one request at a time; this is sufficient for now)
-    let ring_pos = ((avail_idx - 1) as u64) % (DESC_NUM as u64);
-    let head = bus
-        .load_memory(avail_addr + 4 + ring_pos * 2, 16)
-        .expect("failed to read avail.ring entry") as u16;
-
-    // ---- Descriptor 0 ----
-    // struct VRingDesc { u64 addr; u32 len; u16 flags; u16 next; }
-    let desc0 = desc_addr + VRING_DESC_SIZE * (head as u64);
-    let addr0 = bus
-        .load_memory(desc0 + 0, 64)
-        .expect("failed to read desc0.addr");
-    let _len0 = bus
-        .load_memory(desc0 + 8, 32)
-        .expect("failed to read desc0.len") as u32;
-    let _flags0 = bus
-        .load_memory(desc0 + 12, 16)
-        .expect("failed to read desc0.flags") as u16;
-    let next0 = bus
-        .load_memory(desc0 + 14, 16)
-        .expect("failed to read desc0.next") as u16;
-
-    // ---- Descriptor 1 ----
-    let desc1 = desc_addr + VRING_DESC_SIZE * (next0 as u64);
-    let addr1 = bus
-        .load_memory(desc1 + 0, 64)
-        .expect("failed to read desc1.addr");
-    let len1 = bus
-        .load_memory(desc1 + 8, 32)
-        .expect("failed to read desc1.len") as u32;
-    let flags1 = bus
-        .load_memory(desc1 + 12, 16)
-        .expect("failed to read desc1.flags") as u16;
-    let next1 = bus
-        .load_memory(desc1 + 14, 16)
-        .expect("failed to read desc1.next") as u16;
-
-    // ---- Descriptor 2 (status) ----
-    let desc2 = desc_addr + VRING_DESC_SIZE * (next1 as u64);
-    let addr2 = bus
-        .load_memory(desc2 + 0, 64)
-        .expect("failed to read desc2.addr");
-    let _len2 = bus
-        .load_memory(desc2 + 8, 32)
-        .expect("failed to read desc2.len") as u32;
-    let _flags2 = bus
-        .load_memory(desc2 + 12, 16)
-        .expect("failed to read desc2.flags") as u16;
-
-    // ---- Read virtio_blk_outhdr.sector ----
-    // struct virtio_blk_outhdr { u32 type; u32 reserved; u64 sector; }
-    let blk_sector = bus.load_memory(addr0 + 8, 64).expect(&format!(
-        "failed to read virtio_blk_outhdr.sector: addr0=0x{:x} (sector@0x{:x})",
-        addr0,
-        addr0 + 8
-    ));
-
-    info!("virtio: head={} desc=0x{:x} avail=0x{:x} used=0x{:x}", head, desc_addr, avail_addr, used_addr);
-    info!("virtio: addr0=0x{:x} addr1=0x{:x} len1=0x{:x} flags1=0x{:x} addr2=0x{:x} sector={}",
-      addr0, addr1, len1, flags1, addr2, blk_sector);
-
-    // flags1 bit1 == VIRTQ_DESC_F_WRITE (device writes to buffer)
-    let device_writes = (flags1 & 2) != 0;
-
-    if !device_writes {
-        // Guest -> Disk (write): device reads from guest buffer (addr1..addr1+len1)
-        let mut buffer = Vec::with_capacity(len1 as usize);
-        for i in 0..(len1 as u64) {
-            let b = bus
-                .load_memory(addr1 + i, 8)
-                .expect(&format!(
-                    "failed DMA read: guest addr=0x{:x}",
-                    addr1 + i
-                )) as u8;
-            buffer.push(b);
+    /// Access the disk via virtio. This function performs DMA against *guest physical memory*.
+    /// Takes a mutable reference to Dram to read/write guest memory directly.
+    pub fn disk_access(&mut self, dram: &mut Dram) {
+        if self.queue_notify == 9999 {
+            return;
         }
-        for (i, b) in buffer.into_iter().enumerate() {
-            let disk_index = blk_sector * 512 + (i as u64);
-            self.disk[disk_index as usize] = b;
+        self.queue_notify = 9999;
+
+        let desc_addr = self.desc_addr;
+        let avail_addr = self.avail_addr;
+        let used_addr = self.used_addr;
+
+        let avail_idx = match dram.load(avail_addr + 2, 16) {
+            Ok(v) => v as u16,
+            Err(_) => return,
+        };
+        if avail_idx == 0 {
+            return;
         }
-    } else {
-        // Disk -> Guest (read): device writes to guest buffer (addr1..addr1+len1)
-        info!("Reading from disk sector: {}", blk_sector);
-        for i in 0..(len1 as u64) {
-            let b = self.read_disk(blk_sector * 512 + i) as u64;
-            bus.store_memory(addr1 + i, 8, b)
-                .expect("failed DMA write to guest memory");
+
+        let ring_pos = ((avail_idx - 1) as u64) % (DESC_NUM as u64);
+        let head = dram
+            .load(avail_addr + 4 + ring_pos * 2, 16)
+            .expect("failed to read avail.ring entry") as u16;
+
+        let desc0 = desc_addr + VRING_DESC_SIZE * (head as u64);
+        let addr0 = dram
+            .load(desc0 + 0, 64)
+            .expect("failed to read desc0.addr");
+        let _len0 = dram
+            .load(desc0 + 8, 32)
+            .expect("failed to read desc0.len") as u32;
+        let _flags0 = dram
+            .load(desc0 + 12, 16)
+            .expect("failed to read desc0.flags") as u16;
+        let next0 = dram
+            .load(desc0 + 14, 16)
+            .expect("failed to read desc0.next") as u16;
+
+        let desc1 = desc_addr + VRING_DESC_SIZE * (next0 as u64);
+        let addr1 = dram
+            .load(desc1 + 0, 64)
+            .expect("failed to read desc1.addr");
+        let len1 = dram
+            .load(desc1 + 8, 32)
+            .expect("failed to read desc1.len") as u32;
+        let flags1 = dram
+            .load(desc1 + 12, 16)
+            .expect("failed to read desc1.flags") as u16;
+        let next1 = dram
+            .load(desc1 + 14, 16)
+            .expect("failed to read desc1.next") as u16;
+
+        let desc2 = desc_addr + VRING_DESC_SIZE * (next1 as u64);
+        let addr2 = dram
+            .load(desc2 + 0, 64)
+            .expect("failed to read desc2.addr");
+        let _len2 = dram
+            .load(desc2 + 8, 32)
+            .expect("failed to read desc2.len") as u32;
+        let _flags2 = dram
+            .load(desc2 + 12, 16)
+            .expect("failed to read desc2.flags") as u16;
+
+        let blk_sector = dram.load(addr0 + 8, 64).expect(&format!(
+            "failed to read virtio_blk_outhdr.sector: addr0=0x{:x} (sector@0x{:x})",
+            addr0,
+            addr0 + 8
+        ));
+
+        info!("virtio: head={} desc=0x{:x} avail=0x{:x} used=0x{:x}", head, desc_addr, avail_addr, used_addr);
+        info!("virtio: addr0=0x{:x} addr1=0x{:x} len1=0x{:x} flags1=0x{:x} addr2=0x{:x} sector={}",
+          addr0, addr1, len1, flags1, addr2, blk_sector);
+
+        let device_writes = (flags1 & 2) != 0;
+
+        if !device_writes {
+            let mut buffer = Vec::with_capacity(len1 as usize);
+            for i in 0..(len1 as u64) {
+                let b = dram
+                    .load(addr1 + i, 8)
+                    .expect(&format!("failed DMA read: guest addr=0x{:x}", addr1 + i))
+                    as u8;
+                buffer.push(b);
+            }
+            for (i, b) in buffer.into_iter().enumerate() {
+                let disk_index = blk_sector * 512 + (i as u64);
+                self.disk[disk_index as usize] = b;
+            }
+        } else {
+            info!("Reading from disk sector: {}", blk_sector);
+            for i in 0..(len1 as u64) {
+                let b = self.read_disk(blk_sector * 512 + i) as u64;
+                dram.store(addr1 + i, 8, b)
+                    .expect("failed DMA write to guest memory");
+            }
         }
+
+        dram.store(addr2, 8, 0)
+            .expect("failed to write status byte");
+
+        let used_idx = dram.load(used_addr + 2, 16).unwrap_or(0) as u16;
+
+        let used_pos = (used_idx as u64) % (DESC_NUM as u64);
+        let used_elem = used_addr + 4 + used_pos * 8;
+
+        dram.store(used_elem + 0, 32, head as u64)
+            .expect("failed to write used.elems[].id");
+        dram.store(used_elem + 4, 32, len1 as u64)
+            .expect("failed to write used.elems[].len");
+
+        dram.store(used_addr + 2, 16, (used_idx.wrapping_add(1)) as u64)
+            .expect("failed to write used.idx");
     }
-
-    // ---- Write status byte (1 byte) ----
-    // xv6 expects status=0 on success.
-    bus.store_memory(addr2, 8, 0)
-        .expect("failed to write status byte");
-
-    // ---- Update used ring ----
-    // struct VRingUsed { u16 flags; u16 idx; struct { u32 id; u32 len; } elems[NUM]; }
-    let used_idx = bus
-        .load_memory(used_addr + 2, 16)
-        .unwrap_or(0) as u16;
-
-    let used_pos = (used_idx as u64) % (DESC_NUM as u64);
-    let used_elem = used_addr + 4 + used_pos * 8;
-
-    // id = head descriptor index, len = number of bytes written (for block device reads),
-    // for writes len is typically 0 or len1 depending on implementation; xv6 doesn't rely heavily on len.
-    bus.store_memory(used_elem + 0, 32, head as u64)
-        .expect("failed to write used.elems[].id");
-    bus.store_memory(used_elem + 4, 32, len1 as u64)
-        .expect("failed to write used.elems[].len");
-
-    // bump used.idx
-    bus.store_memory(used_addr + 2, 16, (used_idx.wrapping_add(1)) as u64)
-        .expect("failed to write used.idx");
-}
 
     /// Returns a clone of the disk image (used in tests to verify preservation).
     pub fn disk_snapshot(&self) -> Vec<u8> {
@@ -363,7 +320,6 @@ pub fn disk_access(&mut self) {
         Self {
             start_addr: snapshot.start_addr,
             notificator,
-            bus: None,
             id: snapshot.id,
             driver_features: snapshot.driver_features,
             page_size: snapshot.page_size,

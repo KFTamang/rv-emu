@@ -57,15 +57,15 @@ impl Interrupt {
                 cpu.csr.store_csrs(MEPC, cpu.pc);
                 cpu.csr.store_csrs(MCAUSE, cause);
                 cpu.csr.set_mstatus_bit(cpu.mode, MASK_MPP, BIT_MPP);
-                let mie = MASK_MIE & cpu.csr.load_csrs(MSTATUS);
+                let mie = MASK_MIE & cpu.csr.load_csrs(MSTATUS, cpu.cycle, &cpu.interrupt_list);
                 cpu.csr
                     .set_mstatus_bit(if mie > 0 { 1 } else { 0 }, MASK_MPIE, BIT_MPIE);
                 cpu.csr.set_mstatus_bit(0, MASK_MIE, MASK_MIE);
                 cpu.mode = target_mode.unwrap();
-                let mtvec = cpu.csr.load_csrs(MTVEC);
-                debug!("MEPC is 0x{:x}", cpu.csr.load_csrs(MEPC));
-                debug!("MCAUSE is 0x{:x}", cpu.csr.load_csrs(MCAUSE));
-                debug!("MSTATUS is 0x{:x}", cpu.csr.load_csrs(MSTATUS));
+                let mtvec = cpu.csr.load_csrs(MTVEC, cpu.cycle, &cpu.interrupt_list);
+                debug!("MEPC is 0x{:x}", cpu.csr.load_csrs(MEPC, cpu.cycle, &cpu.interrupt_list));
+                debug!("MCAUSE is 0x{:x}", cpu.csr.load_csrs(MCAUSE, cpu.cycle, &cpu.interrupt_list));
+                debug!("MSTATUS is 0x{:x}", cpu.csr.load_csrs(MSTATUS, cpu.cycle, &cpu.interrupt_list));
                 debug!("MTVEC is 0x{:x}", mtvec);
                 debug!("enter M mode");
                 match mtvec & 0x3 {
@@ -83,15 +83,15 @@ impl Interrupt {
                 cpu.csr.store_csrs(SEPC, cpu.pc);
                 cpu.csr.store_csrs(SCAUSE, cause);
                 cpu.csr.set_sstatus_bit(cpu.mode, MASK_SPP, BIT_SPP);
-                let sie = MASK_SIE & cpu.csr.load_csrs(SSTATUS);
+                let sie = MASK_SIE & cpu.csr.load_csrs(SSTATUS, cpu.cycle, &cpu.interrupt_list);
                 cpu.csr
                     .set_sstatus_bit(if sie > 0 { 1 } else { 0 }, MASK_SPIE, BIT_SPIE);
                 cpu.csr.set_sstatus_bit(0, MASK_SIE, BIT_SIE);
                 cpu.mode = target_mode.unwrap();
-                let stvec = cpu.csr.load_csrs(STVEC);
-                debug!("SEPC is 0x{:x}", cpu.csr.load_csrs(SEPC));
-                debug!("SCAUSE is 0x{:x}", cpu.csr.load_csrs(SCAUSE));
-                debug!("SSTATUS is 0x{:x}", cpu.csr.load_csrs(SSTATUS));
+                let stvec = cpu.csr.load_csrs(STVEC, cpu.cycle, &cpu.interrupt_list);
+                debug!("SEPC is 0x{:x}", cpu.csr.load_csrs(SEPC, cpu.cycle, &cpu.interrupt_list));
+                debug!("SCAUSE is 0x{:x}", cpu.csr.load_csrs(SCAUSE, cpu.cycle, &cpu.interrupt_list));
+                debug!("SSTATUS is 0x{:x}", cpu.csr.load_csrs(SSTATUS, cpu.cycle, &cpu.interrupt_list));
                 debug!("STVEC is 0x{:x}", stvec);
                 debug!("enter S mode");
                 match stvec & 0x3 {
@@ -117,18 +117,8 @@ impl Interrupt {
         debug!("Interrupt:{:?} occurred!", self);
     }
     pub fn get_trap_mode(&self, cpu: &Cpu) -> Result<u64, ()> {
-        // An interrupt i will be taken
-        // (a)if bit i is set in both mip and mie,
-        // (b)and if interrupts are globally enabled.
-        // By default, M-mode interrupts are globally enabled
-        // (b-1)if the hart’s current privilege mode is less than M,
-        // (b-2)or if the current privilege mode is M and the MIE bit in the mstatus register is set.
-        // (c)If bit i in mideleg is set, however, interrupts are considered to be globally enabled
-        // if the hart’s current privilege mode equals the delegated privilege mode and that mode’s
-        // interrupt enable bit (xIE in mstatus for mode x) is set,
-        // or if the current privilege mode is less than the delegated privilege mode.
         let bit_i = self.bit_code();
-        let mideleg = cpu.csr.load_csrs(MIDELEG);
+        let mideleg = cpu.csr.load_csrs(MIDELEG, cpu.cycle, &cpu.interrupt_list);
         let destined_mode = if (bit_i & mideleg) == 0 {
             M_MODE
         } else {
@@ -138,9 +128,9 @@ impl Interrupt {
         let current_mode = cpu.mode;
         match destined_mode {
             M_MODE => {
-                let mip = cpu.csr.load_csrs(MIP);
-                let mie = cpu.csr.load_csrs(MIE);
-                let mstatus = cpu.csr.load_csrs(MSTATUS);
+                let mip = cpu.csr.load_csrs(MIP, cpu.cycle, &cpu.interrupt_list);
+                let mie = cpu.csr.load_csrs(MIE, cpu.cycle, &cpu.interrupt_list);
+                let mstatus = cpu.csr.load_csrs(MSTATUS, cpu.cycle, &cpu.interrupt_list);
                 if (mip & mie & bit_i) == 0 {
                     return Err(());
                 }
@@ -153,9 +143,9 @@ impl Interrupt {
                 return Err(());
             }
             S_MODE => {
-                let sip = cpu.csr.load_csrs(SIP);
-                let sie = cpu.csr.load_csrs(SIE);
-                let sstatus = cpu.csr.load_csrs(SSTATUS);
+                let sip = cpu.csr.load_csrs(SIP, cpu.cycle, &cpu.interrupt_list);
+                let sie = cpu.csr.load_csrs(SIE, cpu.cycle, &cpu.interrupt_list);
+                let sstatus = cpu.csr.load_csrs(SSTATUS, cpu.cycle, &cpu.interrupt_list);
 
                 if current_mode == M_MODE {
                     return Err(());
@@ -173,13 +163,6 @@ impl Interrupt {
             }
         }
     }
-}
-
-// Interrupt that will be pending after a specified cycle
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub struct DelayedInterrupt {
-    pub interrupt: Interrupt,
-    pub cycle: u64,
 }
 
 #[allow(unused)]
@@ -239,13 +222,13 @@ impl Exception {
                 cpu.csr.store_csrs(MEPC, cpu.pc);
                 cpu.csr.store_csrs(MCAUSE, cause);
                 cpu.csr.set_mstatus_bit(cpu.mode, MASK_MPP, BIT_MPP);
-                let mie = MASK_MIE & cpu.csr.load_csrs(MSTATUS);
+                let mie = MASK_MIE & cpu.csr.load_csrs(MSTATUS, cpu.cycle, &cpu.interrupt_list);
                 cpu.csr
                     .set_mstatus_bit(if mie > 0 { 1 } else { 0 }, MASK_MPIE, BIT_MPIE);
                 cpu.csr.set_mstatus_bit(0, MASK_MIE, MASK_MIE);
                 cpu.csr.store_csrs(MTVAL, xtval);
                 cpu.mode = target_mode;
-                let mtvec = cpu.csr.load_csrs(MTVEC);
+                let mtvec = cpu.csr.load_csrs(MTVEC, cpu.cycle, &cpu.interrupt_list);
                 debug!("mtvec is 0x{:x}", mtvec);
                 debug!("enter M mode");
                 match mtvec & 0x3 {
@@ -263,13 +246,13 @@ impl Exception {
                 cpu.csr.store_csrs(SEPC, cpu.pc);
                 cpu.csr.store_csrs(SCAUSE, cause);
                 cpu.csr.set_sstatus_bit(cpu.mode, MASK_SPP, BIT_SPP);
-                let sie = MASK_SIE & cpu.csr.load_csrs(SSTATUS);
+                let sie = MASK_SIE & cpu.csr.load_csrs(SSTATUS, cpu.cycle, &cpu.interrupt_list);
                 cpu.csr
                     .set_sstatus_bit(if sie > 0 { 1 } else { 0 }, MASK_SPIE, BIT_SPIE);
                 cpu.csr.set_sstatus_bit(0, MASK_SIE, BIT_SIE);
                 cpu.csr.store_csrs(STVAL, xtval);
                 cpu.mode = target_mode;
-                let stvec = cpu.csr.load_csrs(STVEC);
+                let stvec = cpu.csr.load_csrs(STVEC, cpu.cycle, &cpu.interrupt_list);
                 debug!("stvec is 0x{:x}", stvec);
                 debug!("enter S mode");
                 match stvec & 0x3 {
@@ -297,7 +280,7 @@ impl Exception {
 
     fn get_target_mode(&self, cpu: &mut Cpu) -> u64 {
         let exception_bit = self.bit_code();
-        let medeleg = cpu.csr.load_csrs(MEDELEG);
+        let medeleg = cpu.csr.load_csrs(MEDELEG, cpu.cycle, &cpu.interrupt_list);
         if (cpu.mode < M_MODE) && ((exception_bit & medeleg) != 0) {
             S_MODE
         } else {

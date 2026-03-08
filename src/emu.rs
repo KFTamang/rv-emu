@@ -77,13 +77,7 @@ impl Emu {
         None
     }
 
-    fn run_block_with_breakpoints(&mut self, block: &mut BasicBlock) -> u64 {
-        for breakpoint in &self.breakpoints {
-            if block.start_pc <= *breakpoint && *breakpoint < block.end_pc {
-                block.end_pc = *breakpoint;
-                break;
-            }
-        }
+    fn run_block_with_breakpoints(&mut self, block: &BasicBlock) -> u64 {
         self.cpu.run_block(&mut self.bus, block)
     }
 
@@ -97,8 +91,8 @@ impl Emu {
                     self.cpu.trap_interrupt(&mut self.bus);
                     self.bus.process_virtio();
                     match self.cpu.build_basic_block(&mut self.bus) {
-                        Ok(mut block) => {
-                            cycle = self.run_block_with_breakpoints(&mut block);
+                        Ok(block) => {
+                            cycle = self.run_block_with_breakpoints(&block);
                         }
                         Err(exception) => {
                             exception.take_trap(&mut self.cpu);
@@ -138,8 +132,8 @@ impl Emu {
                     self.cpu.trap_interrupt(&mut self.bus);
                     self.bus.process_virtio();
                     match self.cpu.build_basic_block(&mut self.bus) {
-                        Ok(mut block) => {
-                            cycle = self.run_block_with_breakpoints(&mut block);
+                        Ok(block) => {
+                            cycle = self.run_block_with_breakpoints(&block);
                         }
                         Err(exception) => {
                             exception.take_trap(&mut self.cpu);

@@ -13,6 +13,7 @@ use log::{debug, error, info, trace};
 use serde::{Deserialize, Serialize};
 use std::cmp;
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
 const REG_NUM: usize = 32;
 pub const M_MODE: u64 = 0b11;
@@ -59,7 +60,7 @@ pub struct Cpu {
     pub(crate) clint: Clint,
     pub interrupt_list: BTreeSet<Interrupt>,
     pub(crate) address_translation_cache: std::collections::HashMap<(u64, u64, u64), u64>,
-    pub(crate) block_cache: std::collections::HashMap<u64, BasicBlock>,
+    pub(crate) block_cache: std::collections::HashMap<u64, Arc<BasicBlock>>,
 }
 
 impl Cpu {
@@ -311,19 +312,21 @@ impl Cpu {
         }
     }
 
-    pub fn build_basic_block(&mut self, bus: &mut Bus) -> Result<BasicBlock, Exception> {
-        let mut instrs = Vec::new();
-        let mut pc = self.pc;
+    pub fn build_basic_block(&mut self, bus: &mut Bus) -> Result<Arc<BasicBlock>, Exception> {
+        let pc = self.pc;
 
-        if self.block_cache.contains_key(&pc) {
-            return Ok(self.block_cache.get(&pc).unwrap().clone());
+        if let Some(block) = self.block_cache.get(&pc) {
+            return Ok(Arc::clone(block));
         }
 
+        let mut instrs = Vec::with_capacity(16);
+        let mut cur_pc = pc;
+
         loop {
-            let inst = match self.fetch(bus, pc) {
+            let inst = match self.fetch(bus, cur_pc) {
                 Ok(inst) => inst,
                 Err(e) => {
-                    error!("Failed to fetch instruction at pc={:x}: {:?}", pc, e);
+                    error!("Failed to fetch instruction at pc={:x}: {:?}", cur_pc, e);
                     if instrs.is_empty() {
                         return Err(e);
                     }
@@ -331,21 +334,20 @@ impl Cpu {
                 }
             };
             let decoded_inst = DecodedInstr::decode(inst);
-            instrs.push(decoded_inst.clone());
-
-            if decoded_inst.is_building_block_end() {
+            let is_end = decoded_inst.is_building_block_end();
+            instrs.push(decoded_inst);
+            if is_end {
                 break;
             }
-
-            pc = pc.wrapping_add(4);
+            cur_pc = cur_pc.wrapping_add(4);
         }
 
-        let block = BasicBlock {
-            start_pc: self.pc,
-            end_pc: pc,
+        let block = Arc::new(BasicBlock {
+            start_pc: pc,
+            end_pc: cur_pc,
             instrs,
-        };
-        self.block_cache.insert(self.pc, block.clone());
+        });
+        self.block_cache.insert(pc, Arc::clone(&block));
         Ok(block)
     }
 

@@ -110,9 +110,11 @@ impl Bus {
 
     /// Process pending virtio disk DMA requests.
     pub fn process_virtio(&mut self) {
-        if let Some(mut virtio) = self.virtio.take() {
-            virtio.disk_access(&mut self.dram);
-            self.virtio = Some(virtio);
+        if self.virtio.as_ref().map_or(false, |v| v.has_pending_work()) {
+            if let Some(mut virtio) = self.virtio.take() {
+                virtio.disk_access(&mut self.dram);
+                self.virtio = Some(virtio);
+            }
         }
     }
 

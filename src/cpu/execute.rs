@@ -1,9 +1,9 @@
 use super::*;
 
 impl Cpu {
-    pub fn execute(&mut self, bus: &mut Bus, inst: DecodedInstr) -> Result<(), Exception> {
+    pub fn execute(&mut self, bus: &mut Bus, inst: &DecodedInstr) -> Result<(), Exception> {
         self.clear_reg_marks();
-        match inst {
+        match *inst {
             DecodedInstr::Add {
                 raw: _,
                 rd,

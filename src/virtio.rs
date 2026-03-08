@@ -178,6 +178,10 @@ impl Virtio {
         self.disk[addr as usize]
     }
 
+    pub fn has_pending_work(&self) -> bool {
+        self.queue_notify != 9999
+    }
+
     /// Access the disk via virtio. This function performs DMA against *guest physical memory*.
     /// Takes a mutable reference to Dram to read/write guest memory directly.
     pub fn disk_access(&mut self, dram: &mut Dram) {

@@ -10,10 +10,11 @@ use crate::interrupt::*;
 
 use log::{debug, error, info, trace};
 
+use fxhash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use std::cmp;
 use std::collections::BTreeSet;
-use std::sync::Arc;
+use std::rc::Rc;
 
 const REG_NUM: usize = 32;
 pub const M_MODE: u64 = 0b11;
@@ -42,7 +43,7 @@ pub struct CpuSnapshot {
     pub cycle: u64,
     pub clint: Clint,
     pub interrupt_list: BTreeSet<Interrupt>,
-    pub address_translation_cache: std::collections::HashMap<(u64, u64, u64), u64>,
+    pub address_translation_cache: FxHashMap<(u64, u64, u64), u64>,
 }
 
 pub struct Cpu {
@@ -59,8 +60,8 @@ pub struct Cpu {
     pub cycle: u64,
     pub(crate) clint: Clint,
     pub interrupt_list: BTreeSet<Interrupt>,
-    pub(crate) address_translation_cache: std::collections::HashMap<(u64, u64, u64), u64>,
-    pub(crate) block_cache: std::collections::HashMap<u64, Arc<BasicBlock>>,
+    pub(crate) address_translation_cache: FxHashMap<(u64, u64, u64), u64>,
+    pub(crate) block_cache: FxHashMap<u64, Rc<BasicBlock>>,
 }
 
 impl Cpu {
@@ -81,8 +82,8 @@ impl Cpu {
             clint: Clint::new(0x200_0000, 0x10000),
             cycle: 0,
             interrupt_list: BTreeSet::new(),
-            address_translation_cache: std::collections::HashMap::new(),
-            block_cache: std::collections::HashMap::new(),
+            address_translation_cache: FxHashMap::default(),
+            block_cache: FxHashMap::default(),
         }
     }
 
@@ -95,7 +96,11 @@ impl Cpu {
             cycle: self.cycle,
             clint: self.clint.clone(),
             interrupt_list: self.interrupt_list.clone(),
-            address_translation_cache: self.address_translation_cache.clone(),
+            address_translation_cache: self
+                .address_translation_cache
+                .iter()
+                .map(|(&k, &v)| (k, v))
+                .collect(),
         }
     }
 
@@ -114,8 +119,8 @@ impl Cpu {
             clint: snapshot.clint,
             cycle: snapshot.cycle,
             interrupt_list: snapshot.interrupt_list,
-            address_translation_cache: snapshot.address_translation_cache,
-            block_cache: std::collections::HashMap::new(),
+            address_translation_cache: snapshot.address_translation_cache.into_iter().collect(),
+            block_cache: FxHashMap::default(),
         };
         cpu.clear_reg_marks();
         cpu
@@ -188,6 +193,9 @@ impl Cpu {
 
     // get the takable pending interrupt with the highest priority
     pub fn get_interrupt_to_take(&mut self) -> Option<Interrupt> {
+        if self.interrupt_list.is_empty() {
+            return None;
+        }
         let xip = if self.mode == M_MODE {
             self.csr.load_csrs(MIP, self.cycle, &self.interrupt_list)
         } else {
@@ -312,11 +320,11 @@ impl Cpu {
         }
     }
 
-    pub fn build_basic_block(&mut self, bus: &mut Bus) -> Result<Arc<BasicBlock>, Exception> {
+    pub fn build_basic_block(&mut self, bus: &mut Bus) -> Result<Rc<BasicBlock>, Exception> {
         let pc = self.pc;
 
         if let Some(block) = self.block_cache.get(&pc) {
-            return Ok(Arc::clone(block));
+            return Ok(Rc::clone(block));
         }
 
         let mut instrs = Vec::with_capacity(16);
@@ -342,12 +350,12 @@ impl Cpu {
             cur_pc = cur_pc.wrapping_add(4);
         }
 
-        let block = Arc::new(BasicBlock {
+        let block = Rc::new(BasicBlock {
             start_pc: pc,
             end_pc: cur_pc,
             instrs,
         });
-        self.block_cache.insert(pc, Arc::clone(&block));
+        self.block_cache.insert(pc, Rc::clone(&block));
         Ok(block)
     }
 
@@ -360,7 +368,7 @@ impl Cpu {
             block.end_pc
         );
         for instr in &block.instrs {
-            let result = self.execute(bus, instr.clone());
+            let result = self.execute(bus, instr);
             if let Err(e) = result {
                 error!(
                     "Execution failed in block at pc={:x}: {:?}, mode={}",
@@ -403,7 +411,7 @@ impl Cpu {
         let decoded_inst = DecodedInstr::decode(inst);
 
         let result = self
-            .execute(bus, decoded_inst)
+            .execute(bus, &decoded_inst)
             .map_err(|e| e.take_trap(self));
         if let Err(e) = result {
             error!("Execution failed!");

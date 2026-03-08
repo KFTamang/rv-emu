@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use crate::interrupt::{Exception, Interrupt};
@@ -42,6 +43,7 @@ pub struct Plic {
     start_addr: u64,
     regs: Vec<u32>,
     pending_queue: Arc<Mutex<Vec<ExternalInterrupt>>>,
+    has_pending: Arc<AtomicBool>,
     external_interrupt_list: BTreeSet<ExternalInterrupt>,
 }
 
@@ -51,21 +53,31 @@ impl Plic {
             start_addr,
             regs: vec![0; PLIC_SIZE as usize / 8],
             pending_queue: Arc::new(Mutex::new(Vec::new())),
+            has_pending: Arc::new(AtomicBool::new(false)),
             external_interrupt_list: BTreeSet::new(),
         }
     }
 
     pub fn get_interrupt_notificator(&self, id: ExternalInterrupt) -> Box<dyn Fn() + Send + Sync> {
         let queue = Arc::clone(&self.pending_queue);
+        let has_pending = Arc::clone(&self.has_pending);
         Box::new(move || {
             info!("Notifying PLIC of interrupt ID: {:?}", id);
             queue.lock().unwrap().push(id);
+            has_pending.store(true, Ordering::Relaxed);
         })
     }
 
     pub fn process_pending_interrupts(&mut self, interrupts: &mut BTreeSet<Interrupt>) {
+        if !self.has_pending.load(Ordering::Relaxed) {
+            return;
+        }
         let pending: Vec<ExternalInterrupt> =
             self.pending_queue.lock().unwrap().drain(..).collect();
+        if pending.is_empty() {
+            return;
+        }
+        self.has_pending.store(false, Ordering::Relaxed);
         for interrupt in pending {
             info!("Processing interrupt ID: {:?}", interrupt);
             interrupts.insert(Interrupt::SupervisorExternalInterrupt);
@@ -117,10 +129,12 @@ impl Plic {
     }
 
     pub fn from_snapshot(snapshot: PlicSnapshot) -> Plic {
+        let has_pending = !snapshot.external_interrupt_list.is_empty();
         Plic {
             start_addr: snapshot.start_addr,
             regs: snapshot.regs,
             pending_queue: Arc::new(Mutex::new(Vec::new())),
+            has_pending: Arc::new(AtomicBool::new(has_pending)),
             external_interrupt_list: snapshot.external_interrupt_list,
         }
     }

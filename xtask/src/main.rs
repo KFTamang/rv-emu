@@ -164,14 +164,14 @@ fn test_riscv(args: TestRiscvArgs) -> Result<()> {
     // 3) Discover tests per suite
     let isa_dir = riscv_tests.join("isa");
     if !isa_dir.exists() {
-        bail!("expected riscv-tests build dir at {:?}. Build may have failed.", isa_dir);
+        bail!(
+            "expected riscv-tests build dir at {:?}. Build may have failed.",
+            isa_dir
+        );
     }
 
     // Default output markers (tuned to your example)
-    let mut markers = vec![
-        "Test failed".to_string(),
-        "panic".to_string(),
-    ];
+    let mut markers = vec!["Test failed".to_string(), "panic".to_string()];
     markers.extend(fail_on_output);
 
     // Prepare log dir
@@ -183,7 +183,10 @@ fn test_riscv(args: TestRiscvArgs) -> Result<()> {
     for suite in &suites {
         let tests = discover_tests(&isa_dir, suite, filter.as_deref())?;
         if tests.is_empty() {
-            eprintln!("[xtask] WARN: no tests found for suite={suite} under {:?}", isa_dir);
+            eprintln!(
+                "[xtask] WARN: no tests found for suite={suite} under {:?}",
+                isa_dir
+            );
         } else {
             eprintln!("[xtask] suite={suite}: discovered {} tests", tests.len());
         }
@@ -192,7 +195,11 @@ fn test_riscv(args: TestRiscvArgs) -> Result<()> {
 
         // 4) Run tests (sequential, keep going)
         for t in tests {
-            let test_name = t.file_name().and_then(OsStr::to_str).unwrap_or("<nonutf8>").to_string();
+            let test_name = t
+                .file_name()
+                .and_then(OsStr::to_str)
+                .unwrap_or("<nonutf8>")
+                .to_string();
             eprint!("[xtask] RUN  {suite}/{test_name} ... ");
 
             let mut cmd = Command::new(&emulator);
@@ -394,7 +401,9 @@ fn discover_tests(isa_dir: &Path, suite: &str, filter: Option<&str>) -> Result<V
 }
 
 fn run(cmd: &mut Command) -> Result<()> {
-    let status = cmd.status().with_context(|| format!("failed to run: {:?}", cmd))?;
+    let status = cmd
+        .status()
+        .with_context(|| format!("failed to run: {:?}", cmd))?;
     if !status.success() {
         return Err(anyhow!("command failed: {:?} -> {:?}", cmd, status));
     }

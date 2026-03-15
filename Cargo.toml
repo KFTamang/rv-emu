@@ -16,6 +16,7 @@ log = {version = "0.4.22"}
 serde = { version = "1.0.219", features = ["derive"] }
 bincode = { version = "2.0.1", features = ["serde"]}
 serde-big-array = "=0.5.1"
+fxhash = "0.2.1"
 
 [profile.release-with-debug]
 inherits = "release"

@@ -19,10 +19,10 @@ fib:apps/fib.s ${src}
 exception:apps/exception.s ${src}
 	RUST_LOG=debug cargo run apps/exception.elf --elf -c 100 -d 1 > log/output_exception.log 2>&1
 
-xv6:apps/xv6-riscv/kernel/kernel ${src}
+xv6:
 	cargo run --release apps/xv6-riscv/kernel/kernel --elf --base-addr 2147483648 --loop-on --dump 100000000 --image apps/xv6-riscv/fs.img --snapshot-interval 100000000
 
-xv6-gdb:apps/xv6-riscv/kernel/kernel ${src}
+xv6-gdb:
 	cargo run --release apps/xv6-riscv/kernel/kernel --elf --base-addr 2147483648 --loop-on --dump 100000000 --image apps/xv6-riscv/fs.img --snapshot-interval 100000000 --gdb
 
 run:apps/test.bin apps/fib.bin ${src}
@@ -36,4 +36,4 @@ all:fib test
 # Run in docker container
 test-suite:
 	cargo run -p xtask -- test-riscv --build --suite rv64si-p --suite rv64mi-p --suite rv64ui-p --emulator target/release/rv-emu -- --base-addr 2147483648 --count 100000 --test-result-addr 2147487744
-# 	cargo run -p xtask -- test-riscv --suite rv64mi-p --suite rv64ui-p --emulator target/release/rv-emu -- --base-addr 2147483648 --count 100000 --test-result-addr 2147487744
+# 	cargo run -p xtask -- test-riscv --suite rv64ui-v --emulator target/release/rv-emu -- --base-addr 2147483648 --count 100000 --test-result-addr 2147487744
